@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import Image from "next/image"
 import { Send } from "lucide-react"
 
 type Message = {
@@ -68,9 +67,7 @@ export default function ChatInterface() {
           <div key={message.id} className="flex mb-4">
             {message.sender === "assistant" ? (
               <div className="flex">
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex-shrink-0 mr-2 overflow-hidden">
-                  <Image src="/helpful-robot.png" alt="Assistant" width={32} height={32} />
-                </div>
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex-shrink-0 mr-2"></div>
                 <div className="max-w-[85%]">
                   <div className="font-medium text-sm">
                     Response <span className="text-xs text-gray-500 font-normal">{message.timestamp}</span>
@@ -88,9 +85,7 @@ export default function ChatInterface() {
               </div>
             ) : (
               <div className="flex">
-                <div className="w-8 h-8 rounded-full bg-amber-500 flex-shrink-0 mr-2 overflow-hidden">
-                  <Image src="/diverse-group-city.png" alt="User" width={32} height={32} />
-                </div>
+                <div className="w-8 h-8 rounded-full bg-amber-500 flex-shrink-0 mr-2"></div>
                 <div className="max-w-[85%]">
                   <div className="font-medium text-sm">
                     You <span className="text-xs text-gray-500 font-normal">{message.timestamp}</span>
@@ -110,7 +105,7 @@ export default function ChatInterface() {
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type message..."
-            className="w-full border border-gray-300 rounded-full py-2 pl-4 pr-10 focus:outline-none focus:ring-2 focus:ring-[#1e74bb]"
+            className="w-full border border-gray-300 rounded-full py-2 pl-4 pr-10"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleSendMessage()

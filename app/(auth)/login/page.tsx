@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, User, Lock } from "lucide-react"
@@ -52,7 +51,7 @@ export default function LoginPage() {
                   id="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-[#d8d7e0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#1e74bb] focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-[#d8d7e0] rounded-md"
                   placeholder="Enter your email"
                   required
                 />
@@ -72,7 +71,7 @@ export default function LoginPage() {
                   id="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-10 py-3 border border-[#d8d7e0] rounded-md focus:outline-none focus:ring-2 focus:ring-[#1e74bb] focus:border-transparent"
+                  className="w-full pl-10 pr-10 py-3 border border-[#d8d7e0] rounded-md"
                   placeholder="******"
                   required
                 />
@@ -91,7 +90,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full py-3 px-4 bg-[#1e74bb] text-white font-medium rounded-md hover:bg-[#1a67a7] focus:outline-none focus:ring-2 focus:ring-[#1e74bb] focus:ring-opacity-50 transition-colors"
+              className="w-full py-3 px-4 bg-[#1e74bb] text-white font-medium rounded-md hover:bg-[#1a67a7]"
             >
               Login
             </button>
@@ -109,8 +108,7 @@ export default function LoginPage() {
 
       {/* Right side - Blue Background with Text */}
       <div className="hidden lg:block w-1/2 relative">
-        <div className="absolute inset-0 bg-[#1e74bb]/80 z-10"></div>
-        <Image src="/focused-work.png" alt="Background" fill className="object-cover" priority />
+        <div className="absolute inset-0 bg-[#1e74bb] z-10"></div>
         <div className="absolute inset-0 flex items-center justify-center z-20 px-12">
           <h2 className="text-white text-4xl font-medium max-w-md">
             Please enter your credentials to access your online examination.

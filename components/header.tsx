@@ -1,14 +1,13 @@
-import Image from "next/image"
 import Link from "next/link"
 import { Search, Bell, MessageSquare, LogOut, Settings, User, HelpCircle } from "lucide-react"
 
 export default function Header() {
   return (
-    <header className="border-b border-gray-200 py-3 px-6 flex items-center justify-between bg-white shadow-sm">
+    <header className="border-b border-gray-200 py-3 px-6 flex items-center justify-between bg-white">
       <div className="flex items-center">
         <Link href="/" className="flex items-center">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#1e74bb] to-[#1a67a7] flex items-center justify-center mr-2 shadow-sm">
-            <Image src="/logo.svg" alt="ProbEd Logo" width={24} height={24} className="text-white" />
+          <div className="w-10 h-10 rounded-full bg-[#1e74bb] flex items-center justify-center mr-2">
+            <span className="text-white font-bold">P</span>
           </div>
           <span className="text-[#1e74bb] text-xl font-medium">ProbEd</span>
         </Link>
@@ -20,16 +19,16 @@ export default function Header() {
           <input
             type="text"
             placeholder="Search here"
-            className="pl-10 pr-4 py-2 w-64 border border-gray-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[#1e74bb] transition-all duration-200"
+            className="pl-10 pr-4 py-2 w-64 border border-gray-200 rounded-md text-sm"
           />
         </div>
       </div>
 
       <div className="flex items-center">
-        <button className="p-2 text-gray-500 hover:text-[#1e74bb] hover:bg-blue-50 rounded-full transition-colors">
+        <button className="p-2 text-gray-500 hover:text-[#1e74bb] rounded-full">
           <Bell className="h-5 w-5" />
         </button>
-        <button className="p-2 text-gray-500 hover:text-[#1e74bb] hover:bg-blue-50 rounded-full transition-colors ml-2">
+        <button className="p-2 text-gray-500 hover:text-[#1e74bb] rounded-full ml-2">
           <MessageSquare className="h-5 w-5" />
         </button>
 
@@ -39,8 +38,8 @@ export default function Header() {
             <span className="text-sm text-gray-500 block">Welcome back</span>
           </div>
           <div className="relative group">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 overflow-hidden cursor-pointer shadow-sm border-2 border-white">
-              <Image src="/diverse-group-city.png" alt="User Avatar" width={40} height={40} />
+            <div className="w-10 h-10 rounded-full bg-amber-400 overflow-hidden cursor-pointer">
+              <div className="w-full h-full bg-gray-300"></div>
             </div>
 
             {/* Dropdown menu */}
