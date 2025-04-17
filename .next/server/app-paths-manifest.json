@@ -1,0 +1,8 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/(dashboard)/page": "app/(dashboard)/page.js",
+  "/(dashboard)/subjects/[subject]/page": "app/(dashboard)/subjects/[subject]/page.js",
+  "/(dashboard)/subjects/[subject]/[topic]/page": "app/(dashboard)/subjects/[subject]/[topic]/page.js",
+  "/(dashboard)/subjects/[subject]/[topic]/[quiz]/page": "app/(dashboard)/subjects/[subject]/[topic]/[quiz]/page.js",
+  "/(dashboard)/subjects/[subject]/[topic]/[quiz]/results/page": "app/(dashboard)/subjects/[subject]/[topic]/[quiz]/results/page.js"
+}
