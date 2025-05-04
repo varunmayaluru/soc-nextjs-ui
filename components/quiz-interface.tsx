@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AlertCircle, X } from "lucide-react"
+import { AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import SuccessModal from "./success-modal"
@@ -16,9 +16,9 @@ type QuizInterfaceProps = {
 }
 
 export default function QuizInterface({ quiz, breadcrumb }: QuizInterfaceProps) {
-  const [selectedOption, setSelectedOption] = useState<number | null>(null)
+  const [selectedOption, setSelectedOption] = useState<number | null>(1)
   const [currentPage, setCurrentPage] = useState(1)
-  const [showChat, setShowChat] = useState(false)
+  const [showChat, setShowChat] = useState(true)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const router = useRouter()
 
@@ -35,8 +35,6 @@ export default function QuizInterface({ quiz, breadcrumb }: QuizInterfaceProps) 
     const selectedQuizOption = quizOptions.find((option) => option.id === index)
     if (selectedQuizOption && !selectedQuizOption.isCorrect) {
       setShowChat(true)
-    } else {
-      setShowChat(false)
     }
   }
 
@@ -51,11 +49,42 @@ export default function QuizInterface({ quiz, breadcrumb }: QuizInterfaceProps) 
   }
 
   return (
-    <div className="bg-gray-50 min-h-[calc(100vh-160px)]">
+    <div className="flex h-[calc(100vh-160px)]">
       {/* Success Modal */}
       <SuccessModal isOpen={showSuccessModal} onClose={handleModalClose} />
 
-      <div className="p-6">
+      {/* Left side - Quiz content with scrolling */}
+      <div className="w-full md:w-8/12 p-6 overflow-y-auto">
+        {/* Question navigation */}
+        <div className="flex justify-between items-center mb-6 bg-white rounded-lg p-2 sticky top-0 z-10">
+          <button className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-md">
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+
+          <div className="flex overflow-x-auto space-x-1">
+            {Array.from({ length: 20 }, (_, i) => (
+              <button
+                key={i}
+                className={`w-8 h-8 flex items-center justify-center rounded-md text-sm ${
+                  i + 1 === currentPage
+                    ? "bg-[#1e74bb] text-white"
+                    : i + 1 < currentPage
+                      ? "text-[#1e74bb] border-b-2 border-[#1e74bb]"
+                      : "text-gray-600 hover:bg-gray-100"
+                }`}
+                onClick={() => setCurrentPage(i + 1)}
+              >
+                {i + 1}
+              </button>
+            ))}
+          </div>
+
+          <button className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-md">
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Quiz content */}
         <div className="bg-gray-50 rounded-lg p-8 mb-6">
           <h2 className="text-2xl font-medium text-center mb-6">Algebra Fundamentals Quiz ?</h2>
 
@@ -106,28 +135,12 @@ export default function QuizInterface({ quiz, breadcrumb }: QuizInterfaceProps) 
             <button className="bg-[#1e74bb] text-white py-2 px-6 rounded-md text-sm font-medium">NEXT</button>
           </div>
         </div>
+      </div>
 
-        {/* Chat section */}
-        {showChat && (
-          <div className="bg-white rounded-lg p-6 mb-6 max-w-2xl mx-auto">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center mr-3">
-                  <AlertCircle className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium">Help Assistant</h3>
-                  <p className="text-xs text-gray-500">Always here to help</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowChat(false)}
-                className="text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-full p-2"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
+      {/* Right side - Chat interface */}
+      <div className="hidden md:block w-4/12 border-l border-gray-200 p-6 bg-white overflow-y-auto">
+        <div className="flex flex-col h-full">
+          <div className="flex-grow overflow-y-auto">
             <div className="flex mb-4">
               <div className="w-10 h-10 rounded-full overflow-hidden mr-3 flex-shrink-0">
                 <Image src="/abstract-geometric-shapes.png" alt="You" width={40} height={40} className="object-cover" />
@@ -141,6 +154,19 @@ export default function QuizInterface({ quiz, breadcrumb }: QuizInterfaceProps) 
                   you're a UX writer now. Generate 3 versions of 404 error messages for a ecommerce clothing website.
                 </p>
               </div>
+              <button className="ml-2 text-gray-400 self-start">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M12.6667 6.00001V2.66668C12.6667 2.48987 12.5964 2.32031 12.4714 2.19528C12.3464 2.07025 12.1768 2.00001 12 2.00001H4.00004C3.82323 2.00001 3.65366 2.07025 3.52864 2.19528C3.40361 2.32031 3.33337 2.48987 3.33337 2.66668V13.3333C3.33337 13.5101 3.40361 13.6797 3.52864 13.8047C3.65366 13.9298 3.82323 14 4.00004 14H12C12.1768 14 12.3464 13.9298 12.4714 13.8047C12.5964 13.6797 12.6667 13.5101 12.6667 13.3333V10"
+                    stroke="#9B9DA6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path d="M5.33337 6.66667L14 6.66667" stroke="#9B9DA6" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M14 6.66667L11.3334 4" stroke="#9B9DA6" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M14 6.66667L11.3334 9.33334" stroke="#9B9DA6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
             </div>
 
             <div className="flex mb-4 justify-end">
@@ -150,7 +176,7 @@ export default function QuizInterface({ quiz, breadcrumb }: QuizInterfaceProps) 
                   <span className="text-xs text-gray-500">Just now</span>
                 </div>
                 <p className="text-sm">
-                  Here are three different versions of 404 error messages for an ecommerce clothing website:
+                  Sure! Here are three different versions of 404 error messages for an ecommerce clothing website:
                 </p>
                 <ol className="list-decimal pl-5 mt-2 text-sm">
                   <li className="mb-1">
@@ -168,13 +194,41 @@ export default function QuizInterface({ quiz, breadcrumb }: QuizInterfaceProps) 
                 </ol>
               </div>
             </div>
+          </div>
 
+          <div className="mt-4">
             <div className="relative">
               <input
                 type="text"
                 placeholder="Type message..."
                 className="w-full border border-gray-300 rounded-full py-3 pl-5 pr-16"
               />
+              <div className="absolute inset-y-0 left-3 flex items-center">
+                <button className="text-gray-400 mr-2">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                      d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                      stroke="#9B9DA6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M8 14C8 14 9.5 16 12 16C14.5 16 16 14 16 14"
+                      stroke="#9B9DA6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path d="M9 9H9.01" stroke="#9B9DA6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path
+                      d="M15 9H15.01"
+                      stroke="#9B9DA6"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
               <button className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-[#1e74bb] text-white p-2 rounded-full">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -193,7 +247,7 @@ export default function QuizInterface({ quiz, breadcrumb }: QuizInterfaceProps) 
               </button>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   )

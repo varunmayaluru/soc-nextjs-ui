@@ -26,7 +26,7 @@ export default function Dashboard() {
 
             <div className="flex items-center justify-between">
               <p className="font-medium">
-                <span className="text-green-500">6</span> <span className="text-gray-800">Subjects</span>
+                <span className="text-green-500">6 Subjects</span>
               </p>
               <Link href="#" className="text-gray-400 hover:text-gray-600 flex items-center">
                 <span className="text-sm">View Details</span>
@@ -46,7 +46,7 @@ export default function Dashboard() {
 
             <div className="flex items-center justify-between">
               <p className="font-medium">
-                <span className="text-[#5bceff]">8</span> <span className="text-gray-800">Tasks</span>{" "}
+                <span className="text-[#5bceff]">8 Tasks</span> {" "}
                 <span className="text-gray-400 text-sm">/12 Tasks</span>
               </p>
               <Link href="#" className="text-gray-400 hover:text-gray-600 flex items-center">
@@ -67,7 +67,7 @@ export default function Dashboard() {
 
             <div className="flex items-center justify-between">
               <p className="font-medium">
-                <span className="text-[#fa8b24]">8</span> <span className="text-gray-800">Hours</span>{" "}
+                <span className="text-[#fa8b24]">8 Hours</span> {" "}
                 <span className="text-gray-400 text-sm">In a week</span>
               </p>
               <Link href="#" className="text-gray-400 hover:text-gray-600 flex items-center">
