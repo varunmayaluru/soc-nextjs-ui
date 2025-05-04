@@ -42,7 +42,7 @@ export default function Header() {
           </div>
         </div>
         <div className="flex items-center gap-4">
-         <div className="h-10 w-10">
+         <div className="h-10 w-15">
               <Image
                 src="/delhi-public-school.png"
                 alt="Delhi Public School"
