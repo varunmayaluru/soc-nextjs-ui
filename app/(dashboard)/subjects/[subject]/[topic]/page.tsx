@@ -25,6 +25,21 @@ export default function TopicPage({
 
   const quizzes = getQuizzes(params.topic)
 
+  // Icons for different quiz types
+  const quizIcons = ["📊", "📈", "📏", "🧮", "📚", "🔍", "🧩", "🎯"]
+
+  // Background colors for icons
+  const iconBgs = [
+    "bg-blue-100",
+    "bg-green-100",
+    "bg-yellow-100",
+    "bg-purple-100",
+    "bg-pink-100",
+    "bg-indigo-100",
+    "bg-red-100",
+    "bg-orange-100",
+  ]
+
   return (
     <div>
       <div className="bg-[#1e74bb] text-white p-8 relative">
@@ -56,8 +71,8 @@ export default function TopicPage({
       <div className="p-6">
         <h1 className="text-2xl font-medium text-gray-600 mb-6">Select a quiz to test your knowledge</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {quizzes.map((quiz) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {quizzes.map((quiz, index) => (
             <QuizCard
               key={quiz.id}
               title={quiz.title}
@@ -66,6 +81,8 @@ export default function TopicPage({
               minutes={quiz.estimatedTime || 15}
               difficulty={quiz.difficulty || "Beginner"}
               href={`/subjects/${params.subject}/${params.topic}/${quiz.id}`}
+              icon={quiz.icon || quizIcons[index % quizIcons.length]}
+              iconBg={quiz.iconBg || iconBgs[index % iconBgs.length]}
             />
           ))}
         </div>
