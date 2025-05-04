@@ -1,47 +1,45 @@
-import Link from "next/link"
-import { Search, Bell, MessageSquare } from "lucide-react"
+"use client"
+import { Bell, Search } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { useAuth } from "./auth-provider"
 
 export default function Header() {
+  const { logout } = useAuth()
+
   return (
-    <header className="border-b border-gray-200 py-3 px-6 flex items-center justify-between bg-white">
-      <div className="flex items-center">
-        <Link href="/" className="flex items-center">
-          <div className="w-10 h-10 rounded-full bg-[#1e74bb] flex items-center justify-center mr-2">
-            <span className="text-white font-bold">P</span>
-          </div>
-          <span className="text-[#1e74bb] text-xl font-medium">ProbEd</span>
-        </Link>
-
-        <div className="relative ml-8 hidden sm:block">
-          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <Search className="h-4 w-4 text-gray-400" />
-          </div>
-          <input
-            type="text"
-            placeholder="Search here"
-            className="pl-10 pr-4 py-2 w-64 border border-gray-200 rounded-md text-sm"
-          />
+    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6">
+      <div className="flex flex-1 items-center gap-4 md:gap-6">
+        <div className="flex-1">
+          <form>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+              <Input
+                type="search"
+                placeholder="Search..."
+                className="w-full appearance-none bg-gray-100 pl-8 shadow-none md:w-2/3 lg:w-1/3"
+              />
+            </div>
+          </form>
         </div>
-      </div>
-
-      <div className="flex items-center">
-        <button className="p-2 text-gray-500 hover:text-[#1e74bb] rounded-full">
-          <Bell className="h-5 w-5" />
-        </button>
-        <button className="p-2 text-gray-500 hover:text-[#1e74bb] rounded-full ml-2">
-          <MessageSquare className="h-5 w-5" />
-        </button>
-
-        <div className="flex items-center ml-4">
-          <div className="flex flex-col items-end mr-3 hidden sm:block">
-            <span className="font-medium block text-gray-800">Eleanor Pena</span>
-            <span className="text-sm text-gray-500 block">Welcome to "Your name"</span>
-          </div>
-          <div className="w-10 h-10 rounded-full overflow-hidden cursor-pointer">
-            <img src="/placeholder.svg?key=ag92w" alt="Eleanor Pena" className="w-full h-full object-cover" />
-          </div>
-          <div className="ml-4">
-            <img src="/placeholder.svg?key=zt551" alt="Delhi Public School" className="h-10" />
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="icon" className="rounded-full">
+            <Bell className="h-4 w-4" />
+            <span className="sr-only">Notifications</span>
+          </Button>
+          <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src="/avatar.png" alt="User" />
+              <AvatarFallback>U</AvatarFallback>
+            </Avatar>
+            <div className="hidden md:flex md:flex-col">
+              <span className="text-sm font-medium">User Name</span>
+              <span className="text-xs text-gray-500">user@example.com</span>
+            </div>
+            <Button variant="ghost" size="sm" onClick={logout}>
+              Logout
+            </Button>
           </div>
         </div>
       </div>

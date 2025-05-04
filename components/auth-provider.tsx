@@ -1,50 +1,53 @@
 "use client"
 
 import type React from "react"
+import { createContext, useContext, useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 
-import { createContext, useContext, useEffect, useState } from "react"
-import { useRouter, usePathname } from "next/navigation"
-import { isAuthenticated } from "@/lib/auth"
-
-type AuthContextType = {
+interface AuthContextType {
   isLoggedIn: boolean
   loading: boolean
+  login: (token: string) => void
+  logout: () => void
 }
 
-const AuthContext = createContext<AuthContextType>({
-  isLoggedIn: false,
-  loading: true,
-})
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [loading, setLoading] = useState(true)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const pathname = usePathname()
 
   useEffect(() => {
-    // Check authentication status
-    const checkAuth = () => {
-      const authenticated = isAuthenticated()
-      setIsLoggedIn(authenticated)
-      setLoading(false)
+    // Check if user is logged in
+    const token = localStorage.getItem("authToken")
+    setIsLoggedIn(!!token)
+    setLoading(false)
+  }, [])
 
-      // Redirect logic
-      const isAuthPage = pathname === "/login"
+  const login = (token: string) => {
+    localStorage.setItem("authToken", token)
+    // Also set the token as a cookie for server-side access
+    document.cookie = `authToken=${token}; path=/; max-age=86400; SameSite=Strict`
+    setIsLoggedIn(true)
+    router.push("/")
+  }
 
-      if (!authenticated && !isAuthPage && pathname !== "/") {
-        // Redirect to login if not authenticated and not on login page
-        router.push("/login")
-      } else if (authenticated && isAuthPage) {
-        // Redirect to dashboard if already authenticated and on login page
-        router.push("/")
-      }
-    }
+  const logout = () => {
+    localStorage.removeItem("authToken")
+    // Clear the cookie as well
+    document.cookie = "authToken=; path=/; max-age=0; SameSite=Strict"
+    setIsLoggedIn(false)
+    router.push("/login")
+  }
 
-    checkAuth()
-  }, [pathname, router])
-
-  return <AuthContext.Provider value={{ isLoggedIn, loading }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ isLoggedIn, loading, login, logout }}>{children}</AuthContext.Provider>
 }
 
-export const useAuth = () => useContext(AuthContext)
+export function useAuth() {
+  const context = useContext(AuthContext)
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider")
+  }
+  return context
+}

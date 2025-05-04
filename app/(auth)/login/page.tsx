@@ -6,14 +6,16 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, User, Lock } from "lucide-react"
+import { useAuth } from "@/components/auth-provider"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
+  const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,11 +48,12 @@ export default function LoginPage() {
 
       const data = await response.json()
 
-      // Store the JWT token in localStorage
-      localStorage.setItem("authToken", data.token)
-
-      // Redirect to dashboard
-      router.push("/")
+      // Use the login function from auth context
+      if (data.token) {
+        login(data.token)
+      } else {
+        throw new Error("No token received")
+      }
     } catch (error) {
       console.error("Login error:", error)
       setError(error instanceof Error ? error.message : "Login failed")
@@ -137,6 +140,8 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {error && <div className="p-3 bg-red-100 border border-red-300 text-red-700 rounded-md">{error}</div>}
+
             <button
               type="submit"
               disabled={isLoading}
@@ -145,8 +150,6 @@ export default function LoginPage() {
               {isLoading ? "Logging in..." : "Login"}
             </button>
           </form>
-
-          {error && <div className="mt-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-md">{error}</div>}
 
           {/* Forgot Password */}
           <div className="mt-6 text-center">
