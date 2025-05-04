@@ -51,12 +51,14 @@ export default function Header() {
                 className="object-contain"
               />
             </div>
+         <div>
           <button className="rounded-full p-2 hover:bg-gray-100">
             <Bell className="h-6 w-6 text-gray-600" />
           </button>
           <button className="rounded-full p-2 hover:bg-gray-100">
             <MessageSquare className="h-6 w-6 text-gray-600" />
           </button>
+         </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="relative h-10 w-10 overflow-hidden rounded-full">
