@@ -4,6 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Eye, EyeOff, User, Lock } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
@@ -69,24 +70,24 @@ export default function LoginPage() {
         {/* Logo at top left */}
         <div className="absolute top-10 left-10">
           <div className="flex items-center">
-            <div className="w-10 h-10 rounded-full bg-[#1e74bb] flex items-center justify-center mr-2">
-              <span className="text-white font-bold">P</span>
-            </div>
-            <span className="text-[#1e74bb] text-xl font-medium">ProbED</span>
+            <Image src="/probed-logo.png" alt="ProbEd" width={40} height={40} />
+            <span className="text-xl font-medium ml-2">
+              <span className="text-[#1e74bb]">Prob</span>
+              <span className="text-black">Ed</span>
+            </span>
           </div>
         </div>
 
         <div className="w-full max-w-md">
           {/* Center Logo */}
           <div className="flex justify-center mb-6">
-            <div className="w-12 h-12 rounded-full bg-[#1e74bb] flex items-center justify-center">
-              <span className="text-white font-bold text-xl">P</span>
-            </div>
+            <Image src="/probed-logo.png" alt="ProbEd" width={48} height={48} />
           </div>
 
           {/* Welcome Text */}
           <h1 className="text-3xl font-medium text-center mb-2">
-            Welcome <span className="text-[#1e74bb]">ProbED</span>
+            Welcome to <span className="text-[#1e74bb]">Prob</span>
+            <span className="text-black">Ed</span>
           </h1>
           <p className="text-center text-[#5b5772] mb-8">Login to your account</p>
 
@@ -164,10 +165,8 @@ export default function LoginPage() {
       {/* Right side - Blue Background with Online Exam Image */}
       <div className="hidden lg:block w-1/2 relative">
         <div className="absolute inset-0 bg-[#1e74bb] z-10"></div>
-        <div className="absolute inset-0 flex items-center justify-center z-20 px-12">
-          <h2 className="text-white text-4xl font-medium max-w-md">
-            Please enter your credentials to access your online examination.
-          </h2>
+        <div className="absolute inset-0 z-20">
+          <Image src="/online-exam.png" alt="Online Examination" fill className="object-cover" priority />
         </div>
       </div>
     </div>
