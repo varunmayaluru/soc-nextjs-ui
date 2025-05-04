@@ -15,14 +15,16 @@ export default function QuizPage({
     notFound()
   }
 
+  // Format the breadcrumb path
+  const breadcrumbPath = `${subject.name} / ${topic.title} / ${quiz.title}`
+  const quizInfo = `Quiz: ${quiz.title} (Quiz ${quiz.currentQuestion || 1} of ${quiz.totalQuestions || 10})`
+
   return (
     <div>
       <div className="bg-[#1e74bb] text-white py-6 px-8 relative">
-        <h1 className="text-xl font-medium">Mathematics / Athematic / Counting and Number Recognition</h1>
+        <h1 className="text-xl font-medium">{breadcrumbPath}</h1>
 
-        <div className="absolute top-1/2 right-8 transform -translate-y-1/2 text-white text-sm">
-          Quiz: Counting and Number Recognition (Quiz 1 of 10)
-        </div>
+        <div className="absolute top-1/2 right-8 transform -translate-y-1/2 text-white text-sm">{quizInfo}</div>
       </div>
 
       <QuizInterface

@@ -176,7 +176,7 @@ export default function QuizInterface({ quiz, breadcrumb }: QuizInterfaceProps) 
                   <span className="text-xs text-gray-500">Just now</span>
                 </div>
                 <p className="text-sm">
-                  Sure! Here are three different versions of 404 error messages for an ecommerce clothing website:
+                  Here are three different versions of 404 error messages for an ecommerce clothing website:
                 </p>
                 <ol className="list-decimal pl-5 mt-2 text-sm">
                   <li className="mb-1">

@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
+import { Bell, MessageSquare } from "lucide-react"
 import { useAuth } from "./auth-provider"
 
 export default function Header() {
@@ -12,7 +13,7 @@ export default function Header() {
       <div className="flex w-full items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/probed-logo.svg" alt="ProbEd" width={40} height={40} />
+            <Image src="/probed-logo.png" alt="ProbEd" width={40} height={40} />
             <span className="text-[#1e74bb] text-xl font-semibold">ProbEd</span>
           </Link>
           <div className="relative ml-4 hidden md:block">
@@ -39,36 +40,10 @@ export default function Header() {
         </div>
         <div className="flex items-center gap-4">
           <button className="rounded-full p-2 hover:bg-gray-100">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 text-gray-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-              />
-            </svg>
+            <Bell className="h-6 w-6 text-gray-600" />
           </button>
           <button className="rounded-full p-2 hover:bg-gray-100">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 text-gray-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-              />
-            </svg>
+            <MessageSquare className="h-6 w-6 text-gray-600" />
           </button>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
@@ -88,7 +63,7 @@ export default function Header() {
             </div>
             <div className="h-10 w-10">
               <Image
-                src="/delhi-public-school.svg"
+                src="/delhi-public-school.png"
                 alt="Delhi Public School"
                 width={40}
                 height={40}

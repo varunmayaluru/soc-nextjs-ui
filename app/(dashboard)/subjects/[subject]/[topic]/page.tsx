@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
+import Breadcrumb from "@/components/breadcrumb"
 import { getSubject, getTopic, getQuizzes } from "@/lib/data"
 
 export default function TopicPage({
@@ -16,16 +17,21 @@ export default function TopicPage({
 
   const quizzes = getQuizzes(params.topic)
 
+  // Breadcrumb items
+  const breadcrumbItems = [
+    { label: "Dashboard", href: "/" },
+    { label: subject.name, href: `/subjects/${params.subject}` },
+    { label: topic.title },
+  ]
+
   return (
     <div>
-      <div className="bg-[#1e74bb] text-white p-8">
+      <div className="bg-[#1e74bb] text-white p-8 relative">
         <h1 className="text-2xl font-medium mb-2">Welcome to the {subject.name}</h1>
         <p>Select a topic below to explore concepts, examples, and practice quizzes.</p>
 
         <div className="absolute top-8 right-8 text-white">
-          <span>
-            {subject.category} / {subject.name}
-          </span>
+          <Breadcrumb items={breadcrumbItems} className="text-white" />
         </div>
       </div>
 
@@ -36,8 +42,10 @@ export default function TopicPage({
           {quizzes.map((quiz) => (
             <div key={quiz.id} className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
               <div className="flex items-center mb-4">
-                <div className={`w-8 h-8 rounded-md ${quiz.iconBg} flex items-center justify-center mr-3`}>
-                  <span className={`${quiz.iconColor}`}>{quiz.icon}</span>
+                <div
+                  className={`w-8 h-8 rounded-md ${quiz.iconBg || "bg-green-100"} flex items-center justify-center mr-3`}
+                >
+                  <span className={`${quiz.iconColor || "text-green-600"}`}>{quiz.icon || "📊"}</span>
                 </div>
                 <h3 className="text-gray-800 font-medium">{quiz.title}</h3>
               </div>
