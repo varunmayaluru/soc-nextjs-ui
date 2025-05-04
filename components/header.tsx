@@ -47,7 +47,7 @@ export default function Header() {
                 src="/delhi-public-school.png"
                 alt="Delhi Public School"
                 width={80}
-                height={40}
+                height={49}
                 className="object-contain"
               />
             </div>
