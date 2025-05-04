@@ -13,7 +13,7 @@ export default function Header() {
       <div className="flex w-full items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/probed-logo.png" alt="ProbEd" width={40} height={40} />
+            <Image src="/probed-logo.png" alt="ProbEd" width={30} height={30} />
             <span className="text-xl font-semibold">
               <span className="text-[#1e74bb]">Prob</span>
               <span className="text-black">Ed</span>
@@ -42,6 +42,15 @@ export default function Header() {
           </div>
         </div>
         <div className="flex items-center gap-4">
+         <div className="h-10 w-10">
+              <Image
+                src="/delhi-public-school.png"
+                alt="Delhi Public School"
+                width={80}
+                height={40}
+                className="object-contain"
+              />
+            </div>
           <button className="rounded-full p-2 hover:bg-gray-100">
             <Bell className="h-6 w-6 text-gray-600" />
           </button>
@@ -64,15 +73,7 @@ export default function Header() {
                 <span className="text-xs text-gray-500">Welcome to "Your name"</span>
               </div>
             </div>
-            <div className="h-10 w-10">
-              <Image
-                src="/delhi-public-school.png"
-                alt="Delhi Public School"
-                width={40}
-                height={40}
-                className="object-contain"
-              />
-            </div>
+           
           </div>
         </div>
       </div>
