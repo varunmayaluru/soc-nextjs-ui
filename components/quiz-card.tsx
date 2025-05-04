@@ -20,15 +20,15 @@ export default function QuizCard({ title, description, questions, minutes, diffi
         : "bg-orange-100 text-orange-800"
 
   return (
-    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 h-full flex flex-col">
-      <div className="flex justify-between items-start mb-4">
-        <h3 className="text-2xl font-bold">{title}</h3>
+    <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 h-full flex flex-col">
+      <div className="flex justify-between items-start mb-2">
+        <h3 className="text-lg font-bold">{title}</h3>
         <span className={`px-3 py-1 rounded-full text-sm font-medium ${difficultyColor}`}>{difficulty}</span>
       </div>
 
-      <p className="text-gray-600 mb-6 flex-grow">{description}</p>
+      <p className="text-gray-600 mb-3 flex-grow text-sm">{description}</p>
 
-      <div className="space-y-2 mb-6">
+      <div className="space-y-1 mb-3">
         <div className="flex items-center text-gray-600">
           <FileText className="w-5 h-5 mr-2" />
           <span>{questions} questions</span>
@@ -41,9 +41,9 @@ export default function QuizCard({ title, description, questions, minutes, diffi
 
       <Link
         href={href}
-        className="w-full bg-[#1e74bb] text-white py-3 px-4 rounded-md flex items-center justify-center hover:bg-[#1a67a7] transition-colors"
+        className="w-full bg-[#1e74bb] text-white py-2 px-3 rounded-md flex items-center justify-start hover:bg-[#1a67a7] transition-colors"
       >
-        Start Quiz <Star className="ml-2 w-5 h-5" />
+        Start Quiz <Star className="ml-2 w-4 h-4" />
       </Link>
     </div>
   )
