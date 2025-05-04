@@ -20,7 +20,7 @@ export default function QuizCard({ title, description, questions, minutes, diffi
         : "bg-orange-100 text-orange-800"
 
   return (
-    <div className="border rounded-lg p-6 h-full flex flex-col">
+    <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-100 h-full flex flex-col">
       <div className="flex justify-between items-start mb-4">
         <h3 className="text-2xl font-bold">{title}</h3>
         <span className={`px-3 py-1 rounded-full text-sm font-medium ${difficultyColor}`}>{difficulty}</span>
@@ -41,7 +41,7 @@ export default function QuizCard({ title, description, questions, minutes, diffi
 
       <Link
         href={href}
-        className="w-full bg-black text-white py-3 px-4 rounded-md flex items-center justify-center hover:bg-gray-800 transition-colors"
+        className="w-full bg-[#1e74bb] text-white py-3 px-4 rounded-md flex items-center justify-center hover:bg-[#1a67a7] transition-colors"
       >
         Start Quiz <Star className="ml-2 w-5 h-5" />
       </Link>
