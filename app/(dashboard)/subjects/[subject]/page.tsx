@@ -1,5 +1,4 @@
 import Link from "next/link"
-import Breadcrumb from "@/components/breadcrumb"
 
 export default function SubjectPage({ params }: { params: { subject: string } }) {
   // Get subject name from the URL parameter
@@ -18,22 +17,12 @@ export default function SubjectPage({ params }: { params: { subject: string } })
                 ? "Hindi"
                 : params.subject
 
-  // Format the subject name for display (capitalize first letter)
-  const formattedSubjectName = subjectName.charAt(0).toUpperCase() + subjectName.slice(1)
-
-  // Breadcrumb items
-  const breadcrumbItems = [{ label: "Dashboard", href: "/" }, { label: formattedSubjectName }]
-
   return (
     <div>
       {/* Blue header banner */}
-      <div className="bg-[#1e74bb] text-white p-8 relative">
-        <h1 className="text-2xl font-medium mb-2">Welcome to the {formattedSubjectName}</h1>
+      <div className="bg-[#1e74bb] text-white p-8">
+        <h1 className="text-2xl font-medium mb-2">Welcome to the {subjectName}</h1>
         <p>Select a topic below to explore concepts, examples, and practice quizzes.</p>
-
-        <div className="absolute top-8 right-8 text-white">
-          <Breadcrumb items={breadcrumbItems} className="text-white" />
-        </div>
       </div>
 
       {/* Topics section */}

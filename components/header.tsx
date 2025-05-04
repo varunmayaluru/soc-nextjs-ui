@@ -13,7 +13,7 @@ export default function Header() {
       <div className="flex w-full items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/probed-logo.png" alt="ProbEd" width={40} height={40} />
+            <Image src="/probed-logo.svg" alt="ProbEd" width={40} height={40} />
             <span className="text-[#1e74bb] text-xl font-semibold">ProbEd</span>
           </Link>
           <div className="relative ml-4 hidden md:block">

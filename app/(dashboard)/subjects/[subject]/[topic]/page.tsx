@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
-import Breadcrumb from "@/components/breadcrumb"
 import { getSubject, getTopic, getQuizzes } from "@/lib/data"
 
 export default function TopicPage({
@@ -17,21 +16,17 @@ export default function TopicPage({
 
   const quizzes = getQuizzes(params.topic)
 
-  // Breadcrumb items
-  const breadcrumbItems = [
-    { label: "Dashboard", href: "/" },
-    { label: subject.name, href: `/subjects/${params.subject}` },
-    { label: topic.title },
-  ]
+  // Format the breadcrumb path
+  const breadcrumbPath = `${subject.name} / ${topic.title}`
 
   return (
     <div>
       <div className="bg-[#1e74bb] text-white p-8 relative">
-        <h1 className="text-2xl font-medium mb-2">Welcome to the {subject.name}</h1>
-        <p>Select a topic below to explore concepts, examples, and practice quizzes.</p>
+        <h1 className="text-xl font-medium">{breadcrumbPath}</h1>
+        <p className="mt-2">Select a quiz below to explore concepts, examples, and practice questions.</p>
 
-        <div className="absolute top-8 right-8 text-white">
-          <Breadcrumb items={breadcrumbItems} className="text-white" />
+        <div className="absolute top-1/2 right-8 transform -translate-y-1/2 text-white text-sm">
+          Topic: {topic.title}
         </div>
       </div>
 

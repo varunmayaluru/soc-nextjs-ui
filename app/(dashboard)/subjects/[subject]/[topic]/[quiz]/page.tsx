@@ -16,8 +16,8 @@ export default function QuizPage({
   }
 
   // Format the breadcrumb path
-  const breadcrumbPath = `${subject.name} / ${topic.title} / ${quiz.title}`
-  const quizInfo = `Quiz: ${quiz.title} (Quiz ${quiz.currentQuestion || 1} of ${quiz.totalQuestions || 10})`
+  const breadcrumbPath = `${subject.name} / ${topic.title} / ${quiz.title || "Counting and Number Recognition"}`
+  const quizInfo = `Quiz: ${quiz.title || "Counting and Number Recognition"} (Quiz ${quiz.currentQuestion || 1} of ${quiz.totalQuestions || 10})`
 
   return (
     <div>
