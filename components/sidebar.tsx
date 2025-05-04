@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { BookOpen, Users, MessageSquare, Settings, HelpCircle, LogOut, Home, BarChart } from "lucide-react"
+import { BookOpen, Users, MessageSquare, Settings, HelpCircle, Home, BarChart } from "lucide-react"
+import LogoutButton from "./logout-button"
 
 export default function Sidebar() {
   return (
@@ -77,16 +78,7 @@ export default function Sidebar() {
           </span>
         </Link>
 
-        <Link
-          href="/login"
-          className="p-3 rounded-md text-red-500 hover:bg-red-50 transition-colors relative group"
-          title="Logout"
-        >
-          <LogOut className="h-6 w-6" />
-          <span className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-            Logout
-          </span>
-        </Link>
+        <LogoutButton />
       </div>
     </aside>
   )
