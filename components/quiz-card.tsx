@@ -1,6 +1,6 @@
 import type React from "react"
 import Link from "next/link"
-import { FileText, Clock, Star } from "lucide-react"
+import { FileText, Clock, ArrowRight } from "lucide-react"
 
 type QuizCardProps = {
   title: string
@@ -43,13 +43,17 @@ export default function QuizCard({
   const total = totalQuestions || questions
 
   return (
-    <div className="bg-white rounded-lg p-5 shadow-md border border-gray-100 h-full flex flex-col hover:shadow-lg transition-shadow min-h-[280px]">
+    <div className="bg-white rounded-lg p-6 shadow-md border border-gray-100 h-full flex flex-col hover:shadow-xl hover:border-gray-200 hover:translate-y-[-4px] transition-all duration-300 min-h-[280px] relative group">
       <div className="flex items-start gap-3 mb-3 relative">
-        <div className={`${iconBg} w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5`}>
+        <div
+          className={`${iconBg} w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 transform group-hover:scale-110 transition-transform duration-300`}
+        >
           <span className="text-sm">{icon}</span>
         </div>
         <div className="flex-1">
-          <h3 className="text-lg font-bold line-clamp-1 pr-24">{title}</h3>
+          <h3 className="text-lg font-bold line-clamp-1 pr-24 group-hover:text-[#1e74bb] transition-colors duration-300">
+            {title}
+          </h3>
         </div>
         <span className={`absolute top-0 right-0 px-2 py-0.5 rounded-full text-xs font-medium ${difficultyColor}`}>
           {difficulty}
@@ -86,7 +90,8 @@ export default function QuizCard({
         href={href}
         className="w-full bg-[#1e74bb] text-white py-2 px-3 rounded-md flex items-center justify-center hover:bg-[#1a67a7] transition-colors"
       >
-        Start Quiz <Star className="ml-2 w-4 h-4" />
+        Start Quiz{" "}
+        <ArrowRight className="ml-2 w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" />
       </Link>
     </div>
   )

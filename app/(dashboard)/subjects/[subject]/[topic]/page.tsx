@@ -54,7 +54,7 @@ export default function TopicPage({
 
   return (
     <div>
-      <div className="bg-[#1e74bb] text-white p-8 relative">
+      <div className="bg-[#1e74bb] text-white px-8 py-6 relative">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>

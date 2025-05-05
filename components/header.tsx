@@ -42,40 +42,33 @@ export default function Header() {
           </div>
         </div>
         <div className="flex items-center gap-4">
-         <div className="h-10 w-15">
-              <Image
-                src="/delhi-public-school.png"
-                alt="Delhi Public School"
-                width={80}
-                height={49}
-                className="object-contain"
-              />
-            </div>
-         <div>
-          <button className="rounded-full p-2 hover:bg-gray-100">
-            <Bell className="h-6 w-6 text-gray-600" />
-          </button>
-          <button className="rounded-full p-2 hover:bg-gray-100">
-            <MessageSquare className="h-6 w-6 text-gray-600" />
-          </button>
-         </div>
+          <div className="h-10 w-15">
+            <Image
+              src="/delhi-public-school.png"
+              alt="Delhi Public School"
+              width={80}
+              height={49}
+              className="object-contain"
+            />
+          </div>
+          <div>
+            <button className="rounded-full p-2 hover:bg-gray-100">
+              <Bell className="h-6 w-6 text-gray-600" />
+            </button>
+            <button className="rounded-full p-2 hover:bg-gray-100">
+              <MessageSquare className="h-6 w-6 text-gray-600" />
+            </button>
+          </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="relative h-10 w-10 overflow-hidden rounded-full">
-                <Image
-                  src="/abstract-geometric-shapes.png"
-                  alt="Eleanor Pena"
-                  width={40}
-                  height={40}
-                  className="object-cover"
-                />
+                <Image src="/13176.jpg" alt="Eleanor Pena" width={40} height={40} className="object-cover h-full" />
               </div>
               <div className="hidden flex-col md:flex">
                 <span className="text-sm font-medium">Eleanor Pena</span>
                 <span className="text-xs text-gray-500">Welcome to "Your name"</span>
               </div>
             </div>
-           
           </div>
         </div>
       </div>
