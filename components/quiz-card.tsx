@@ -11,6 +11,10 @@ type QuizCardProps = {
   href: string
   icon?: React.ReactNode
   iconBg?: string
+  progress?: number
+  progressColor?: string
+  completedQuestions?: number
+  totalQuestions?: number
 }
 
 export default function QuizCard({
@@ -22,6 +26,10 @@ export default function QuizCard({
   href,
   icon = "📚",
   iconBg = "bg-blue-100",
+  progress = 0,
+  progressColor = "bg-blue-500",
+  completedQuestions = 0,
+  totalQuestions = 0,
 }: QuizCardProps) {
   // Determine the difficulty badge color
   const difficultyColor =
@@ -31,25 +39,39 @@ export default function QuizCard({
         ? "bg-blue-100 text-blue-800"
         : "bg-orange-100 text-orange-800"
 
+  // Use the provided questions count if totalQuestions is not provided
+  const total = totalQuestions || questions
+
   return (
-    <div className="bg-white rounded-lg p-4 shadow-md border border-gray-100 h-full flex flex-col hover:shadow-lg transition-shadow">
-      <div className="flex items-start gap-3 mb-3">
+    <div className="bg-white rounded-lg p-5 shadow-md border border-gray-100 h-full flex flex-col hover:shadow-lg transition-shadow min-h-[280px]">
+      <div className="flex items-start gap-3 mb-3 relative">
         <div className={`${iconBg} w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5`}>
           <span className="text-sm">{icon}</span>
         </div>
         <div className="flex-1">
-          <div className="flex justify-between items-start">
-            <h3 className="text-lg font-bold line-clamp-1">{title}</h3>
-          </div>
-          <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium mt-1 ${difficultyColor}`}>
-            {difficulty}
+          <h3 className="text-lg font-bold line-clamp-1 pr-24">{title}</h3>
+        </div>
+        <span className={`absolute top-0 right-0 px-2 py-0.5 rounded-full text-xs font-medium ${difficultyColor}`}>
+          {difficulty}
+        </span>
+      </div>
+
+      <p className="text-gray-600 mb-4 flex-grow text-sm line-clamp-2">{description}</p>
+
+      {/* Progress bar */}
+      <div className="mb-4">
+        <div className="flex justify-between mb-2">
+          <span className="text-gray-600 text-sm">{progress}%</span>
+          <span className="text-gray-400 text-xs">
+            {completedQuestions}/{total} Questions
           </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className={`${progressColor} h-2 rounded-full`} style={{ width: `${progress}%` }}></div>
         </div>
       </div>
 
-      <p className="text-gray-600 mb-3 flex-grow text-sm line-clamp-2">{description}</p>
-
-      <div className="space-y-1 mb-3 text-sm">
+      <div className="space-y-2 mb-4 text-sm">
         <div className="flex items-center text-gray-600">
           <FileText className="w-4 h-4 mr-2" />
           <span>{questions} questions</span>

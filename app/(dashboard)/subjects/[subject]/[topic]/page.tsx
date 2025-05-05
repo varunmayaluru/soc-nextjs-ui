@@ -40,6 +40,18 @@ export default function TopicPage({
     "bg-orange-100",
   ]
 
+  // Progress bar colors
+  const progressColors = [
+    "bg-blue-500",
+    "bg-green-500",
+    "bg-purple-500",
+    "bg-yellow-500",
+    "bg-red-500",
+    "bg-indigo-500",
+    "bg-pink-500",
+    "bg-orange-500",
+  ]
+
   return (
     <div>
       <div className="bg-[#1e74bb] text-white p-8 relative">
@@ -47,7 +59,7 @@ export default function TopicPage({
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href="/subjects">Subjects</Link>
+                <Link className="text-white" href="/subjects">Subjects</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator>
@@ -55,14 +67,14 @@ export default function TopicPage({
             </BreadcrumbSeparator>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link href={`/subjects/${params.subject}`}>{subject.name}</Link>
+                <Link className="text-white" href={`/subjects/${params.subject}`}>{subject.name}</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator>
               <ChevronRight className="h-4 w-4" />
             </BreadcrumbSeparator>
             <BreadcrumbItem>
-              <BreadcrumbLink>{topic.title}</BreadcrumbLink>
+              <BreadcrumbLink className="text-white">{topic.title}</BreadcrumbLink>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -71,7 +83,7 @@ export default function TopicPage({
       <div className="p-6">
         <h1 className="text-2xl font-medium text-gray-600 mb-6">Select a quiz to test your knowledge</h1>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {quizzes.map((quiz, index) => (
             <QuizCard
               key={quiz.id}
@@ -83,6 +95,10 @@ export default function TopicPage({
               href={`/subjects/${params.subject}/${params.topic}/${quiz.id}`}
               icon={quiz.icon || quizIcons[index % quizIcons.length]}
               iconBg={quiz.iconBg || iconBgs[index % iconBgs.length]}
+              progress={quiz.progress || Math.floor(Math.random() * 100)} // Use quiz progress or generate random for demo
+              progressColor={quiz.progressColor || progressColors[index % progressColors.length]}
+              completedQuestions={quiz.completedQuestions || 0}
+              totalQuestions={quiz.totalQuestions || 10}
             />
           ))}
         </div>
