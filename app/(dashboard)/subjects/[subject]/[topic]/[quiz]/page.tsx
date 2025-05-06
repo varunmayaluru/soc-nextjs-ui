@@ -1,6 +1,14 @@
 import { notFound } from "next/navigation"
 import QuizInterface from "@/components/quiz-interface"
 import { getSubject, getTopic, getQuiz } from "@/lib/data"
+import Link from "next/link"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 
 export default function QuizPage({
   params,
@@ -22,7 +30,31 @@ export default function QuizPage({
   return (
     <div>
       <div className="bg-[#1e74bb] text-white py-6 px-8 relative">
-        <h1 className="text-xl font-medium">{breadcrumbPath}</h1>
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href="/subjects">Subjects</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href={`/subjects/${params.subject}`}>{subject.name}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link href={`/subjects/${params.subject}/${params.topic}`}>{topic.title}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink>{quiz.title || "Quiz"}</BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
 
         <div className="absolute top-1/2 right-8 transform -translate-y-1/2 text-white text-sm">{quizInfo}</div>
       </div>

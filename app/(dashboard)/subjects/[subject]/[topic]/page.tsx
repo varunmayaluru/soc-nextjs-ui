@@ -1,6 +1,15 @@
 import { notFound } from "next/navigation"
-import Link from "next/link"
 import { getSubject, getTopic, getQuizzes } from "@/lib/data"
+import QuizCard from "@/components/quiz-card"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import { ChevronRight } from "lucide-react"
+import Link from "next/link"
 
 export default function TopicPage({
   params,
@@ -16,50 +25,81 @@ export default function TopicPage({
 
   const quizzes = getQuizzes(params.topic)
 
-  // Format the breadcrumb path
-  const breadcrumbPath = `${subject.name} / ${topic.title}`
+  // Icons for different quiz types
+  const quizIcons = ["📊", "📈", "📏", "🧮", "📚", "🔍", "🧩", "🎯"]
+
+  // Background colors for icons
+  const iconBgs = [
+    "bg-blue-100",
+    "bg-green-100",
+    "bg-yellow-100",
+    "bg-purple-100",
+    "bg-pink-100",
+    "bg-indigo-100",
+    "bg-red-100",
+    "bg-orange-100",
+  ]
+
+  // Progress bar colors
+  const progressColors = [
+    "bg-blue-500",
+    "bg-green-500",
+    "bg-purple-500",
+    "bg-yellow-500",
+    "bg-red-500",
+    "bg-indigo-500",
+    "bg-pink-500",
+    "bg-orange-500",
+  ]
 
   return (
     <div>
-      <div className="bg-[#1e74bb] text-white p-8 relative">
-        <h1 className="text-xl font-medium">{breadcrumbPath}</h1>
-        <p className="mt-2">Select a quiz below to explore concepts, examples, and practice questions.</p>
-
-        <div className="absolute top-1/2 right-8 transform -translate-y-1/2 text-white text-sm">
-          Topic: {topic.title}
-        </div>
+      <div className="bg-[#1e74bb] text-white px-8 py-6 relative">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link className="text-white" href="/subjects">Subjects</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator>
+              <ChevronRight className="h-4 w-4" />
+            </BreadcrumbSeparator>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link className="text-white" href={`/subjects/${params.subject}`}>{subject.name}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator>
+              <ChevronRight className="h-4 w-4" />
+            </BreadcrumbSeparator>
+            <BreadcrumbItem>
+              <BreadcrumbLink className="text-white">{topic.title}</BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
       </div>
 
       <div className="p-6">
-        <h2 className="text-xl font-medium mt-6 mb-4">Quiz</h2>
+        <h1 className="text-2xl font-medium text-gray-600 mb-6">Select a quiz to test your knowledge</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {quizzes.map((quiz) => (
-            <div key={quiz.id} className="bg-white rounded-lg p-6 shadow-sm border border-gray-100">
-              <div className="flex items-center mb-4">
-                <div
-                  className={`w-8 h-8 rounded-md ${quiz.iconBg || "bg-green-100"} flex items-center justify-center mr-3`}
-                >
-                  <span className={`${quiz.iconColor || "text-green-600"}`}>{quiz.icon || "📊"}</span>
-                </div>
-                <h3 className="text-gray-800 font-medium">{quiz.title}</h3>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <p className="text-[#1e74bb] font-medium">
-                  10 Quizs
-                  {quiz.completedQuestions && (
-                    <span className="text-gray-400 text-sm"> /{quiz.completedQuestions} Completed</span>
-                  )}
-                </p>
-                <Link
-                  href={`/subjects/${params.subject}/${params.topic}/${quiz.id}`}
-                  className="bg-[#1e74bb] text-white py-2 px-4 rounded-md text-sm"
-                >
-                  Select a Quiz
-                </Link>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {quizzes.map((quiz, index) => (
+            <QuizCard
+              key={quiz.id}
+              title={quiz.title}
+              description={quiz.description || "Test your knowledge with this quiz on " + topic.title}
+              questions={quiz.totalQuestions || 10}
+              minutes={quiz.estimatedTime || 15}
+              difficulty={quiz.difficulty || "Beginner"}
+              href={`/subjects/${params.subject}/${params.topic}/${quiz.id}`}
+              icon={quiz.icon || quizIcons[index % quizIcons.length]}
+              iconBg={quiz.iconBg || iconBgs[index % iconBgs.length]}
+              progress={quiz.progress || Math.floor(Math.random() * 100)} // Use quiz progress or generate random for demo
+              progressColor={quiz.progressColor || progressColors[index % progressColors.length]}
+              completedQuestions={quiz.completedQuestions || 0}
+              totalQuestions={quiz.totalQuestions || 10}
+            />
           ))}
         </div>
       </div>
