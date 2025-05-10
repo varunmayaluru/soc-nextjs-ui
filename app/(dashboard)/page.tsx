@@ -1,7 +1,139 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
+import { api } from "@/lib/api-client"
+
+// Update the API response type to match the exact structure
+type SubjectApiResponse = {
+  subject_id: number
+  subject_name: string
+  total_lessons: number
+  completed_lessons: number
+  completion_percentage: number
+}
+
+// Update the Subject type definition
+type Subject = {
+  id: number
+  name: string
+  category: string
+  icon: string
+  iconBg: string
+  iconColor: string
+  progress: number
+  progressColor: string
+  completedLessons: number
+  totalLessons: number
+}
 
 export default function Dashboard() {
+  const [subjects, setSubjects] = useState<Subject[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchSubjects() {
+      try {
+        setIsLoading(true)
+
+        // Use the new API client instead of direct fetch
+        const response = await api.get<SubjectApiResponse[]>("topics/subjects/progress")
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`)
+        }
+
+        // Update the data transformation in the fetchSubjects function
+        const formattedSubjects = response.data.map((subject: SubjectApiResponse) => ({
+          id: subject.subject_id,
+          name: subject.subject_name,
+          category: getSubjectCategory(subject.subject_name),
+          icon: getIconForSubject(subject.subject_name),
+          iconBg: getIconBgForSubject(subject.subject_name),
+          iconColor: getIconColorForSubject(subject.subject_name),
+          progress: subject.completion_percentage,
+          progressColor: getProgressColorForSubject(subject.subject_name),
+          completedLessons: subject.completed_lessons,
+          totalLessons: subject.total_lessons,
+        }))
+
+        setSubjects(formattedSubjects)
+        setError(null)
+      } catch (err) {
+        console.error("Error fetching subjects:", err)
+        setError(err instanceof Error ? err.message : "Failed to fetch subjects")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchSubjects()
+  }, [])
+
+  // Helper functions to assign consistent visual properties
+  function getIconForSubject(name: string): string {
+    const icons: Record<string, string> = {
+      Mathematics: "📊",
+      Science: "🧬",
+      English: "ENG",
+      "Social Studies": "🌎",
+      "Computer Science": "💻",
+      Hindi: "⭐",
+    }
+    return icons[name] || "📚"
+  }
+
+  function getIconBgForSubject(name: string): string {
+    const backgrounds: Record<string, string> = {
+      Mathematics: "bg-amber-100",
+      Science: "bg-blue-100",
+      English: "bg-red-100",
+      "Social Studies": "bg-green-100",
+      "Computer Science": "bg-purple-100",
+      Hindi: "bg-yellow-100",
+    }
+    return backgrounds[name] || "bg-gray-100"
+  }
+
+  function getIconColorForSubject(name: string): string {
+    const colors: Record<string, string> = {
+      Mathematics: "text-amber-600",
+      Science: "text-blue-600",
+      English: "text-red-600",
+      "Social Studies": "text-green-600",
+      "Computer Science": "text-purple-600",
+      Hindi: "text-yellow-600",
+    }
+    return colors[name] || "text-gray-600"
+  }
+
+  function getProgressColorForSubject(name: string): string {
+    const colors: Record<string, string> = {
+      Mathematics: "bg-purple-500",
+      Science: "bg-blue-500",
+      English: "bg-blue-500",
+      "Social Studies": "bg-yellow-500",
+      "Computer Science": "bg-green-500",
+      Hindi: "bg-red-500",
+    }
+    return colors[name] || "bg-gray-500"
+  }
+
+  // Add a helper function to determine subject category
+  function getSubjectCategory(name: string): string {
+    const categories: Record<string, string> = {
+      Mathematics: "Mathematics",
+      Science: "Science",
+      English: "Languages",
+      "Social Studies": "Humanities",
+      "Computer Science": "Technology",
+      Hindi: "Languages",
+    }
+    return categories[name] || "Subject"
+  }
+
   return (
     <div className="p-0">
       {/* Learning Overview Banner */}
@@ -26,7 +158,7 @@ export default function Dashboard() {
 
             <div className="flex items-center justify-between relative">
               <p className="font-medium">
-                <span className="text-green-500">6 Subjects</span>
+                <span className="text-green-500">{subjects.length} Subjects</span>
               </p>
               <Link href="#" className="text-gray-400 hover:text-gray-600 flex items-center group">
                 <span className="text-sm">View Details</span>
@@ -86,230 +218,74 @@ export default function Dashboard() {
           </button>
         </div>
 
+        {/* Loading state */}
+        {isLoading && (
+          <div className="flex justify-center items-center py-10">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1e74bb]"></div>
+          </div>
+        )}
+
+        {/* Error state */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6">
+            <p>Error: {error}</p>
+            <p className="text-sm mt-1">Please check your API connection or try refreshing the page.</p>
+          </div>
+        )}
+
         {/* Subjects Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
-          {/* Mathematics */}
-          <div className="bg-white rounded-lg p-6 shadow-md border border-gray-100 transition-all duration-300 hover:shadow-xl hover:border-gray-200 hover:translate-y-[-4px] relative group">
-            <div className="flex items-center justify-between mb-4 relative">
-              <h3 className="text-lg font-medium group-hover:text-[#1e74bb] transition-colors duration-300">
-                Mathematics
-              </h3>
-              <div className="w-8 h-8 rounded-md bg-amber-100 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
-                <span className="text-amber-600 font-bold">📊</span>
-              </div>
-            </div>
-
-            <div className="mb-4 relative">
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600">20%</span>
-                <span className="text-gray-400 text-sm">5/19 Lessons</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-purple-500 h-2 rounded-full" style={{ width: "20%" }}></div>
-              </div>
-            </div>
-
-            <Link
-              href="/subjects/arthematic"
-              className="inline w-40 bg-[#1e74bb] text-white py-2 px-4 rounded-md text-sm hover:bg-[#1a67a7] transition-colors flex items-center"
-            >
-              Select a topic
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform duration-300"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+        {!isLoading && !error && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
+            {subjects.map((subject) => (
+              <div
+                key={subject.id}
+                className="bg-white rounded-lg p-6 shadow-md border border-gray-100 transition-all duration-300 hover:shadow-xl hover:border-gray-200 hover:translate-y-[-4px] relative group"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
+                <div className="flex items-center justify-between mb-4 relative">
+                  <h3 className="text-lg font-medium group-hover:text-[#1e74bb] transition-colors duration-300">
+                    {subject.name}
+                  </h3>
+                  <div
+                    className={`w-8 h-8 rounded-md ${subject.iconBg} flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300`}
+                  >
+                    <span className={`${subject.iconColor} font-bold`}>{subject.icon}</span>
+                  </div>
+                </div>
+
+                <div className="mb-4 relative">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-gray-600">{subject.progress}%</span>
+                    <span className="text-gray-400 text-sm">
+                      {subject.completedLessons}/{subject.totalLessons} Lessons
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`${subject.progressColor} h-2 rounded-full`}
+                      style={{ width: `${subject.progress}%` }}
+                    ></div>
+                  </div>
+                </div>
+
+                <Link
+                  href={`/subjects/${subject.id}`}
+                  className="inline w-40 bg-[#1e74bb] text-white py-2 px-4 rounded-md text-sm hover:bg-[#1a67a7] transition-colors flex items-center"
+                >
+                  Select a topic
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform duration-300"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </div>
+            ))}
           </div>
-
-          {/* Science */}
-          <div className="bg-white rounded-lg p-6 shadow-md border border-gray-100 transition-all duration-300 hover:shadow-xl hover:border-gray-200 hover:translate-y-[-4px] relative group">
-            <div className="flex items-center justify-between mb-4 relative">
-              <h3 className="text-lg font-medium group-hover:text-[#1e74bb] transition-colors duration-300">Science</h3>
-              <div className="w-8 h-8 rounded-md bg-blue-100 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
-                <span className="text-blue-600 font-bold">🧬</span>
-              </div>
-            </div>
-
-            <div className="mb-4 relative">
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600">80%</span>
-                <span className="text-gray-400 text-sm">5/19 Lessons</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-500 h-2 rounded-full" style={{ width: "80%" }}></div>
-              </div>
-            </div>
-
-            <Link
-              href="/subjects/science"
-              className="inline w-40 bg-[#1e74bb] text-white py-2 px-4 rounded-md text-sm hover:bg-[#1a67a7] transition-colors flex items-center"
-            >
-              Select a topic
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform duration-300"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </div>
-
-          {/* English */}
-          <div className="bg-white rounded-lg p-6 shadow-md border border-gray-100 transition-all duration-300 hover:shadow-xl hover:border-gray-200 hover:translate-y-[-4px] relative group">
-            <div className="flex items-center justify-between mb-4 relative">
-              <h3 className="text-lg font-medium group-hover:text-[#1e74bb] transition-colors duration-300">English</h3>
-              <div className="w-8 h-8 rounded-md bg-red-100 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
-                <span className="text-red-600 font-bold">ENG</span>
-              </div>
-            </div>
-
-            <div className="mb-4 relative">
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600">50%</span>
-                <span className="text-gray-400 text-sm">5/10 Lessons</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-500 h-2 rounded-full" style={{ width: "50%" }}></div>
-              </div>
-            </div>
-
-            <Link
-              href="/subjects/english"
-              className="inline w-40  bg-[#1e74bb] text-white py-2 px-4 rounded-md text-sm hover:bg-[#1a67a7] transition-colors flex items-center"
-            >
-              Select a topic
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform duration-300"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </div>
-
-          {/* Social Studies */}
-          <div className="bg-white rounded-lg p-6 shadow-md border border-gray-100 transition-all duration-300 hover:shadow-xl hover:border-gray-200 hover:translate-y-[-4px] relative group">
-            <div className="flex items-center justify-between mb-4 relative">
-              <h3 className="text-lg font-medium group-hover:text-[#1e74bb] transition-colors duration-300">
-                Social Studies
-              </h3>
-              <div className="w-8 h-8 rounded-md bg-green-100 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
-                <span className="text-green-600 font-bold">🌎</span>
-              </div>
-            </div>
-
-            <div className="mb-4 relative">
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600">20%</span>
-                <span className="text-gray-400 text-sm">5/19 Lessons</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-yellow-500 h-2 rounded-full" style={{ width: "20%" }}></div>
-              </div>
-            </div>
-
-            <Link
-              href="/subjects/social-studies"
-              className="inline w-40  bg-[#1e74bb] text-white py-2 px-4 rounded-md text-sm hover:bg-[#1a67a7] transition-colors flex items-center"
-            >
-              Select a topic
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform duration-300"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </div>
-
-          {/* Computer Science */}
-          <div className="bg-white rounded-lg p-6 shadow-md border border-gray-100 transition-all duration-300 hover:shadow-xl hover:border-gray-200 hover:translate-y-[-4px] relative group">
-            <div className="flex items-center justify-between mb-4 relative">
-              <h3 className="text-lg font-medium group-hover:text-[#1e74bb] transition-colors duration-300">
-                Computer Science
-              </h3>
-              <div className="w-8 h-8 rounded-md bg-purple-100 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
-                <span className="text-purple-600 font-bold">💻</span>
-              </div>
-            </div>
-
-            <div className="mb-4 relative">
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600">80%</span>
-                <span className="text-gray-400 text-sm">5/19 Lessons</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-green-500 h-2 rounded-full" style={{ width: "80%" }}></div>
-              </div>
-            </div>
-
-            <Link
-              href="/subjects/computer-science"
-              className="inline w-40  bg-[#1e74bb] text-white py-2 px-4 rounded-md text-sm hover:bg-[#1a67a7] transition-colors flex items-center"
-            >
-              Select a topic
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform duration-300"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </div>
-
-          {/* Hindi */}
-          <div className="bg-white rounded-lg p-6 shadow-md border border-gray-100 transition-all duration-300 hover:shadow-xl hover:border-gray-200 hover:translate-y-[-4px] relative group">
-            <div className="flex items-center justify-between mb-4 relative">
-              <h3 className="text-lg font-medium group-hover:text-[#1e74bb] transition-colors duration-300">Hindi</h3>
-              <div className="w-8 h-8 rounded-md bg-yellow-100 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
-                <span className="text-yellow-600 font-bold">⭐</span>
-              </div>
-            </div>
-
-            <div className="mb-4 relative">
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600">50%</span>
-                <span className="text-gray-400 text-sm">5/10 Lessons</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-red-500 h-2 rounded-full" style={{ width: "50%" }}></div>
-              </div>
-            </div>
-
-            <Link
-              href="/subjects/hindi"
-              className="inline w-40 bg-[#1e74bb] text-white py-2 px-4 rounded-md text-sm hover:bg-[#1a67a7] transition-colors flex items-center"
-            >
-              Select a topic
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 ml-2 transform group-hover:translate-x-1 transition-transform duration-300"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   )
