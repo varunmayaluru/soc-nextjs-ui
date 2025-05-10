@@ -24,7 +24,7 @@ export const AUTH_CONFIG = {
 // };
 
 // // Other app-wide configuration
-// export const APP_CONFIG = {
-//   APP_NAME: "ProbEd",
-//   SUPPORT_EMAIL: "support@probed.com",
-// };
+export const APP_CONFIG = {
+  APP_NAME: "ProbEd",
+  SUPPORT_EMAIL: "support@probed.com",
+};
