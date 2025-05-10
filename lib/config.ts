@@ -18,13 +18,13 @@ export const AUTH_CONFIG = {
 };
 
 // Feature Flags
-export const FEATURES = {
-  ENABLE_ANALYTICS: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === "true",
-  DEBUG_MODE: process.env.NEXT_PUBLIC_DEBUG_MODE === "true",
-};
+// export const FEATURES = {
+//   ENABLE_ANALYTICS: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === "true",
+//   DEBUG_MODE: process.env.NEXT_PUBLIC_DEBUG_MODE === "true",
+// };
 
-// Other app-wide configuration
-export const APP_CONFIG = {
-  APP_NAME: "ProbEd",
-  SUPPORT_EMAIL: "support@probed.com",
-};
+// // Other app-wide configuration
+// export const APP_CONFIG = {
+//   APP_NAME: "ProbEd",
+//   SUPPORT_EMAIL: "support@probed.com",
+// };
