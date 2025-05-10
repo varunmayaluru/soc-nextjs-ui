@@ -6,8 +6,9 @@ import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff, User, Lock } from 'lucide-react'
+import { Eye, EyeOff, User, Lock } from "lucide-react"
 import { useAuth } from "@/components/auth-provider"
+import { APP_CONFIG } from "@/lib/config"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -33,8 +34,9 @@ export default function LoginPage() {
       formData.append("client_id", "")
       formData.append("client_secret", "")
 
-      // Send request to the server with the new endpoint
-      const response = await fetch("http://localhost:8000/api/v1/users/token", {
+      // Use fetch directly for this request since it requires a different content type
+      // than our API client's default JSON content type
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/token`, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -74,7 +76,7 @@ export default function LoginPage() {
         {/* Logo at top left */}
         <div className="absolute top-10 left-10">
           <div className="flex items-center">
-            <Image src="/probed-logo.png" alt="ProbEd" width={40} height={40} />
+            <Image src="/probed-logo.png" alt={APP_CONFIG.APP_NAME} width={40} height={40} />
             <span className="text-xl font-medium ml-2">
               <span className="text-[#1e74bb]">Prob</span>
               <span className="text-black">Ed</span>
@@ -85,7 +87,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Center Logo */}
           <div className="flex justify-center mb-6">
-            <Image src="/probed-logo.png" alt="ProbEd" width={48} height={48} />
+            <Image src="/probed-logo.png" alt={APP_CONFIG.APP_NAME} width={48} height={48} />
           </div>
 
           {/* Welcome Text */}
@@ -162,6 +164,14 @@ export default function LoginPage() {
             <Link href="#" className="text-[#1e74bb] hover:underline">
               Click here
             </Link>
+          </div>
+
+          {/* Support Email */}
+          <div className="mt-4 text-center text-sm text-[#5b5772]">
+            Need help? Contact us at{" "}
+            <a href={`mailto:${APP_CONFIG.SUPPORT_EMAIL}`} className="text-[#1e74bb] hover:underline">
+              {APP_CONFIG.SUPPORT_EMAIL}
+            </a>
           </div>
         </div>
       </div>

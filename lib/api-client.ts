@@ -4,9 +4,7 @@
  */
 
 import { getAuthToken } from "./auth";
-
-// Base API URL - can be moved to environment variable
-const API_BASE_URL = "http://localhost:8000/api/v1";
+import { API_CONFIG } from "./config";
 
 // Types for API responses
 export type ApiResponse<T> = {
@@ -60,7 +58,7 @@ export async function apiRequest<T>(
     // Make the request
     const url = endpoint.startsWith("http")
       ? endpoint
-      : `${API_BASE_URL}${
+      : `${API_CONFIG.BASE_URL}${
           endpoint.startsWith("/") ? endpoint : `/${endpoint}`
         }`;
 
