@@ -6,7 +6,7 @@ import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff, User, Lock } from "lucide-react"
+import { Eye, EyeOff, User, Lock } from 'lucide-react'
 import { useAuth } from "@/components/auth-provider"
 
 export default function LoginPage() {
@@ -24,22 +24,23 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      // Create a JSON object with email and password
-      const credentials = JSON.stringify({ email, password })
+      // Create form data for the token request
+      const formData = new URLSearchParams()
+      formData.append("username", email) // Using email state for username
+      formData.append("password", password)
+      formData.append("grant_type", "password")
+      formData.append("scope", "")
+      formData.append("client_id", "")
+      formData.append("client_secret", "")
 
-      // Convert to base64
-      const base64Credentials = btoa(credentials)
-
-      // Send request to the server
-      const response = await fetch("http://localhost:8000/auth/login", {
+      // Send request to the server with the new endpoint
+      const response = await fetch("http://localhost:8000/api/v1/users/token", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
           Accept: "application/json",
         },
-        body: JSON.stringify({
-          data: base64Credentials,
-        }),
+        body: formData.toString(),
       })
 
       if (!response.ok) {
@@ -48,10 +49,13 @@ export default function LoginPage() {
       }
 
       const data = await response.json()
+      console.log("Login response:", data)
 
-      // Use the login function from auth context
-      if (data.token) {
-        login(data.token)
+      // Use the login function from auth context with the correct token format
+      if (data.access_token) {
+        // Store both the access token and token type
+        login(`${data.token_type} ${data.access_token}`)
+        router.push("/") // Redirect to dashboard after successful login
       } else {
         throw new Error("No token received")
       }
