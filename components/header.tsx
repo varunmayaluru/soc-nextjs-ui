@@ -6,7 +6,10 @@ import { Bell, MessageSquare } from "lucide-react"
 import { useAuth } from "./auth-provider"
 
 export default function Header() {
-  const { logout } = useAuth()
+  const { userInfo } = useAuth()
+
+  // Get the user's name, fallback to "User" if not available
+  const userName = userInfo?.first_name || "User"
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6">
@@ -62,11 +65,11 @@ export default function Header() {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="relative h-10 w-10 overflow-hidden rounded-full">
-                <Image src="/13176.jpg" alt="Eleanor Pena" width={40} height={40} className="object-cover h-full" />
+                <Image src="/13176.jpg" alt={userName} width={40} height={40} className="object-cover h-full" />
               </div>
               <div className="hidden flex-col md:flex">
-                <span className="text-sm font-medium">Eleanor Pena</span>
-                <span className="text-xs text-gray-500">Welcome to "Your name"</span>
+                <span className="text-sm font-medium">{userName}</span>
+                <span className="text-xs text-gray-500">Welcome to ProbEd</span>
               </div>
             </div>
           </div>
