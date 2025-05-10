@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 
 interface UserInfo {
   first_name?: string
+  last_name?: string
   sub?: string
   exp?: number
   [key: string]: any
