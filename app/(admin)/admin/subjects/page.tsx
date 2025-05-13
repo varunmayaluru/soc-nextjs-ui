@@ -32,32 +32,58 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-// Define types
-type Subject = {
-  id: number
-  name: string
-  category: string
-  totalTopics: number
-  createdAt: string
+
+import { Organization, Subject } from "../../../types/types"
+
+type SubjectsPageProps = Subject & {
+ organization_name: string;
+ 
 }
+
 
 export default function SubjectsPage() {
   const { toast } = useToast()
+  const [organizations, setorganizations] = useState<Organization[]>([])
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
 
   // Fetch subjects on component mount
   useEffect(() => {
-    fetchSubjects()
+    fetchOrganizations();
+    fetchSubjects();
   }, [])
+
+
+  const fetchOrganizations = async () => {
+    try {
+          const response = await api.get<Organization[]>(`/organizations/organizations/organizations`)
+    
+          if (response.ok) {
+            setorganizations(response.data)
+          } else {
+            throw new Error("Failed to fetch topics")
+          }
+        } catch (error) {
+          console.error("Error fetching topics:", error)
+          toast({
+            title: "Error",
+            description: "Failed to load topics. Please try again.",
+            variant: "destructive",
+          })
+         
+         
+        } finally {
+          //setLoading(false)
+        }
+  };
 
   // Fetch subjects from API
   const fetchSubjects = async () => {
     setIsLoading(true)
     try {
       // This would be replaced with your actual API endpoint
-      const response = await api.get<Subject[]>("/admin/subjects")
+      const response = await api.get<Subject[]>("/subjects/subjects/")
 
       if (response.ok) {
         setSubjects(response.data)
