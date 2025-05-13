@@ -15,7 +15,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Change the return statement to remove the ProtectedRoute wrapper
   return (
     <AuthProvider>
-      <ProtectedRoute>.
+      <ProtectedRoute>
+        .
         <div className="flex min-h-screen bg-gray-50">
           <Sidebar />
           <div className="flex-1 flex flex-col">
