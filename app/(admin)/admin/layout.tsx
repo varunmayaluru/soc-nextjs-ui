@@ -29,7 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <nav className="space-y-1">
                 <Link
                   href="/admin"
-                  className="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-md hover:bg-gray-100"
+                  className="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-md hover:bg-blue-50 hover:text-[#1e74bb] transition-colors"
                 >
                   <LayoutDashboard className="w-5 h-5 text-gray-500" />
                   Dashboard
@@ -37,7 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 <Link
                   href="/admin/organization"
-                  className="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-md hover:bg-gray-100"
+                  className="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-md hover:bg-blue-50 hover:text-[#1e74bb] transition-colors"
                 >
                   <Building className="w-5 h-5 text-gray-500" />
                   Organization
@@ -45,7 +45,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 <Link
                   href="/admin/subjects"
-                  className="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-md hover:bg-gray-100"
+                  className="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-md hover:bg-blue-50 hover:text-[#1e74bb] transition-colors"
                 >
                   <BookOpen className="w-5 h-5 text-gray-500" />
                   Subjects & Topics
@@ -53,7 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 <Link
                   href="/admin/users"
-                  className="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-md hover:bg-gray-100"
+                  className="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-md hover:bg-blue-50 hover:text-[#1e74bb] transition-colors"
                 >
                   <Users className="w-5 h-5 text-gray-500" />
                   Users
@@ -61,7 +61,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 <Link
                   href="/admin/settings"
-                  className="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-md hover:bg-gray-100"
+                  className="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-md hover:bg-blue-50 hover:text-[#1e74bb] transition-colors"
                 >
                   <Settings className="w-5 h-5 text-gray-500" />
                   Settings
