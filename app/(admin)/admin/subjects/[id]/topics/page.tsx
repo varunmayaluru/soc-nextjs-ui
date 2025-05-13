@@ -218,7 +218,7 @@ export default function TopicsPage() {
         </Dialog>
       </div>
 
-      <Card>
+      <Card className="border border-gray-100 shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle>All Topics</CardTitle>
           <CardDescription>Manage topics for {subject?.name}</CardDescription>

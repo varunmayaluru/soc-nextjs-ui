@@ -121,7 +121,7 @@ export default function OrganizationPage() {
         </TabsList>
 
         <TabsContent value="details">
-          <Card>
+          <Card className="border border-gray-100 shadow-sm">
             <CardHeader>
               <CardTitle>Organization Details</CardTitle>
               <CardDescription>Manage your organization's basic information</CardDescription>

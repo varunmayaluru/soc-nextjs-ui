@@ -139,7 +139,7 @@ export default function SubjectsPage() {
         </Dialog>
       </div>
 
-      <Card>
+      <Card className="border border-gray-100 shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle>All Subjects</CardTitle>
           <CardDescription>Manage your learning platform subjects and their topics</CardDescription>
