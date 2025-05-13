@@ -59,7 +59,9 @@ export default function TopicPage({
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link className="text-white" href="/subjects">Subjects</Link>
+                <Link className="text-white" href="/subjects">
+                  Subjects
+                </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator>
@@ -67,7 +69,9 @@ export default function TopicPage({
             </BreadcrumbSeparator>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link className="text-white" href={`/subjects/${params.subject}`}>{subject.name}</Link>
+                <Link className="text-white" href={`/subjects/${params.subject}`}>
+                  {subject.name}
+                </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator>
