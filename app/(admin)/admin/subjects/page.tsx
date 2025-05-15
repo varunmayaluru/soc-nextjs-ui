@@ -34,8 +34,10 @@ import {
 
 
 import { Organization, Subject } from "../../../types/types"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 
-type SubjectsPageProps = Subject & {
+type SubjectsPageViewModel = Subject & {
  organization_name: string;
  
 }
@@ -43,89 +45,92 @@ type SubjectsPageProps = Subject & {
 
 export default function SubjectsPage() {
   const { toast } = useToast()
-  const [organizations, setorganizations] = useState<Organization[]>([])
+  const [organizations, setOrganizations] = useState<Organization[]>([])
   const [subjects, setSubjects] = useState<Subject[]>([])
+  const [SubjectPageViewModel, setSubjectPageViewModel] = useState<SubjectsPageViewModel[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
 
   // Fetch subjects on component mount
-  useEffect(() => {
-    fetchOrganizations();
-    fetchSubjects();
-  }, [])
-
-
-  const fetchOrganizations = async () => {
-    try {
-          const response = await api.get<Organization[]>(`/organizations/organizations/organizations`)
-    
-          if (response.ok) {
-            setorganizations(response.data)
-          } else {
-            throw new Error("Failed to fetch topics")
-          }
-        } catch (error) {
-          console.error("Error fetching topics:", error)
-          toast({
-            title: "Error",
-            description: "Failed to load topics. Please try again.",
-            variant: "destructive",
-          })
-         
-         
-        } finally {
-          //setLoading(false)
-        }
+useEffect(() => {
+  const fetchData = async () => {
+    const orgs = await fetchOrganizations();
+    await fetchSubjects(orgs); 
   };
 
-  // Fetch subjects from API
-  const fetchSubjects = async () => {
-    setIsLoading(true)
-    try {
-      // This would be replaced with your actual API endpoint
-      const response = await api.get<Subject[]>("/subjects/subjects/")
+  fetchData();
 
-      if (response.ok) {
-        setSubjects(response.data)
-      } else {
-        throw new Error("Failed to fetch subjects")
-      }
-    } catch (error) {
-      console.error("Error fetching subjects:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load subjects. Please try again.",
-        variant: "destructive",
-      })
+}, []);
 
-      // For demo purposes, set some sample data
-      setSubjects([
-        { id: 1, name: "Mathematics", category: "Core", totalTopics: 8, createdAt: "2023-05-15" },
-        { id: 2, name: "Science", category: "Core", totalTopics: 6, createdAt: "2023-05-16" },
-        { id: 3, name: "English", category: "Languages", totalTopics: 4, createdAt: "2023-05-17" },
-        { id: 4, name: "Computer Science", category: "Technology", totalTopics: 5, createdAt: "2023-05-18" },
-        { id: 5, name: "Social Studies", category: "Humanities", totalTopics: 7, createdAt: "2023-05-19" },
-      ])
-    } finally {
-      setIsLoading(false)
+
+ const fetchOrganizations = async (): Promise<Organization[]> => {
+  setIsLoading(true);
+  try {
+    const response = await api.get<Organization[]>(`/organizations/organizations/organizations`);
+    if (response.ok) {
+      const data = response.data;
+      setOrganizations(data);
+      return data;
+    } else {
+      throw new Error("Failed to fetch organizations");
     }
+  } catch (error) {
+    console.error("Error fetching organizations:", error);
+    toast({
+      title: "Error",
+      description: "Failed to load organizations. Please try again.",
+      variant: "destructive",
+    });
+    return [];
+  } finally {
+    setIsLoading(false);
   }
+};
+
+  // Fetch subjects from API
+  const fetchSubjects = async (orgs: Organization[]) => {
+  setIsLoading(true);
+  try {
+    const response = await api.get<Subject[]>("/subjects/subjects/");
+    if (response.ok) {
+      const subjectsWithOrganizationName = response.data.map((subject) => {
+        const organization = orgs.find((org) => org.organization_id === subject.organization_id);
+        return {
+          ...subject,
+          organization_name: organization ? organization.organization_name : "Unknown",
+        };
+      });
+      setSubjectPageViewModel(subjectsWithOrganizationName);
+    } else {
+      throw new Error("Failed to fetch subjects");
+    }
+  } catch (error) {
+    console.error("Error fetching subjects:", error);
+    toast({
+      title: "Error",
+      description: "Failed to load subjects. Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   // Filter subjects based on search query
-  const filteredSubjects = subjects.filter(
+  let filteredSubjects = SubjectPageViewModel.filter(
     (subject) =>
-      subject.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      subject.category.toLowerCase().includes(searchQuery.toLowerCase()),
+      subject.subject_name.toString().toLowerCase().includes(searchQuery.toLowerCase()) 
   )
 
   // Delete subject handler
   const handleDeleteSubject = async (id: number) => {
     try {
       // This would be replaced with your actual API endpoint
-      const response = await api.delete(`/admin/subjects/${id}`)
+      const response = await api.delete(`/subjects/subjects/${id}`)
 
       if (response.ok) {
-        setSubjects(subjects.filter((subject) => subject.id !== id))
+        fetchSubjects(organizations) 
         toast({
           title: "Success",
           description: "Subject deleted successfully",
@@ -160,7 +165,11 @@ export default function SubjectsPage() {
               <DialogTitle>Add New Subject</DialogTitle>
               <DialogDescription>Create a new subject for your learning platform.</DialogDescription>
             </DialogHeader>
-            <SubjectForm onSuccess={() => fetchSubjects()} />
+            <SubjectForm subject={undefined}  onSuccess={() => fetchSubjects(organizations)}
+                              organizationOptions={organizations.map((org) => ({
+                                  value: org.organization_id,
+                                  label: org.organization_name,
+                                }))} />
           </DialogContent>
         </Dialog>
       </div>
@@ -196,23 +205,24 @@ export default function SubjectsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Topics</TableHead>
+                    <TableHead>Id</TableHead>
+                    <TableHead>Subject Name</TableHead>
+                    <TableHead>Organization Name</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredSubjects.map((subject) => (
-                    <TableRow key={subject.id}>
-                      <TableCell className="font-medium">{subject.name}</TableCell>
-                      <TableCell>{subject.category}</TableCell>
-                      <TableCell>{subject.totalTopics}</TableCell>
-                      <TableCell>{new Date(subject.createdAt).toLocaleDateString()}</TableCell>
+                    <TableRow key={subject.subject_id}>
+                      <TableCell className="font-medium">{subject.subject_id}</TableCell>
+                       <TableCell>{subject.subject_name}</TableCell>
+                      <TableCell className="font-medium">{subject.organization_name}</TableCell>
+                     
+                      <TableCell>{new Date(subject.create_date_time).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Link href={`/admin/subjects/${subject.id}/topics`}>
+                          <Link href={`/admin/subjects/${subject.subject_id}/topics`}>
                             <Button variant="outline" size="sm">
                               <ChevronRight className="h-4 w-4" />
                               <span className="sr-only">View Topics</span>
@@ -231,7 +241,11 @@ export default function SubjectsPage() {
                                 <DialogTitle>Edit Subject</DialogTitle>
                                 <DialogDescription>Update the subject details.</DialogDescription>
                               </DialogHeader>
-                              <SubjectForm subject={subject} onSuccess={() => fetchSubjects()} />
+                              <SubjectForm subject={subject} onSuccess={() => fetchSubjects(organizations)}
+                              organizationOptions={organizations.map((org) => ({
+                                  value: org.organization_id,
+                                  label: org.organization_name,
+                                }))} />
                             </DialogContent>
                           </Dialog>
 
@@ -246,7 +260,7 @@ export default function SubjectsPage() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  This will permanently delete the subject "{subject.name}" and all associated topics.
+                                  This will permanently delete the subject "{subject.subject_name}" and all associated topics.
                                   This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
@@ -254,7 +268,7 @@ export default function SubjectsPage() {
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
                                   className="bg-red-500 hover:bg-red-600"
-                                  onClick={() => handleDeleteSubject(subject.id)}
+                                  onClick={() => handleDeleteSubject(subject.subject_id)}
                                 >
                                   Delete
                                 </AlertDialogAction>
@@ -275,72 +289,81 @@ export default function SubjectsPage() {
   )
 }
 
-// Subject Form Component
+
 interface SubjectFormProps {
-  subject?: Subject
-  onSuccess: () => void
+  subject?: Subject;
+  onSuccess: () => void;
+  organizationOptions: { value: number; label: string }[];
 }
 
-function SubjectForm({ subject, onSuccess }: SubjectFormProps) {
-  const { toast } = useToast()
-  const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    name: subject?.name || "",
-    category: subject?.category || "",
-  })
+export function SubjectForm({ subject, onSuccess, organizationOptions }: SubjectFormProps) {
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+  const [formData, setFormData] = useState({
+    subject_name: subject?.subject_name || "",
+    organization_id: subject?.organization_id || 0,
+    is_active: subject?.is_active ?? true,
+    created_by: subject?.created_by || 0, // hardcode or get from session if needed
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: name === "organization_id" ? +value : value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
     try {
-      // Validate form
-      if (!formData.name || !formData.category) {
-        throw new Error("Please fill in all required fields")
+      if (!formData.subject_name || !formData.organization_id) {
+        throw new Error("Please fill in all required fields");
       }
 
-      // This would be replaced with your actual API endpoint
+      const payload = {
+        ...formData,
+        update_date_time: new Date().toISOString(),
+      };
+
       const response = subject
-        ? await api.put(`/admin/subjects/${subject.id}`, formData)
-        : await api.post("/admin/subjects", formData)
+        ? await api.put(`/subjects/subjects/${subject.subject_id}`, payload)
+        : await api.post("subjects/subjects/", {
+            ...payload,
+            create_date_time: new Date().toISOString(),
+          });
 
       if (response.ok) {
         toast({
           title: "Success",
           description: subject ? "Subject updated successfully" : "Subject created successfully",
-        })
-        onSuccess()
+        });
+        onSuccess();
+        
       } else {
-        throw new Error(subject ? "Failed to update subject" : "Failed to create subject")
+        throw new Error(subject ? "Failed to update subject" : "Failed to create subject");
       }
     } catch (error) {
-      console.error("Error saving subject:", error)
+      console.error("Error saving subject:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit}>
       <div className="space-y-4 py-4">
         <div className="space-y-2">
-          <label htmlFor="name" className="text-sm font-medium">
-            Subject Name <span className="text-red-500">*</span>
-          </label>
+          <Label htmlFor="subject_name">Subject Name *</Label>
           <Input
-            id="name"
-            name="name"
-            value={formData.name}
+            id="subject_name"
+            name="subject_name"
+            value={formData.subject_name}
             onChange={handleChange}
             placeholder="e.g., Mathematics"
             required
@@ -348,16 +371,33 @@ function SubjectForm({ subject, onSuccess }: SubjectFormProps) {
         </div>
 
         <div className="space-y-2">
-          <label htmlFor="category" className="text-sm font-medium">
-            Category <span className="text-red-500">*</span>
-          </label>
-          <Input
-            id="category"
-            name="category"
-            value={formData.category}
+          <Label htmlFor="organization_id">Organization *</Label>
+          <select
+            id="organization_id"
+            name="organization_id"
+            value={formData.organization_id}
             onChange={handleChange}
-            placeholder="e.g., Core, Languages, Technology"
+            className="w-full border rounded px-2 py-2"
             required
+          >
+            <option value="">Select Organization</option>
+            {organizationOptions.map((org) => (
+              <option key={org.value} value={org.value}>
+                {org.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Label htmlFor="is_active">Active</Label>
+          <Switch
+            className="h-6 w-11 rounded-full"
+            id="is_active"
+            checked={formData.is_active}
+            onCheckedChange={(checked) =>
+              setFormData((prev) => ({ ...prev, is_active: checked }))
+            }
           />
         </div>
       </div>
@@ -371,5 +411,5 @@ function SubjectForm({ subject, onSuccess }: SubjectFormProps) {
         </Button>
       </DialogFooter>
     </form>
-  )
+  );
 }

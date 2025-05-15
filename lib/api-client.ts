@@ -65,7 +65,11 @@ export async function apiRequest<T>(endpoint: string, options: RequestInit = {})
     const contentType = response.headers.get("Content-Type") || ""
 
     if (contentType.includes("application/json")) {
-      data = await response.json()
+      if(response.status === 204) {
+        data = null
+      }else {
+        data = await response.json()
+      }
     } else {
       data = await response.text()
     }

@@ -11,11 +11,13 @@ export type Organization = {
 };
 
  export type Subject = {
-  id: number
-  name: string
-  category: string
-  totalTopics: number
-  createdAt: string
+  organization_id: number;
+  subject_id: number;
+  subject_name: string;
+  is_active: boolean;
+  created_by: number;
+  create_date_time: string;
+  update_date_time: string;
   
 }
 
