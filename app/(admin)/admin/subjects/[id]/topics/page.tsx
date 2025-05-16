@@ -32,23 +32,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Subject } from "@/app/Types/types"
+import { is } from "date-fns/locale"
 
-// Define types
-type Subject = {
-  id: number
-  name: string
-  category: string
-}
+
 
 type Topic = {
-  id: number
-  title: string
-  description: string
-  icon: string
-  iconBg: string
-  iconColor: string
-  subjectId: number
-  createdAt: string
+  organization_id: number;
+  subject_id: number;
+  topic_id: number;
+  topic_name: string;
+  is_active: boolean;
+  created_by: string;
+  create_date_time: string;
 }
 
 export default function TopicsPage() {
@@ -61,6 +57,10 @@ export default function TopicsPage() {
   const [searchQuery, setSearchQuery] = useState("")
 
   const subjectId = params.id as string
+ 
+ const organizationName = localStorage.getItem("organizationName");
+
+
 
   // Fetch subject and topics on component mount
   useEffect(() => {
@@ -72,7 +72,7 @@ export default function TopicsPage() {
   const fetchSubject = async () => {
     try {
       // This would be replaced with your actual API endpoint
-      const response = await api.get<Subject>(`/admin/subjects/${subjectId}`)
+      const response = await api.get<Subject>(`/subjects/subjects/${subjectId}`)
 
       if (response.ok) {
         setSubject(response.data)
@@ -86,13 +86,7 @@ export default function TopicsPage() {
         description: "Failed to load subject details. Please try again.",
         variant: "destructive",
       })
-
-      // For demo purposes, set sample data
-      setSubject({
-        id: Number.parseInt(subjectId),
-        name: "Mathematics",
-        category: "Core",
-      })
+     
     }
   }
 
@@ -101,7 +95,7 @@ export default function TopicsPage() {
     setIsLoading(true)
     try {
       // This would be replaced with your actual API endpoint
-      const response = await api.get<Topic[]>(`/admin/subjects/${subjectId}/topics`)
+      const response = await api.get<Topic[]>(`/topics/topics/TopicsBySubjectId/${subjectId}`)
 
       if (response.ok) {
         setTopics(response.data)
@@ -117,38 +111,7 @@ export default function TopicsPage() {
       })
 
       // For demo purposes, set some sample data
-      setTopics([
-        {
-          id: 1,
-          title: "Arithmetic & Number Sense",
-          description: "Basic arithmetic operations and number concepts",
-          icon: "📊",
-          iconBg: "bg-green-100",
-          iconColor: "text-green-600",
-          subjectId: Number.parseInt(subjectId),
-          createdAt: "2023-05-15",
-        },
-        {
-          id: 2,
-          title: "Algebra",
-          description: "Algebraic expressions and equations",
-          icon: "📈",
-          iconBg: "bg-blue-100",
-          iconColor: "text-blue-600",
-          subjectId: Number.parseInt(subjectId),
-          createdAt: "2023-05-16",
-        },
-        {
-          id: 3,
-          title: "Geometry",
-          description: "Shapes, sizes, and properties of space",
-          icon: "📏",
-          iconBg: "bg-orange-100",
-          iconColor: "text-orange-600",
-          subjectId: Number.parseInt(subjectId),
-          createdAt: "2023-05-17",
-        },
-      ])
+      
     } finally {
       setIsLoading(false)
     }
@@ -157,18 +120,17 @@ export default function TopicsPage() {
   // Filter topics based on search query
   const filteredTopics = topics.filter(
     (topic) =>
-      topic.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      topic.description.toLowerCase().includes(searchQuery.toLowerCase()),
+      topic.topic_name.toLowerCase().includes(searchQuery.toLowerCase()) 
   )
 
   // Delete topic handler
   const handleDeleteTopic = async (id: number) => {
     try {
       // This would be replaced with your actual API endpoint
-      const response = await api.delete(`/admin/topics/${id}`)
+      const response = await api.delete(`topics/topics/TopicsBySubjectId/${id}`)
 
       if (response.ok) {
-        setTopics(topics.filter((topic) => topic.id !== id))
+        setTopics(topics.filter((topic) => topic.topic_id !== id))
         toast({
           title: "Success",
           description: "Topic deleted successfully",
@@ -197,8 +159,8 @@ export default function TopicsPage() {
 
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold">{subject?.name} Topics</h1>
-          <p className="text-gray-500">Manage topics for {subject?.name}</p>
+          <h1 className="text-2xl font-bold">{subject?.subject_name} Topics</h1>
+          <p className="text-gray-500">Manage topics for {subject?.subject_name}</p>
         </div>
 
         <Dialog>
@@ -211,9 +173,9 @@ export default function TopicsPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add New Topic</DialogTitle>
-              <DialogDescription>Create a new topic for {subject?.name}.</DialogDescription>
+              <DialogDescription>Create a new topic for {subject?.subject_name}.</DialogDescription>
             </DialogHeader>
-            <TopicForm subjectId={Number.parseInt(subjectId)} onSuccess={() => fetchTopics()} />
+            <TopicForm subjectId={Number.parseInt(subjectId)} subjectName={subject?.subject_name || ""} organizationName={organizationName ||""} onSuccess={() => fetchTopics()} />
           </DialogContent>
         </Dialog>
       </div>
@@ -221,7 +183,7 @@ export default function TopicsPage() {
       <Card className="border border-gray-100 shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle>All Topics</CardTitle>
-          <CardDescription>Manage topics for {subject?.name}</CardDescription>
+          <CardDescription>Manage topics for {subject?.subject_name}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center mb-4">
@@ -249,24 +211,18 @@ export default function TopicsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Icon</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Description</TableHead>
+                    <TableHead >Id</TableHead>
+                    <TableHead>Topic</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredTopics.map((topic) => (
-                    <TableRow key={topic.id}>
-                      <TableCell>
-                        <div className={`w-8 h-8 rounded-md ${topic.iconBg} flex items-center justify-center`}>
-                          <span className={topic.iconColor}>{topic.icon}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">{topic.title}</TableCell>
-                      <TableCell className="max-w-xs truncate">{topic.description}</TableCell>
-                      <TableCell>{new Date(topic.createdAt).toLocaleDateString()}</TableCell>
+                    <TableRow key={topic.topic_id}>
+                      <TableCell>{topic.topic_id}</TableCell>
+                      <TableCell className="font-medium">{topic.topic_name}</TableCell>
+                      <TableCell>{new Date(topic.create_date_time).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Dialog>
@@ -284,6 +240,8 @@ export default function TopicsPage() {
                               <TopicForm
                                 topic={topic}
                                 subjectId={Number.parseInt(subjectId)}
+                                subjectName={subject?.subject_name || ""}
+                                organizationName={organizationName || ""}
                                 onSuccess={() => fetchTopics()}
                               />
                             </DialogContent>
@@ -300,7 +258,7 @@ export default function TopicsPage() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  This will permanently delete the topic "{topic.title}" and all associated content.
+                                  This will permanently delete the topic "{topic.topic_name}" and all associated content.
                                   This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
@@ -308,7 +266,7 @@ export default function TopicsPage() {
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                                 <AlertDialogAction
                                   className="bg-red-500 hover:bg-red-600"
-                                  onClick={() => handleDeleteTopic(topic.id)}
+                                  onClick={() => handleDeleteTopic(topic.topic_id)}
                                 >
                                   Delete
                                 </AlertDialogAction>
@@ -333,59 +291,26 @@ export default function TopicsPage() {
 interface TopicFormProps {
   topic?: Topic
   subjectId: number
+  subjectName: string
+  organizationName: string
   onSuccess: () => void
 }
 
-function TopicForm({ topic, subjectId, onSuccess }: TopicFormProps) {
+function TopicForm({ topic, subjectId,subjectName,organizationName ,onSuccess }: TopicFormProps) {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
-    title: topic?.title || "",
-    description: topic?.description || "",
-    icon: topic?.icon || "📚",
-    iconBg: topic?.iconBg || "bg-blue-100",
-    iconColor: topic?.iconColor || "text-blue-600",
+    topic_name: topic?.topic_name || "",
+    is_active: topic?.is_active ?? true,
+   
   })
 
-  // Available icons and colors for selection
-  const icons = ["📚", "📊", "📈", "📏", "🧮", "🔍", "🧩", "🎯"]
-  const iconBgs = [
-    "bg-blue-100",
-    "bg-green-100",
-    "bg-yellow-100",
-    "bg-purple-100",
-    "bg-pink-100",
-    "bg-indigo-100",
-    "bg-red-100",
-    "bg-orange-100",
-  ]
-  const iconColors = [
-    "text-blue-600",
-    "text-green-600",
-    "text-yellow-600",
-    "text-purple-600",
-    "text-pink-600",
-    "text-indigo-600",
-    "text-red-600",
-    "text-orange-600",
-  ]
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleIconSelect = (icon: string) => {
-    setFormData((prev) => ({ ...prev, icon }))
-  }
-
-  const handleBgSelect = (bg: string) => {
-    setFormData((prev) => ({ ...prev, iconBg: bg }))
-  }
-
-  const handleColorSelect = (color: string) => {
-    setFormData((prev) => ({ ...prev, iconColor: color }))
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -393,19 +318,21 @@ function TopicForm({ topic, subjectId, onSuccess }: TopicFormProps) {
 
     try {
       // Validate form
-      if (!formData.title) {
+      if (!formData.topic_name) {
         throw new Error("Topic title is required")
       }
-
+      const organizationId = localStorage.getItem("organizationId");
       const payload = {
         ...formData,
-        subjectId,
+        subject_id: subjectId,
+        organization_id: Number.parseInt(organizationId||""), 
+        created_by:101
       }
 
       // This would be replaced with your actual API endpoint
       const response = topic
-        ? await api.put(`/admin/topics/${topic.id}`, payload)
-        : await api.post("/admin/topics", payload)
+        ? await api.put(`/topics/topics/${topic.topic_id}`, payload)
+        : await api.post("/topics/topics", payload)
 
       if (response.ok) {
         toast({
@@ -431,96 +358,57 @@ function TopicForm({ topic, subjectId, onSuccess }: TopicFormProps) {
   return (
     <form onSubmit={handleSubmit}>
       <div className="space-y-4 py-4">
+      <div className="space-y-2">
+          <label htmlFor="title" className="text-sm font-medium">
+           Organization <span className="text-red-500">*</span>
+          </label>
+          <Input
+            id="Organization"
+            name="Organization"
+            value={organizationName}
+            disabled
+          />
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="title" className="text-sm font-medium">
+           Subject <span className="text-red-500">*</span>
+          </label>
+          <Input
+            id="Subject"
+            name="Subject"
+            value={subjectName}
+            disabled
+          />
+        </div>
         <div className="space-y-2">
           <label htmlFor="title" className="text-sm font-medium">
             Topic Title <span className="text-red-500">*</span>
           </label>
           <Input
-            id="title"
-            name="title"
-            value={formData.title}
+            id="topic_name"
+            name="topic_name"
+            value={formData.topic_name}
             onChange={handleChange}
             placeholder="e.g., Arithmetic & Number Sense"
             required
           />
         </div>
 
-        <div className="space-y-2">
-          <label htmlFor="description" className="text-sm font-medium">
-            Description
-          </label>
-          <Textarea
-            id="description"
-            name="description"
-            value={formData.description}
-            onChange={handleChange}
-            placeholder="Brief description of this topic"
-            rows={3}
+       
+        <div className="flex items-center space-x-2">
+          <input
+            type="checkbox" 
+            id="is_active"
+            name="is_active"
+            checked={formData.is_active}
+            onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
           />
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Icon</label>
-          <div className="grid grid-cols-8 gap-2">
-            {icons.map((icon) => (
-              <button
-                key={icon}
-                type="button"
-                className={`w-8 h-8 flex items-center justify-center rounded-md ${
-                  formData.icon === icon ? "ring-2 ring-[#1e74bb]" : "hover:bg-gray-100"
-                }`}
-                onClick={() => handleIconSelect(icon)}
-              >
-                {icon}
-              </button>
-            ))}
+          <label htmlFor="is_active" className="text-sm font-medium">
+            Active  
+          </label>
           </div>
-        </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Icon Background</label>
-          <div className="grid grid-cols-8 gap-2">
-            {iconBgs.map((bg) => (
-              <button
-                key={bg}
-                type="button"
-                className={`w-8 h-8 ${bg} rounded-md ${formData.iconBg === bg ? "ring-2 ring-[#1e74bb]" : ""}`}
-                onClick={() => handleBgSelect(bg)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Icon Color</label>
-          <div className="grid grid-cols-8 gap-2">
-            {iconColors.map((color) => (
-              <button
-                key={color}
-                type="button"
-                className={`w-8 h-8 bg-white flex items-center justify-center rounded-md ${
-                  formData.iconColor === color ? "ring-2 ring-[#1e74bb]" : "hover:bg-gray-100"
-                }`}
-                onClick={() => handleColorSelect(color)}
-              >
-                <div className={`w-4 h-4 rounded-full ${color.replace("text-", "bg-")}`}></div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Preview</label>
-          <div className="flex items-center gap-2 p-4 border rounded-md">
-            <div className={`w-10 h-10 rounded-md ${formData.iconBg} flex items-center justify-center`}>
-              <span className={formData.iconColor}>{formData.icon}</span>
-            </div>
-            <div>
-              <div className="font-medium">{formData.title || "Topic Title"}</div>
-              <div className="text-sm text-gray-500">{formData.description || "Topic description"}</div>
-            </div>
-          </div>
-        </div>
       </div>
 
       <DialogFooter>
