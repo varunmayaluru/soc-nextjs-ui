@@ -8,11 +8,14 @@ import { api } from "@/lib/api-client"
 // Update the API response type to match the exact structure
 type SubjectApiResponse = {
   subject_id: number
+  organization_id : number
+  user_id: number
+  total_quizzes: number
   subject_name: string
-  total_lessons: number
-  completed_lessons: number
-  completion_percentage: number
-}
+  completed_quizzes: number
+  progress_percentage: number
+
+  }
 
 // Update the Subject type definition
 type Subject = {
@@ -53,10 +56,10 @@ export default function Dashboard() {
           icon: getIconForSubject(subject.subject_name),
           iconBg: getIconBgForSubject(subject.subject_name),
           iconColor: getIconColorForSubject(subject.subject_name),
-          progress: subject.completion_percentage,
+          progress: subject.progress_percentage,
           progressColor: getProgressColorForSubject(subject.subject_name),
-          completedLessons: subject.completed_lessons,
-          totalLessons: subject.total_lessons,
+          completedLessons: subject.completed_quizzes,
+          totalLessons: subject.total_quizzes,
         }))
 
         setSubjects(formattedSubjects)
