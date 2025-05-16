@@ -39,7 +39,7 @@ export default function Dashboard() {
         setIsLoading(true)
 
         // Use the new API client instead of direct fetch
-        const response = await api.get<SubjectApiResponse[]>("topics/subjects/progress")
+        const response = await api.get<SubjectApiResponse[]>("user-subject-progress/subjects/progress/1")
 
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`)
