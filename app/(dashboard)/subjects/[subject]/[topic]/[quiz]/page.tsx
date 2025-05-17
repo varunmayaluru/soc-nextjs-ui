@@ -131,7 +131,7 @@ export default function QuizPage({
   }
 
   return (
-    <div className="p-6">
+    <div>
       <QuizInterface quizId={params.quiz} subjectId={params.subject} topicId={params.topic} />
     </div>
   )

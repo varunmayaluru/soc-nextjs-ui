@@ -3,15 +3,14 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, HelpCircle, XCircle } from "lucide-react"
-import ChatInterface from "@/components/chat-interface"
+import { AlertCircle, ChevronLeft, ChevronRight, LinkIcon } from "lucide-react"
 import { api } from "@/lib/api-client"
+import Link from "next/link"
 
 interface Option {
   quiz_question_option_id: number
@@ -58,6 +57,9 @@ export function QuizInterface({
   const [isAnswerChecked, setIsAnswerChecked] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
   const [currentQuestionId, setCurrentQuestionId] = useState<number | null>(null)
+  const [totalQuestions, setTotalQuestions] = useState(10)
+  const [quizTitle, setQuizTitle] = useState("Algebra Fundamentals Quiz")
+  const [subjectName, setSubjectName] = useState("Mathematics / Athematic / Counting and Number Recognition")
 
   useEffect(() => {
     const fetchQuestion = async () => {
@@ -72,7 +74,6 @@ export function QuizInterface({
         setCurrentQuestionId(Number(id))
 
         const response = await api.get<Question>(`questions/questions/quiz-question/1`)
-
 
         if (!response.ok) {
           throw new Error(`Failed to fetch question: ${response.status}`)
@@ -124,7 +125,6 @@ export function QuizInterface({
     try {
       const response = await api.get<Question>(`questions/questions/quiz-question/${newQuestionId}`)
 
-
       if (!response.ok) {
         throw new Error(`Failed to fetch question: ${response.status}`)
       }
@@ -139,165 +139,234 @@ export function QuizInterface({
     }
   }
 
-  const getDifficultyColor = (level: string) => {
-    switch (level?.toLowerCase()) {
-      case "easy":
-        return "bg-green-100 text-green-800"
-      case "medium":
-        return "bg-yellow-100 text-yellow-800"
-      case "hard":
-        return "bg-red-100 text-red-800"
-      default:
-        return "bg-gray-100 text-gray-800"
+  // Generate pagination numbers
+  const generatePaginationNumbers = () => {
+    const numbers = []
+    for (let i = 1; i <= 20; i++) {
+      numbers.push(i)
     }
+    return numbers
   }
 
+  const paginationNumbers = generatePaginationNumbers()
+
+  // Mock relevant links
+  const relevantLinks = [
+    { title: "Why Atomic Radius Decreases", href: "#" },
+    { title: "Why Atomic Radius Decreases", href: "#" },
+    { title: "Nuclear Charge vs Shielding", href: "#" },
+  ]
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
-      {/* Question Panel */}
-      <div className="md:col-span-2">
-        <Card className="h-full">
-          <CardContent className="p-6">
-            {loading ? (
-              <div className="space-y-4">
-                <Skeleton className="h-8 w-3/4" />
-                <Skeleton className="h-4 w-1/4" />
-                <Skeleton className="h-24 w-full" />
-                <div className="space-y-2 mt-4">
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                </div>
-                <div className="flex justify-between mt-6">
-                  <Skeleton className="h-10 w-24" />
-                  <Skeleton className="h-10 w-24" />
-                </div>
+    <div className="mx-auto">
+      {/* Blue header bar */}
+      <div className="bg-[#3373b5] text-white p-4 rounded-t-md flex justify-between items-center">
+        <div className="text-sm font-medium">{subjectName}</div>
+        <div className="text-sm font-medium">
+          [Quiz {currentQuestionId} of {totalQuestions}]
+        </div>
+      </div>
+
+      {/* Pagination */}
+      <div className="bg-white border-b border-gray-200 px-4 py-2 flex overflow-x-auto">
+        {paginationNumbers.map((num) => (
+          <button
+            key={num}
+            className={`min-w-[36px] h-9 flex items-center justify-center mx-1 rounded-md ${num === currentQuestionId ? "text-[#3373b5] font-medium" : "text-gray-500"
+              }`}
+          >
+            {num}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4">
+        {/* Question Panel */}
+        <div className="md:col-span-2">
+          {loading ? (
+            <div className="space-y-4 p-6 bg-white rounded-md">
+              <Skeleton className="h-8 w-3/4" />
+              <Skeleton className="h-4 w-1/4" />
+              <Skeleton className="h-24 w-full" />
+              <div className="space-y-2 mt-4">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
               </div>
-            ) : error ? (
-              <div className="flex flex-col items-center justify-center h-full">
-                <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-                <p className="text-lg font-medium text-center">{error}</p>
-                <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
-                  Try Again
+              <div className="flex justify-between mt-6">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-24" />
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-full p-6 bg-white rounded-md">
+              <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+              <p className="text-lg font-medium text-center">{error}</p>
+              <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+                Try Again
+              </Button>
+            </div>
+          ) : (
+            <div className="bg-white rounded-md p-6">
+              {/* Question navigation */}
+              <div className="flex justify-between items-center mb-8">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full bg-gray-200 hover:bg-gray-300 border-none h-12 w-12"
+                  onClick={() => navigateToQuestion("prev")}
+                  disabled={currentQuestionId === 1}
+                >
+                  <ChevronLeft className="h-6 w-6 text-gray-700" />
+                </Button>
+                <h2 className="text-xl font-bold">
+                  {currentQuestionId}. {question?.quiz_question_text || quizTitle} ?
+                </h2>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full bg-gray-200 hover:bg-gray-300 border-none h-12 w-12"
+                  onClick={() => navigateToQuestion("next")}
+                >
+                  <ChevronRight className="h-6 w-6 text-gray-700" />
                 </Button>
               </div>
-            ) : question ? (
-              <div>
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h2 className="text-xl font-bold">Question {currentQuestionId}</h2>
-                    <Badge className={`mt-1 ${getDifficultyColor(question.difficulty_level)}`}>
-                      {question.difficulty_level}
-                    </Badge>
-                    {question.is_maths && (
-                      <Badge variant="outline" className="ml-2 mt-1">
-                        Math
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => navigateToQuestion("prev")}
-                      disabled={currentQuestionId === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={() => navigateToQuestion("next")}>
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
 
-                <div className="my-6">
-                  <p className="text-lg">{question.quiz_question_text}</p>
-                </div>
-
-                <RadioGroup
-                  value={selectedOption?.toString()}
-                  onValueChange={(value) => handleOptionSelect(Number.parseInt(value))}
-                  className="space-y-3"
-                >
-                  {question.options.map((option) => (
+              {/* Options */}
+              <RadioGroup
+                value={selectedOption?.toString()}
+                onValueChange={(value) => handleOptionSelect(Number.parseInt(value))}
+                className="space-y-4"
+              >
+                {question?.options.map((option) => (
+                  <div
+                    key={option.quiz_question_option_id}
+                    className={`border ${selectedOption === option.quiz_question_option_id
+                      ? "border-[#3373b5] bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
+                      } rounded-full p-2 flex items-center`}
+                  >
                     <div
-                      key={option.quiz_question_option_id}
-                      className={`flex items-center space-x-2 p-3 rounded-md border ${isAnswerChecked && option.quiz_question_option_id === selectedOption
-                        ? option.is_correct
-                          ? "border-green-500 bg-green-50"
-                          : "border-red-500 bg-red-50"
-                        : "border-gray-200 hover:border-gray-300"
-                        }`}
+                      className={`${selectedOption === option.quiz_question_option_id ? "bg-[#3373b5]" : ""
+                        } rounded-full flex items-center justify-center ml-2 mr-4`}
                     >
                       <RadioGroupItem
                         value={option.quiz_question_option_id.toString()}
                         id={`option-${option.quiz_question_option_id}`}
+                        className={selectedOption === option.quiz_question_option_id ? "text-white border-white" : ""}
                       />
-                      <Label htmlFor={`option-${option.quiz_question_option_id}`} className="flex-grow cursor-pointer">
-                        {option.option_text}
-                      </Label>
-                      {isAnswerChecked && option.is_correct && <CheckCircle className="h-5 w-5 text-green-500" />}
-                      {isAnswerChecked && !option.is_correct && option.quiz_question_option_id === selectedOption && (
-                        <XCircle className="h-5 w-5 text-red-500" />
-                      )}
                     </div>
-                  ))}
-                </RadioGroup>
+                    <Label
+                      htmlFor={`option-${option.quiz_question_option_id}`}
+                      className={`flex-grow cursor-pointer py-2 ${selectedOption === option.quiz_question_option_id ? "text-[#3373b5] font-medium" : ""
+                        }`}
+                    >
+                      {option.option_text}
+                    </Label>
+                    {isAnswerChecked && option.is_correct && selectedOption === option.quiz_question_option_id && (
+                      <div className="mr-2 text-green-500">✓</div>
+                    )}
+                    {isAnswerChecked && !option.is_correct && selectedOption === option.quiz_question_option_id && (
+                      <div className="mr-2 text-red-500">✗</div>
+                    )}
+                  </div>
+                ))}
+              </RadioGroup>
 
-                <div className="mt-6 flex justify-between">
-                  <Button variant="outline" onClick={() => window.history.back()}>
-                    Back to Quiz
-                  </Button>
-                  <Button onClick={checkAnswer} disabled={selectedOption === null || isAnswerChecked}>
-                    Check Answer
-                  </Button>
+              {/* Action buttons */}
+              <div className="mt-8 flex justify-between">
+                <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-100">
+                  Skip
+                </Button>
+                <Button className="bg-[#3373b5] hover:bg-[#2a5d92]" onClick={checkAnswer}>
+                  SUBMIT
+                </Button>
+              </div>
+
+              {/* Relevant links section */}
+              <div className="mt-12 bg-gray-100 p-4 rounded-md">
+                <h3 className="text-lg font-bold mb-4">Relevant links</h3>
+                <div className="flex flex-wrap gap-4">
+                  {relevantLinks.map((link, index) => (
+                    <Link
+                      key={index}
+                      href={link.href}
+                      className="flex items-center text-sm text-gray-700 hover:text-[#3373b5]"
+                    >
+                      <LinkIcon className="h-4 w-4 mr-1" />
+                      {link.title}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Chat Panel */}
+        <div className="md:col-span-2">
+          <Card className="h-full">
+            <CardContent className="p-4">
+              <div className="flex items-center mb-4">
+                <Avatar className="h-8 w-8 mr-2">
+                  <AvatarFallback className="bg-blue-500 text-white">AI</AvatarFallback>
+                </Avatar>
+                <h3 className="font-semibold">Study Assistant</h3>
+              </div>
+              <Separator className="mb-4" />
+              {/* Chat interface would go here */}
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-yellow-100 text-yellow-800">You</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">You</span>
+                      <span className="text-xs text-gray-500">1 min ago</span>
+                    </div>
+                    <p className="text-sm mt-1">
+                      you're a UX writer now. Generate 3 versions of 404 error messages for a ecommerce clothing
+                      website.
+                    </p>
+                  </div>
                 </div>
 
-                {isAnswerChecked && (
-                  <div
-                    className={`mt-4 p-4 rounded-md ${isCorrect ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}
-                  >
-                    <div className="flex items-center">
-                      {isCorrect ? (
-                        <>
-                          <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
-                          <p className="font-medium text-green-800">Correct answer!</p>
-                        </>
-                      ) : (
-                        <>
-                          <XCircle className="h-5 w-5 text-red-500 mr-2" />
-                          <p className="font-medium text-red-800">Incorrect answer. Try again!</p>
-                        </>
-                      )}
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-green-100 text-green-800">AI</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Response</span>
+                      <span className="text-xs text-gray-500">Just now</span>
+                    </div>
+                    <div className="text-sm mt-1 space-y-2">
+                      <p>
+                        Sure! Here are three different versions of 404 error messages for an ecommerce clothing website:
+                      </p>
+                      <ol className="list-decimal pl-5 space-y-2">
+                        <li>
+                          Uh-oh! It looks like the page you're looking for isn't here. Please check the URL and try
+                          again or return to the homepage to continue shopping.
+                        </li>
+                        <li>
+                          Whoops! We can't seem to find the page you're looking for. Please double-check the URL or use
+                          our collection of stylish clothes and accessories.
+                        </li>
+                        <li>
+                          Sorry, the page you're trying to access isn't available. It's possible that the item has sold
+                          out or the page has
+                        </li>
+                      </ol>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full">
-                <HelpCircle className="h-12 w-12 text-gray-400 mb-4" />
-                <p className="text-lg font-medium text-center">No question found</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Chat Panel */}
-      <div className="md:col-span-1">
-        <Card className="h-full">
-          <CardContent className="p-4">
-            <div className="flex items-center mb-4">
-              <Avatar className="h-8 w-8 mr-2">
-                <AvatarFallback className="bg-blue-500 text-white">AI</AvatarFallback>
-              </Avatar>
-              <h3 className="font-semibold">Study Assistant</h3>
-            </div>
-            <Separator className="mb-4" />
-            {/* <ChatInterface questionText={question?.quiz_question_text || ""} /> */}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )
