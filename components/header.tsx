@@ -4,6 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Bell, MessageSquare } from "lucide-react"
 import { useAuth } from "./auth-provider"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 export default function Header() {
   const { userInfo } = useAuth()
@@ -64,9 +65,15 @@ export default function Header() {
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="relative h-10 w-10 overflow-hidden rounded-full">
-                <Image src="/13176.jpg" alt={userName} width={40} height={40} className="object-cover h-full" />
-              </div>
+              <Avatar className="h-10 w-10">
+                <AvatarFallback className="bg-[#1e74bb] text-white">
+                  {userName
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               <div className="hidden flex-col md:flex">
                 <span className="text-sm font-medium">{userName}</span>
                 <span className="text-xs text-gray-500">Welcome to ProbEd</span>
