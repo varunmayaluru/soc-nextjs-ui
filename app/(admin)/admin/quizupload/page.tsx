@@ -2,21 +2,26 @@
 
 import React from 'react';
 import { api } from '@/lib/api-client'; // Adjust the import path as necessary
+import { toast } from '@/components/ui/use-toast';
 const QuizUpload = () => {
     const handleFileUpload = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
         try {
-            const response = await api.post('/quizzes/quizzes/upload-quiz', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-            alert('Quiz uploaded successfully!');
-            console.log(response.data);
-            
+            const response = await api.post('/quizzes/quizzes/upload-quiz', formData);
+            if (response.ok) {
+                toast({
+                  title: "Success",
+                  description: "Quiz uploaded successfully.",
+                })
+              } else {
+                throw new Error("Error uploading quiz")
+              }
         } catch (error) {
-            console.error('Error uploading quiz:', error);
+            toast({
+                title: "error",
+                description: "Failed to upload quiz. Please try again.",
+              })
             alert('Failed to upload quiz. Please try again.');
         }
     };
@@ -27,7 +32,7 @@ const QuizUpload = () => {
                 <h1 className="text-2xl font-bold mb-6 text-center">Quiz Upload</h1>
                 <form onSubmit={handleFileUpload} encType="multipart/form-data">
 
-                <div className="form-group mb-4">
+                {/* <div className="form-group mb-4">
                     <label htmlFor="quizTitle" className="block text-sm font-medium text-gray-700 mb-2">Quiz Title</label>
                     <input 
                     type="text" 
@@ -45,7 +50,7 @@ const QuizUpload = () => {
                     placeholder="Enter quiz description" 
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     ></textarea>
-                </div>
+                </div> */}
                 <div className="form-group mb-6">
                     <label htmlFor="fileUpload" className="block text-sm font-medium text-gray-700 mb-2">Upload File</label>
                     <input 

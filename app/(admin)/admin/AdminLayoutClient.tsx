@@ -2,7 +2,7 @@
 
 import type React from "react"
 import Link from "next/link"
-import { Building, BookOpen, LayoutDashboard, Settings, Users, ChevronRight, Menu, X } from "lucide-react"
+import { Building, BookOpen, LayoutDashboard, Settings, Users, ChevronRight, Menu, X, BookAIcon } from "lucide-react"
 import { AuthProvider } from "@/components/auth-provider"
 import ProtectedRoute from "@/components/protected-route"
 import Header from "@/components/header"
@@ -17,6 +17,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     { href: "/admin/organization", icon: Building, label: "Organization" },
     { href: "/admin/subjects", icon: BookOpen, label: "Subjects & Topics" },
     { href: "/admin/users", icon: Users, label: "Users" },
+    { href: "/admin/quizupload", icon: BookAIcon, label: "Quiz Upload" },
     { href: "/admin/settings", icon: Settings, label: "Settings" },
   ]
 
