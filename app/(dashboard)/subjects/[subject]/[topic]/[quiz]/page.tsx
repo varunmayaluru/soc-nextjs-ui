@@ -15,6 +15,8 @@ export default function QuizPage({
 }: {
   params: { subject: string; topic: string; quiz: string }
 }) {
+
+  console.log(params)
   const subject = getSubject(params.subject)
   const topic = getTopic(params.subject, params.topic)
   const quiz = getQuiz(params.topic, params.quiz)

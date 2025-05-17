@@ -42,7 +42,7 @@ export default function SubjectPage({ params }: { params: { subject: string } })
   useEffect(() => {
     const fetchProgressData = async () => {
       try {
-       const response = await api.get<any>("user-topic-progress/topic-progress/1")
+        const response = await api.get<any>("user-topic-progress/topic-progress/1")
         const data = await response.data
         setProgressData(data)
       } catch (error) {
@@ -56,13 +56,13 @@ export default function SubjectPage({ params }: { params: { subject: string } })
   }, [])
 
   // Helper function to get icon and color based on topic name
-  const getTopicVisuals = (topicName: string ,topic_id : number) => {
+  const getTopicVisuals = (topicName: string, topic_id: number) => {
     const name = topicName.toLowerCase()
 
     if (name.includes("arithmetic") || name.includes("number")) {
-      return { icon: "📊", color: "green", path: 'topic/'+topic_id }
+      return { icon: "📊", color: "green", path: 'topic/' + topic_id }
     } else if (name.includes("algebra")) {
-      return { icon: "📈", color: "blue", path:`topic/{topic_id}`}
+      return { icon: "📈", color: "blue", path: `topic/{topic_id}` }
     } else if (name.includes("geometry")) {
       return { icon: "📏", color: "orange", path: `topic/{topic_id}` }
     } else if (name.includes("trigonometry")) {
@@ -138,7 +138,7 @@ export default function SubjectPage({ params }: { params: { subject: string } })
                       </span>
                     </p>
                     <Link
-                      href={`/subjects/${params.subject}/${path}`}
+                      href={`/subjects/${params.subject}/${topic.topic_id}`}
                       className="bg-[#1e74bb] text-white py-2 px-4 rounded-md text-sm flex items-center group-hover:bg-[#1a67a7] transition-all duration-300"
                     >
                       Select a Quiz
