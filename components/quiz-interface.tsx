@@ -90,7 +90,7 @@ export function QuizInterface({
         const id = questionId || "1" // Default to 1 if no questionId provided
         setCurrentQuestionId(Number(id))
 
-        const response = await api.get<Question>(`questions/questions/quiz-question/${id}`)
+        const response = await api.get<Question>(`questions/questions/quiz-question/${id}?quiz_id=${quizId}`)
 
         if (!response.ok) {
           throw new Error(`Failed to fetch question: ${response.status}`)
@@ -140,7 +140,7 @@ export function QuizInterface({
     setSelectedOption(null)
 
     try {
-      const response = await api.get<Question>(`questions/questions/quiz-question/${newQuestionId}`)
+      const response = await api.get<Question>(`questions/questions/quiz-question/${newQuestionId}?quiz_id=${quizId}`)
 
       if (!response.ok) {
         throw new Error(`Failed to fetch question: ${response.status}`)
@@ -283,8 +283,8 @@ export function QuizInterface({
                   <div
                     key={option.quiz_question_option_id}
                     className={`border ${selectedOption === option.quiz_question_option_id
-                        ? "border-[#3373b5] bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
+                      ? "border-[#3373b5] bg-blue-50"
+                      : "border-gray-200 hover:border-gray-300"
                       } rounded-full p-2 flex items-center`}
                   >
                     <div
