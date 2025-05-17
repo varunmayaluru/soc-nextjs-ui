@@ -73,23 +73,16 @@ export default function SubjectPage({ params }: { params: { subject: string } })
         // Get user ID from localStorage or use a default
         const userId = localStorage.getItem("userId") || "1"
 
-        const response = await api.get<TopicProgress[]>(`user-topic-progress/topic-progress/${userId}`)
+        const response = await api.get<TopicProgress[]>(`user-topic-progress/topic-progress/${userId}?subject_id=${params.subject}`)
 
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`)
         }
 
         if (response.data) {
-          // Filter topics by the current subject if needed
-          const filteredData = response.data.filter(
-            (topic) =>
-              // Convert subject ID to string for comparison
-              String(topic.subject_id) === params.subject ||
-              // Also try to match by numeric ID if the param is a number
-              (!isNaN(Number(params.subject)) && topic.subject_id === Number(params.subject)),
-          )
+          setProgressData(response.data)
 
-          setProgressData(filteredData)
+
         } else {
           throw new Error("No data received from API")
         }

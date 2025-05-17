@@ -1,14 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AlertCircle, ChevronLeft, ChevronRight, LinkIcon } from "lucide-react"
+import { AlertCircle, Bot, ChevronLeft, ChevronRight, LinkIcon, Paperclip, Send, User } from "lucide-react"
 import { api } from "@/lib/api-client"
 import Link from "next/link"
 
@@ -31,12 +28,11 @@ interface Question {
   options: Option[]
 }
 
-interface Quiz {
-  quiz_id: number
-  title: string
-  description: string
-  total_questions: number
-  questions: Question[]
+interface Message {
+  id: number
+  sender: "user" | "response"
+  content: string
+  timestamp: string
 }
 
 export function QuizInterface({
@@ -56,10 +52,31 @@ export function QuizInterface({
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [isAnswerChecked, setIsAnswerChecked] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
-  const [currentQuestionId, setCurrentQuestionId] = useState<number | null>(null)
+  const [currentQuestionId, setCurrentQuestionId] = useState<number | null>(1)
   const [totalQuestions, setTotalQuestions] = useState(10)
   const [quizTitle, setQuizTitle] = useState("Algebra Fundamentals Quiz")
   const [subjectName, setSubjectName] = useState("Mathematics / Athematic / Counting and Number Recognition")
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 1,
+      sender: "user",
+      content: "you're a UX writer now. Generate 3 versions of 404 error messages for a ecommerce clothing website.",
+      timestamp: "1 min ago",
+    },
+    {
+      id: 2,
+      sender: "response",
+      content: `Sure! Here are three different versions of 404 error messages for an ecommerce clothing website:
+
+1. Uh-oh! It looks like the page you're looking for isn't here. Please check the URL and try again or return to the homepage to continue shopping.
+
+2. Whoops! We can't seem to find the page you're looking for. Please double-check the URL or use our collection of stylish clothes and accessories.
+
+3. Sorry, the page you're trying to access isn't available. It's possible that the item has sold out or the page has`,
+      timestamp: "Just now",
+    },
+  ])
+  const [newMessage, setNewMessage] = useState("")
 
   useEffect(() => {
     const fetchQuestion = async () => {
@@ -73,7 +90,7 @@ export function QuizInterface({
         const id = questionId || "1" // Default to 1 if no questionId provided
         setCurrentQuestionId(Number(id))
 
-        const response = await api.get<Question>(`questions/questions/quiz-question/1`)
+        const response = await api.get<Question>(`questions/questions/quiz-question/${id}`)
 
         if (!response.ok) {
           throw new Error(`Failed to fetch question: ${response.status}`)
@@ -139,16 +156,39 @@ export function QuizInterface({
     }
   }
 
-  // Generate pagination numbers
-  const generatePaginationNumbers = () => {
-    const numbers = []
-    for (let i = 1; i <= 20; i++) {
-      numbers.push(i)
+  const handleSendMessage = () => {
+    if (newMessage.trim() === "") return
+
+    const userMessage: Message = {
+      id: messages.length + 1,
+      sender: "user",
+      content: newMessage,
+      timestamp: "1 min ago",
     }
-    return numbers
+
+    setMessages([...messages, userMessage])
+    setNewMessage("")
+
+    // Simulate response
+    setTimeout(() => {
+      const responseMessage: Message = {
+        id: messages.length + 2,
+        sender: "response",
+        content: `Sure! Here are three different versions of 404 error messages for an ecommerce clothing website:
+
+1. Uh-oh! It looks like the page you're looking for isn't here. Please check the URL and try again or return to the homepage to continue shopping.
+
+2. Whoops! We can't seem to find the page you're looking for. Please double-check the URL or use our collection of stylish clothes and accessories.
+
+3. Sorry, the page you're trying to access isn't available. It's possible that the item has sold out or the page has`,
+        timestamp: "Just now",
+      }
+      setMessages((prev) => [...prev, responseMessage])
+    }, 1000)
   }
 
-  const paginationNumbers = generatePaginationNumbers()
+  // Generate pagination numbers
+  const paginationNumbers = Array.from({ length: 20 }, (_, i) => i + 1)
 
   // Mock relevant links
   const relevantLinks = [
@@ -160,7 +200,7 @@ export function QuizInterface({
   return (
     <div className="mx-auto">
       {/* Blue header bar */}
-      <div className="bg-[#3373b5] text-white p-4 rounded-t-md flex justify-between items-center">
+      <div className="bg-[#3373b5] text-white p-4 flex justify-between items-center">
         <div className="text-sm font-medium">{subjectName}</div>
         <div className="text-sm font-medium">
           [Quiz {currentQuestionId} of {totalQuestions}]
@@ -172,7 +212,7 @@ export function QuizInterface({
         {paginationNumbers.map((num) => (
           <button
             key={num}
-            className={`min-w-[36px] h-9 flex items-center justify-center mx-1 rounded-md ${num === currentQuestionId ? "text-[#3373b5] font-medium" : "text-gray-500"
+            className={`min-w-[36px] h-9 flex items-center justify-center mx-1 ${num === currentQuestionId ? "text-[#3373b5] font-medium" : "text-gray-500"
               }`}
           >
             {num}
@@ -180,11 +220,11 @@ export function QuizInterface({
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
         {/* Question Panel */}
-        <div className="md:col-span-2">
+        <div className="bg-white p-6">
           {loading ? (
-            <div className="space-y-4 p-6 bg-white rounded-md">
+            <div className="space-y-4">
               <Skeleton className="h-8 w-3/4" />
               <Skeleton className="h-4 w-1/4" />
               <Skeleton className="h-24 w-full" />
@@ -200,7 +240,7 @@ export function QuizInterface({
               </div>
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center h-full p-6 bg-white rounded-md">
+            <div className="flex flex-col items-center justify-center h-full">
               <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
               <p className="text-lg font-medium text-center">{error}</p>
               <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
@@ -208,13 +248,13 @@ export function QuizInterface({
               </Button>
             </div>
           ) : (
-            <div className="bg-white rounded-md p-6">
+            <div>
               {/* Question navigation */}
               <div className="flex justify-between items-center mb-8">
                 <Button
                   variant="outline"
                   size="icon"
-                  className="rounded-full bg-gray-200 hover:bg-gray-300 border-none h-12 w-12"
+                  className="rounded-full bg-gray-300 hover:bg-gray-400 border-none h-12 w-12 flex items-center justify-center"
                   onClick={() => navigateToQuestion("prev")}
                   disabled={currentQuestionId === 1}
                 >
@@ -226,7 +266,7 @@ export function QuizInterface({
                 <Button
                   variant="outline"
                   size="icon"
-                  className="rounded-full bg-gray-200 hover:bg-gray-300 border-none h-12 w-12"
+                  className="rounded-full bg-gray-300 hover:bg-gray-400 border-none h-12 w-12 flex items-center justify-center"
                   onClick={() => navigateToQuestion("next")}
                 >
                   <ChevronRight className="h-6 w-6 text-gray-700" />
@@ -243,12 +283,12 @@ export function QuizInterface({
                   <div
                     key={option.quiz_question_option_id}
                     className={`border ${selectedOption === option.quiz_question_option_id
-                      ? "border-[#3373b5] bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
+                        ? "border-[#3373b5] bg-blue-50"
+                        : "border-gray-200 hover:border-gray-300"
                       } rounded-full p-2 flex items-center`}
                   >
                     <div
-                      className={`${selectedOption === option.quiz_question_option_id ? "bg-[#3373b5]" : ""
+                      className={`${selectedOption === option.quiz_question_option_id ? "bg-[#3373b5]" : "bg-white"
                         } rounded-full flex items-center justify-center ml-2 mr-4`}
                     >
                       <RadioGroupItem
@@ -276,10 +316,10 @@ export function QuizInterface({
 
               {/* Action buttons */}
               <div className="mt-8 flex justify-between">
-                <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-100">
+                <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md">
                   Skip
                 </Button>
-                <Button className="bg-[#3373b5] hover:bg-[#2a5d92]" onClick={checkAnswer}>
+                <Button className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-md" onClick={checkAnswer}>
                   SUBMIT
                 </Button>
               </div>
@@ -305,67 +345,85 @@ export function QuizInterface({
         </div>
 
         {/* Chat Panel */}
-        <div className="md:col-span-2">
-          <Card className="h-full">
-            <CardContent className="p-4">
-              <div className="flex items-center mb-4">
-                <Avatar className="h-8 w-8 mr-2">
-                  <AvatarFallback className="bg-blue-500 text-white">AI</AvatarFallback>
-                </Avatar>
-                <h3 className="font-semibold">Study Assistant</h3>
-              </div>
-              <Separator className="mb-4" />
-              {/* Chat interface would go here */}
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-yellow-100 text-yellow-800">You</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">You</span>
-                      <span className="text-xs text-gray-500">1 min ago</span>
+        <div className="bg-white border-l border-gray-200 flex flex-col h-full">
+          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            {messages.map((message) => (
+              <div key={message.id} className="flex mb-4">
+                {message.sender === "user" ? (
+                  <div className="flex w-full">
+                    <div className="mr-3">
+                      <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
+                        <User className="h-5 w-5 text-amber-600" />
+                      </div>
                     </div>
-                    <p className="text-sm mt-1">
-                      you're a UX writer now. Generate 3 versions of 404 error messages for a ecommerce clothing
-                      website.
-                    </p>
+                    <div className="flex-1">
+                      <div className="flex items-center">
+                        <span className="font-medium text-sm">You</span>
+                        <span className="text-xs text-gray-500 ml-2">{message.timestamp}</span>
+                        <button className="ml-auto">
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M7 17L17 7M7 7L17 17"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="mt-1 text-sm">{message.content}</div>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="flex w-full">
+                    <div className="mr-3">
+                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                        <Bot className="h-5 w-5 text-green-600" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center">
+                        <span className="font-medium text-sm">Response</span>
+                        <span className="text-xs text-gray-500 ml-2">{message.timestamp}</span>
+                      </div>
+                      <div className="mt-1 text-sm whitespace-pre-wrap">{message.content}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
 
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-green-100 text-green-800">AI</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Response</span>
-                      <span className="text-xs text-gray-500">Just now</span>
-                    </div>
-                    <div className="text-sm mt-1 space-y-2">
-                      <p>
-                        Sure! Here are three different versions of 404 error messages for an ecommerce clothing website:
-                      </p>
-                      <ol className="list-decimal pl-5 space-y-2">
-                        <li>
-                          Uh-oh! It looks like the page you're looking for isn't here. Please check the URL and try
-                          again or return to the homepage to continue shopping.
-                        </li>
-                        <li>
-                          Whoops! We can't seem to find the page you're looking for. Please double-check the URL or use
-                          our collection of stylish clothes and accessories.
-                        </li>
-                        <li>
-                          Sorry, the page you're trying to access isn't available. It's possible that the item has sold
-                          out or the page has
-                        </li>
-                      </ol>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Chat input */}
+          <div className="p-4 border-t border-gray-200">
+            <div className="flex items-center bg-gray-50 rounded-full border border-gray-300">
+              <button className="p-2 text-gray-400">
+                <Paperclip className="h-5 w-5" />
+              </button>
+              <input
+                type="text"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type message..."
+                className="flex-1 bg-transparent border-none focus:ring-0 py-2 px-3 text-sm"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSendMessage()
+                  }
+                }}
+              />
+              <button className="p-2 text-gray-400" onClick={handleSendMessage}>
+                <Send className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

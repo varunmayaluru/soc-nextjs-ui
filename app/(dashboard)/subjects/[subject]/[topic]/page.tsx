@@ -34,7 +34,7 @@ export default function TopicPage({
   useEffect(() => {
     const fetchProgressData = async () => {
       try {
-        const response = await api.get<any>(`user-quiz-progress/quiz-progress/1`)
+        const response = await api.get<any>(`user-quiz-progress/quiz-progress/1?subject_id=${params.subject}&topic_id=${params.topic}`)
         const data = await response.data
         setQuizzes(data)
       } catch (error) {

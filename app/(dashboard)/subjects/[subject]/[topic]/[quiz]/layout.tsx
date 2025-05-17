@@ -1,9 +1,9 @@
-import type { ReactNode } from "react"
-
+import type React from "react"
+// Update the layout to remove any padding or max-width constraints
 export default function QuizLayout({
   children,
 }: {
-  children: ReactNode
+  children: React.ReactNode
 }) {
-  return <>{children}</>
+  return <div className="w-full max-w-none p-0">{children}</div>
 }

@@ -26,7 +26,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 function decodeJWT(token: string): UserInfo {
   try {
     // Extract the payload part (second part) of the JWT
-    const base64Url = token.split(" ")[1].split(".")[1]
+    const tokenParts = token.split(" ")
+    const actualToken = tokenParts.length > 1 ? tokenParts[1] : token
+    const base64Url = actualToken.split(".")[1]
     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/")
     const jsonPayload = decodeURIComponent(
       atob(base64)
@@ -41,6 +43,14 @@ function decodeJWT(token: string): UserInfo {
   }
 }
 
+// Function to check if token is expired
+function isTokenExpired(decodedToken: UserInfo): boolean {
+  if (!decodedToken.exp) return false
+
+  // Convert exp to milliseconds and compare with current time
+  return Date.now() >= decodedToken.exp * 1000
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -51,13 +61,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check if user is logged in
     const token = localStorage.getItem("authToken")
     if (token) {
-      setIsLoggedIn(true)
       // Decode and set user info
       const decodedToken = decodeJWT(token)
-      setUserInfo(decodedToken)
+
+      // Check if token is expired
+      if (isTokenExpired(decodedToken)) {
+        // Token is expired, log out
+        logout()
+      } else {
+        setIsLoggedIn(true)
+        setUserInfo(decodedToken)
+      }
     }
     setLoading(false)
   }, [])
+
+  // Periodically check if token is expired
+  useEffect(() => {
+    if (!isLoggedIn || !userInfo) return
+
+    const checkTokenExpiration = () => {
+      if (isTokenExpired(userInfo)) {
+        logout()
+      }
+    }
+
+    // Check every minute
+    const interval = setInterval(checkTokenExpiration, 60000)
+
+    return () => clearInterval(interval)
+  }, [isLoggedIn, userInfo])
 
   const login = (token: string) => {
     localStorage.setItem("authToken", token)

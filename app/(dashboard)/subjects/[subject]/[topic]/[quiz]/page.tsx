@@ -131,7 +131,7 @@ export default function QuizPage({
   }
 
   return (
-    <div>
+    <div className="w-full max-w-none p-0">
       <QuizInterface quizId={params.quiz} subjectId={params.subject} topicId={params.topic} />
     </div>
   )
