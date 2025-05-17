@@ -10,7 +10,7 @@ export type Organization = {
   created_by: string;
 };
 
- export type Subject = {
+export type Subject = {
   organization_id: number;
   subject_id: number;
   subject_name: string;
@@ -18,6 +18,4 @@ export type Organization = {
   created_by: number;
   create_date_time: string;
   update_date_time: string;
-  
-}
-
+};

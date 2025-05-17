@@ -1,253 +1,303 @@
 "use client"
 
-import { useState } from "react"
-import { AlertCircle, ChevronLeft, ChevronRight } from "lucide-react"
-import { useRouter } from "next/navigation"
-import Image from "next/image"
-import SuccessModal from "./success-modal"
+import { useState, useEffect } from "react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Separator } from "@/components/ui/separator"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
+import { AlertCircle, CheckCircle, ChevronLeft, ChevronRight, HelpCircle, XCircle } from "lucide-react"
+import ChatInterface from "@/components/chat-interface"
+import { api } from "@/lib/api-client"
 
-type QuizInterfaceProps = {
-  quiz: any
-  breadcrumb: {
-    subject: string
-    category: string
-    topic: string
-  }
+interface Option {
+  quiz_question_option_id: number
+  option_text: string
+  is_correct: boolean
 }
 
-export default function QuizInterface({ quiz, breadcrumb }: QuizInterfaceProps) {
-  const [selectedOption, setSelectedOption] = useState<number | null>(1)
-  const [currentPage, setCurrentPage] = useState(1)
-  const [showChat, setShowChat] = useState(true)
-  const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const router = useRouter()
+interface Question {
+  question_id: number
+  quiz_id: number
+  quiz_question_text: string
+  difficulty_level: string
+  is_active: boolean
+  is_maths: boolean
+  created_by: number
+  create_date_time: string
+  update_date_time: string | null
+  options: Option[]
+}
 
-  // Options with correct/incorrect flags
-  const quizOptions = [
-    { id: 0, text: "Identify variables, constants, and coefficients", isCorrect: true },
-    { id: 1, text: "Simplify expressions like 3x + 5 - x + 2.", isCorrect: false },
-    { id: 2, text: "Solve equations like 2y + 5 = 11.", isCorrect: true },
-    { id: 3, text: "Translate word problems into simple algebraic", isCorrect: true },
-  ]
+interface Quiz {
+  quiz_id: number
+  title: string
+  description: string
+  total_questions: number
+  questions: Question[]
+}
 
-  const handleOptionSelect = (index: number) => {
-    setSelectedOption(index)
-    const selectedQuizOption = quizOptions.find((option) => option.id === index)
-    if (selectedQuizOption && !selectedQuizOption.isCorrect) {
-      setShowChat(true)
+export function QuizInterface({
+  quizId,
+  questionId,
+  subjectId,
+  topicId,
+}: {
+  quizId: string
+  questionId?: string
+  subjectId?: string
+  topicId?: string
+}) {
+  const [question, setQuestion] = useState<Question | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedOption, setSelectedOption] = useState<number | null>(null)
+  const [isAnswerChecked, setIsAnswerChecked] = useState(false)
+  const [isCorrect, setIsCorrect] = useState(false)
+  const [currentQuestionId, setCurrentQuestionId] = useState<number | null>(null)
+
+  useEffect(() => {
+    const fetchQuestion = async () => {
+      setLoading(true)
+      setError(null)
+      setIsAnswerChecked(false)
+      setSelectedOption(null)
+
+      try {
+        // Use the provided questionId or fetch the first question for the quiz
+        const id = questionId || "1" // Default to 1 if no questionId provided
+        setCurrentQuestionId(Number(id))
+
+        const response = await api.get<Question>(`questions/questions/quiz-question/1`)
+
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch question: ${response.status}`)
+        }
+
+        const data = await response.data
+        setQuestion(data)
+      } catch (err) {
+        console.error("Error fetching question:", err)
+        setError("Failed to load question. Please try again.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchQuestion()
+  }, [quizId, questionId])
+
+  const handleOptionSelect = (optionId: number) => {
+    setSelectedOption(optionId)
+    setIsAnswerChecked(false)
+  }
+
+  const checkAnswer = () => {
+    if (selectedOption === null) return
+
+    const selectedOptionData = question?.options.find((option) => option.quiz_question_option_id === selectedOption)
+
+    setIsCorrect(selectedOptionData?.is_correct || false)
+    setIsAnswerChecked(true)
+  }
+
+  const navigateToQuestion = async (direction: "prev" | "next") => {
+    if (!currentQuestionId) return
+
+    // Simple navigation logic - in a real app, you'd fetch the actual next/prev question IDs
+    const newQuestionId = direction === "next" ? currentQuestionId + 1 : currentQuestionId - 1
+
+    if (newQuestionId < 1) return // Prevent going below question 1
+
+    setCurrentQuestionId(newQuestionId)
+
+    // Reset states
+    setLoading(true)
+    setError(null)
+    setIsAnswerChecked(false)
+    setSelectedOption(null)
+
+    try {
+      const response = await api.get<Question>(`questions/questions/quiz-question/${newQuestionId}`)
+
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch question: ${response.status}`)
+      }
+
+      const data = await response.data
+      setQuestion(data)
+    } catch (err) {
+      console.error("Error fetching question:", err)
+      setError("Failed to load question. Please try again.")
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleSubmit = () => {
-    setShowSuccessModal(true)
-  }
-
-  const handleModalClose = () => {
-    setShowSuccessModal(false)
-    const topicId = quiz.topicId || "arithmetic-number-sense"
-    router.push(`/subjects/${quiz.subjectId}/${topicId}/${quiz.id}/results`)
+  const getDifficultyColor = (level: string) => {
+    switch (level?.toLowerCase()) {
+      case "easy":
+        return "bg-green-100 text-green-800"
+      case "medium":
+        return "bg-yellow-100 text-yellow-800"
+      case "hard":
+        return "bg-red-100 text-red-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
   }
 
   return (
-    <div className="flex h-[calc(100vh-160px)]">
-      {/* Success Modal */}
-      <SuccessModal isOpen={showSuccessModal} onClose={handleModalClose} />
-
-      {/* Left side - Quiz content with scrolling */}
-      <div className="w-full md:w-8/12 p-6 overflow-y-auto">
-        {/* Question navigation */}
-        <div className="flex justify-between items-center mb-6 bg-white rounded-lg p-2 sticky top-0 z-10">
-          <button className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-md">
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-
-          <div className="flex overflow-x-auto space-x-1">
-            {Array.from({ length: 20 }, (_, i) => (
-              <button
-                key={i}
-                className={`w-8 h-8 flex items-center justify-center rounded-md text-sm ${
-                  i + 1 === currentPage
-                    ? "bg-[#1e74bb] text-white"
-                    : i + 1 < currentPage
-                      ? "text-[#1e74bb] border-b-2 border-[#1e74bb]"
-                      : "text-gray-600 hover:bg-gray-100"
-                }`}
-                onClick={() => setCurrentPage(i + 1)}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-
-          <button className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 rounded-md">
-            <ChevronRight className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Quiz content */}
-        <div className="bg-gray-50 rounded-lg p-8 mb-6">
-          <h2 className="text-2xl font-medium text-center mb-6">Algebra Fundamentals Quiz ?</h2>
-
-          <div className="flex justify-center mb-8">
-            <button className="bg-[#1e74bb] text-white py-2 px-6 rounded-md text-sm font-medium">QUIZ 1 TO 20</button>
-          </div>
-
-          <div className="space-y-4 max-w-2xl mx-auto">
-            {quizOptions.map((option) => (
-              <div
-                key={option.id}
-                className={`bg-white border ${
-                  selectedOption === option.id
-                    ? option.isCorrect
-                      ? "border-2 border-green-500"
-                      : "border-2 border-red-500"
-                    : "border-gray-200"
-                } rounded-lg p-4 flex items-center cursor-pointer`}
-                onClick={() => handleOptionSelect(option.id)}
-              >
-                <div
-                  className={`w-6 h-6 rounded-full ${
-                    selectedOption === option.id
-                      ? option.isCorrect
-                        ? "bg-green-500 flex items-center justify-center"
-                        : "bg-red-500 flex items-center justify-center"
-                      : "border-2 border-gray-300"
-                  } mr-4 flex-shrink-0`}
-                >
-                  {selectedOption === option.id && <div className="w-2 h-2 bg-white rounded-full"></div>}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
+      {/* Question Panel */}
+      <div className="md:col-span-2">
+        <Card className="h-full">
+          <CardContent className="p-6">
+            {loading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-8 w-3/4" />
+                <Skeleton className="h-4 w-1/4" />
+                <Skeleton className="h-24 w-full" />
+                <div className="space-y-2 mt-4">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
                 </div>
-                <span>{option.text}</span>
-                {selectedOption === option.id && !option.isCorrect && (
-                  <div className="ml-auto flex items-center text-red-500">
-                    <AlertCircle className="h-4 w-4 mr-1" />
-                    <span className="text-sm">Incorrect</span>
+                <div className="flex justify-between mt-6">
+                  <Skeleton className="h-10 w-24" />
+                  <Skeleton className="h-10 w-24" />
+                </div>
+              </div>
+            ) : error ? (
+              <div className="flex flex-col items-center justify-center h-full">
+                <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+                <p className="text-lg font-medium text-center">{error}</p>
+                <Button variant="outline" className="mt-4" onClick={() => window.location.reload()}>
+                  Try Again
+                </Button>
+              </div>
+            ) : question ? (
+              <div>
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h2 className="text-xl font-bold">Question {currentQuestionId}</h2>
+                    <Badge className={`mt-1 ${getDifficultyColor(question.difficulty_level)}`}>
+                      {question.difficulty_level}
+                    </Badge>
+                    {question.is_maths && (
+                      <Badge variant="outline" className="ml-2 mt-1">
+                        Math
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => navigateToQuestion("prev")}
+                      disabled={currentQuestionId === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" onClick={() => navigateToQuestion("next")}>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="my-6">
+                  <p className="text-lg">{question.quiz_question_text}</p>
+                </div>
+
+                <RadioGroup
+                  value={selectedOption?.toString()}
+                  onValueChange={(value) => handleOptionSelect(Number.parseInt(value))}
+                  className="space-y-3"
+                >
+                  {question.options.map((option) => (
+                    <div
+                      key={option.quiz_question_option_id}
+                      className={`flex items-center space-x-2 p-3 rounded-md border ${isAnswerChecked && option.quiz_question_option_id === selectedOption
+                        ? option.is_correct
+                          ? "border-green-500 bg-green-50"
+                          : "border-red-500 bg-red-50"
+                        : "border-gray-200 hover:border-gray-300"
+                        }`}
+                    >
+                      <RadioGroupItem
+                        value={option.quiz_question_option_id.toString()}
+                        id={`option-${option.quiz_question_option_id}`}
+                      />
+                      <Label htmlFor={`option-${option.quiz_question_option_id}`} className="flex-grow cursor-pointer">
+                        {option.option_text}
+                      </Label>
+                      {isAnswerChecked && option.is_correct && <CheckCircle className="h-5 w-5 text-green-500" />}
+                      {isAnswerChecked && !option.is_correct && option.quiz_question_option_id === selectedOption && (
+                        <XCircle className="h-5 w-5 text-red-500" />
+                      )}
+                    </div>
+                  ))}
+                </RadioGroup>
+
+                <div className="mt-6 flex justify-between">
+                  <Button variant="outline" onClick={() => window.history.back()}>
+                    Back to Quiz
+                  </Button>
+                  <Button onClick={checkAnswer} disabled={selectedOption === null || isAnswerChecked}>
+                    Check Answer
+                  </Button>
+                </div>
+
+                {isAnswerChecked && (
+                  <div
+                    className={`mt-4 p-4 rounded-md ${isCorrect ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}
+                  >
+                    <div className="flex items-center">
+                      {isCorrect ? (
+                        <>
+                          <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                          <p className="font-medium text-green-800">Correct answer!</p>
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="h-5 w-5 text-red-500 mr-2" />
+                          <p className="font-medium text-red-800">Incorrect answer. Try again!</p>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
-            ))}
-          </div>
-
-          <div className="flex justify-between mt-10 max-w-2xl mx-auto">
-            <button className="bg-[#1e74bb] text-white py-2 px-6 rounded-md text-sm font-medium">PREV</button>
-            <button className="bg-[#1e74bb] text-white py-2 px-6 rounded-md text-sm font-medium" onClick={handleSubmit}>
-              SUBMIT
-            </button>
-            <button className="bg-[#1e74bb] text-white py-2 px-6 rounded-md text-sm font-medium">NEXT</button>
-          </div>
-        </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full">
+                <HelpCircle className="h-12 w-12 text-gray-400 mb-4" />
+                <p className="text-lg font-medium text-center">No question found</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Right side - Chat interface */}
-      <div className="hidden md:block w-4/12 border-l border-gray-200 p-6 bg-white overflow-y-auto">
-        <div className="flex flex-col h-full">
-          <div className="flex-grow overflow-y-auto">
-            <div className="flex mb-4">
-              <div className="w-10 h-10 rounded-full overflow-hidden mr-3 flex-shrink-0">
-                <Image src="/abstract-geometric-shapes.png" alt="You" width={40} height={40} className="object-cover" />
-              </div>
-              <div className="bg-gray-100 rounded-lg p-3 max-w-[80%]">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="font-medium text-sm">You</span>
-                  <span className="text-xs text-gray-500">1 min ago</span>
-                </div>
-                <p className="text-sm">
-                  you're a UX writer now. Generate 3 versions of 404 error messages for a ecommerce clothing website.
-                </p>
-              </div>
-              <button className="ml-2 text-gray-400 self-start">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M12.6667 6.00001V2.66668C12.6667 2.48987 12.5964 2.32031 12.4714 2.19528C12.3464 2.07025 12.1768 2.00001 12 2.00001H4.00004C3.82323 2.00001 3.65366 2.07025 3.52864 2.19528C3.40361 2.32031 3.33337 2.48987 3.33337 2.66668V13.3333C3.33337 13.5101 3.40361 13.6797 3.52864 13.8047C3.65366 13.9298 3.82323 14 4.00004 14H12C12.1768 14 12.3464 13.9298 12.4714 13.8047C12.5964 13.6797 12.6667 13.5101 12.6667 13.3333V10"
-                    stroke="#9B9DA6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path d="M5.33337 6.66667L14 6.66667" stroke="#9B9DA6" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M14 6.66667L11.3334 4" stroke="#9B9DA6" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M14 6.66667L11.3334 9.33334" stroke="#9B9DA6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </button>
+      {/* Chat Panel */}
+      <div className="md:col-span-1">
+        <Card className="h-full">
+          <CardContent className="p-4">
+            <div className="flex items-center mb-4">
+              <Avatar className="h-8 w-8 mr-2">
+                <AvatarFallback className="bg-blue-500 text-white">AI</AvatarFallback>
+              </Avatar>
+              <h3 className="font-semibold">Study Assistant</h3>
             </div>
-
-            <div className="flex mb-4 justify-end">
-              <div className="bg-blue-100 rounded-lg p-3 max-w-[80%]">
-                <div className="flex justify-between items-center mb-1">
-                  <span className="font-medium text-sm">Response</span>
-                  <span className="text-xs text-gray-500">Just now</span>
-                </div>
-                <p className="text-sm">
-                  Here are three different versions of 404 error messages for an ecommerce clothing website:
-                </p>
-                <ol className="list-decimal pl-5 mt-2 text-sm">
-                  <li className="mb-1">
-                    Uh-oh! It looks like the page you're looking for isn't here. Please check the URL and try again or
-                    return to the homepage to continue shopping.
-                  </li>
-                  <li className="mb-1">
-                    Whoops! We can't seem to find the page you're looking for. Please double-check the URL or use our
-                    search to find what you need. You can also browse our collection of stylish clothes and accessories.
-                  </li>
-                  <li>
-                    Sorry, the page you're trying to access isn't available. It's possible that the item has sold out or
-                    the page has been moved.
-                  </li>
-                </ol>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Type message..."
-                className="w-full border border-gray-300 rounded-full py-3 pl-5 pr-16"
-              />
-              <div className="absolute inset-y-0 left-3 flex items-center">
-                <button className="text-gray-400 mr-2">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path
-                      d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                      stroke="#9B9DA6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M8 14C8 14 9.5 16 12 16C14.5 16 16 14 16 14"
-                      stroke="#9B9DA6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path d="M9 9H9.01" stroke="#9B9DA6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path
-                      d="M15 9H15.01"
-                      stroke="#9B9DA6"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <button className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-[#1e74bb] text-white p-2 rounded-full">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m22 2-7 20-4-9-9-4Z" />
-                  <path d="M22 2 11 13" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
+            <Separator className="mb-4" />
+            {/* <ChatInterface questionText={question?.quiz_question_text || ""} /> */}
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

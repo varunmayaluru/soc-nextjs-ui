@@ -1,6 +1,5 @@
 "use client"
-import { notFound } from "next/navigation"
-import { getSubject, getTopic, getQuizzes } from "@/lib/data"
+import { getSubject } from "@/lib/data"
 import { api } from "@/lib/api-client"
 import QuizCard from "@/components/quiz-card"
 import {
@@ -12,26 +11,25 @@ import {
 } from "@/components/ui/breadcrumb"
 import { ChevronRight } from "lucide-react"
 import Link from "next/link"
-import { Key, useEffect, useState } from "react"
-import { set } from "date-fns"
+import { type Key, useEffect, useState } from "react"
 
 export default function TopicPage({
   params,
 }: {
-  params: { subject: string; topicId: number }
+  params: { subject: string; topic: string }
 }) {
   const [isLoading, setIsLoading] = useState(true)
   const [quizzes, setQuizzes] = useState<any>([])
 
-  console.log(params.subject, params.topicId)
+  console.log(params.subject, params.topic)
   const subject = getSubject(params.subject)
-  // const topic = getTopic(params.subject, params.topicId)
+  // const topic = getTopic(params.subject, params.topic)
 
   // if (!subject || !topic) {
   //   notFound()
   // }
 
-  // const quizzes = getQuizzes(params.topicId)
+  // const quizzes = getQuizzes(params.topic)
 
   useEffect(() => {
     const fetchProgressData = async () => {
@@ -112,23 +110,40 @@ export default function TopicPage({
         <h1 className="text-2xl font-medium text-gray-600 mb-6">Select a quiz to test your knowledge</h1>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {quizzes.map((quiz: { quiz_id: Key | null | undefined; title: string; description: any; total_questions: any; estimatedTime: any; level: any; icon: any; iconBg: any; progress_percentage: any; progressColor: any; completed_questions: any }, index: number) => (
-            <QuizCard
-              key={quiz.quiz_id}
-              title={quiz.title}
-              description={quiz.description || "Test your knowledge with this quiz on "}
-              questions={quiz.total_questions}
-              minutes={quiz.estimatedTime || 15}
-              difficulty={quiz.level || "Beginner"}
-              href={`/subjects/${params.topicId}/${quiz.quiz_id}`}
-              icon={quiz.icon || quizIcons[index % quizIcons.length]}
-              iconBg={quiz.iconBg || iconBgs[index % iconBgs.length]}
-              progress={quiz.progress_percentage} // Use quiz progress or generate random for demo
-              progressColor={quiz.progressColor || progressColors[index % progressColors.length]}
-              completedQuestions={quiz.completed_questions || 0}
-              totalQuestions={quiz.total_questions || 10}
-            />
-          ))}
+          {quizzes.map(
+            (
+              quiz: {
+                quiz_id: Key | null | undefined
+                title: string
+                description: any
+                total_questions: any
+                estimatedTime: any
+                level: any
+                icon: any
+                iconBg: any
+                progress_percentage: any
+                progressColor: any
+                completed_questions: any
+              },
+              index: number,
+            ) => (
+              <QuizCard
+                key={quiz.quiz_id}
+                title={quiz.title}
+                description={quiz.description || "Test your knowledge with this quiz on "}
+                questions={quiz.total_questions}
+                minutes={quiz.estimatedTime || 15}
+                difficulty={quiz.level || "Beginner"}
+                href={`/subjects/${params.subject}/${params.topic}/${quiz.quiz_id}`}
+                icon={quiz.icon || quizIcons[index % quizIcons.length]}
+                iconBg={quiz.iconBg || iconBgs[index % iconBgs.length]}
+                progress={quiz.progress_percentage} // Use quiz progress or generate random for demo
+                progressColor={quiz.progressColor || progressColors[index % progressColors.length]}
+                completedQuestions={quiz.completed_questions || 0}
+                totalQuestions={quiz.total_questions || 10}
+              />
+            ),
+          )}
         </div>
       </div>
     </div>
