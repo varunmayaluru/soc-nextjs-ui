@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { BookOpen, Users, MessageSquare, Settings, HelpCircle, Home, BarChart } from "lucide-react"
+import { BookOpen, Users, MessageSquare, Settings, HelpCircle, Home, BarChart, User2Icon } from "lucide-react"
 import LogoutButton from "./logout-button"
 
 export default function Sidebar() {
@@ -63,6 +63,16 @@ export default function Sidebar() {
           <Settings className="h-6 w-6" />
           <span className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
             Settings
+          </span>
+        </Link>
+
+        <Link
+          href="/admin"
+          className="p-3 rounded-md text-gray-500 hover:bg-blue-50 hover:text-[#1e74bb] transition-colors relative group">
+          
+          <User2Icon className="h-6 w-6" />
+          <span className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+            Admin Login
           </span>
         </Link>
       </div>
