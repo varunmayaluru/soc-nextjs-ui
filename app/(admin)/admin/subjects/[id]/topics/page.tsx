@@ -32,7 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Subject } from "@/app/Types/types"
+import { Subject } from "@/app/types/types"
 import { is } from "date-fns/locale"
 
 
@@ -57,8 +57,8 @@ export default function TopicsPage() {
   const [searchQuery, setSearchQuery] = useState("")
 
   const subjectId = params.id as string
- 
- const organizationName = localStorage.getItem("organizationName");
+
+  const organizationName = localStorage.getItem("organizationName");
 
 
 
@@ -86,7 +86,7 @@ export default function TopicsPage() {
         description: "Failed to load subject details. Please try again.",
         variant: "destructive",
       })
-     
+
     }
   }
 
@@ -111,7 +111,7 @@ export default function TopicsPage() {
       })
 
       // For demo purposes, set some sample data
-      
+
     } finally {
       setIsLoading(false)
     }
@@ -120,7 +120,7 @@ export default function TopicsPage() {
   // Filter topics based on search query
   const filteredTopics = topics.filter(
     (topic) =>
-      topic.topic_name.toLowerCase().includes(searchQuery.toLowerCase()) 
+      topic.topic_name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   // Delete topic handler
@@ -175,7 +175,7 @@ export default function TopicsPage() {
               <DialogTitle>Add New Topic</DialogTitle>
               <DialogDescription>Create a new topic for {subject?.subject_name}.</DialogDescription>
             </DialogHeader>
-            <TopicForm subjectId={Number.parseInt(subjectId)} subjectName={subject?.subject_name || ""} organizationName={organizationName ||""} onSuccess={() => fetchTopics()} />
+            <TopicForm subjectId={Number.parseInt(subjectId)} subjectName={subject?.subject_name || ""} organizationName={organizationName || ""} onSuccess={() => fetchTopics()} />
           </DialogContent>
         </Dialog>
       </div>
@@ -296,13 +296,13 @@ interface TopicFormProps {
   onSuccess: () => void
 }
 
-function TopicForm({ topic, subjectId,subjectName,organizationName ,onSuccess }: TopicFormProps) {
+function TopicForm({ topic, subjectId, subjectName, organizationName, onSuccess }: TopicFormProps) {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     topic_name: topic?.topic_name || "",
     is_active: topic?.is_active ?? true,
-   
+
   })
 
 
@@ -325,8 +325,8 @@ function TopicForm({ topic, subjectId,subjectName,organizationName ,onSuccess }:
       const payload = {
         ...formData,
         subject_id: subjectId,
-        organization_id: Number.parseInt(organizationId||""), 
-        created_by:101
+        organization_id: Number.parseInt(organizationId || ""),
+        created_by: 101
       }
 
       // This would be replaced with your actual API endpoint
@@ -358,9 +358,9 @@ function TopicForm({ topic, subjectId,subjectName,organizationName ,onSuccess }:
   return (
     <form onSubmit={handleSubmit}>
       <div className="space-y-4 py-4">
-      <div className="space-y-2">
+        <div className="space-y-2">
           <label htmlFor="title" className="text-sm font-medium">
-           Organization <span className="text-red-500">*</span>
+            Organization <span className="text-red-500">*</span>
           </label>
           <Input
             id="Organization"
@@ -371,7 +371,7 @@ function TopicForm({ topic, subjectId,subjectName,organizationName ,onSuccess }:
         </div>
         <div className="space-y-2">
           <label htmlFor="title" className="text-sm font-medium">
-           Subject <span className="text-red-500">*</span>
+            Subject <span className="text-red-500">*</span>
           </label>
           <Input
             id="Subject"
@@ -394,10 +394,10 @@ function TopicForm({ topic, subjectId,subjectName,organizationName ,onSuccess }:
           />
         </div>
 
-       
+
         <div className="flex items-center space-x-2">
           <input
-            type="checkbox" 
+            type="checkbox"
             id="is_active"
             name="is_active"
             checked={formData.is_active}
@@ -405,9 +405,9 @@ function TopicForm({ topic, subjectId,subjectName,organizationName ,onSuccess }:
             className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
           />
           <label htmlFor="is_active" className="text-sm font-medium">
-            Active  
+            Active
           </label>
-          </div>
+        </div>
 
       </div>
 
