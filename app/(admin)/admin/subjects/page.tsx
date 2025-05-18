@@ -32,16 +32,13 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-
-import { Organization, Subject } from "../../../types/types"
+import type { Organization, Subject } from "../../../types/types"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 
 type SubjectsPageViewModel = Subject & {
- organization_name: string;
- 
+  organization_name: string
 }
-
 
 export default function SubjectsPage() {
   const { toast } = useToast()
@@ -51,76 +48,75 @@ export default function SubjectsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
 
+  const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState<number | null>(null)
+
   // Fetch subjects on component mount
-useEffect(() => {
-  const fetchData = async () => {
-    const orgs = await fetchOrganizations();
-    await fetchSubjects(orgs); 
-  };
-
-  fetchData();
-
-}, []);
-
-
- const fetchOrganizations = async (): Promise<Organization[]> => {
-  setIsLoading(true);
-  try {
-    const response = await api.get<Organization[]>(`/organizations/organizations/organizations`);
-    if (response.ok) {
-      const data = response.data;
-      setOrganizations(data);
-      return data;
-    } else {
-      throw new Error("Failed to fetch organizations");
+  useEffect(() => {
+    const fetchData = async () => {
+      const orgs = await fetchOrganizations()
+      await fetchSubjects(orgs)
     }
-  } catch (error) {
-    console.error("Error fetching organizations:", error);
-    toast({
-      title: "Error",
-      description: "Failed to load organizations. Please try again.",
-      variant: "destructive",
-    });
-    return [];
-  } finally {
-    setIsLoading(false);
+
+    fetchData()
+  }, [])
+
+  const fetchOrganizations = async (): Promise<Organization[]> => {
+    setIsLoading(true)
+    try {
+      const response = await api.get<Organization[]>(`/organizations/organizations/organizations`)
+      if (response.ok) {
+        const data = response.data
+        setOrganizations(data)
+        return data
+      } else {
+        throw new Error("Failed to fetch organizations")
+      }
+    } catch (error) {
+      console.error("Error fetching organizations:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load organizations. Please try again.",
+        variant: "destructive",
+      })
+      return []
+    } finally {
+      setIsLoading(false)
+    }
   }
-};
 
   // Fetch subjects from API
   const fetchSubjects = async (orgs: Organization[]) => {
-  setIsLoading(true);
-  try {
-    const response = await api.get<Subject[]>("/subjects/subjects/");
-    if (response.ok) {
-      const subjectsWithOrganizationName = response.data.map((subject) => {
-        const organization = orgs.find((org) => org.organization_id === subject.organization_id);
-        return {
-          ...subject,
-          organization_name: organization ? organization.organization_name : "Unknown",
-        };
-      });
-      setSubjectPageViewModel(subjectsWithOrganizationName);
-    } else {
-      throw new Error("Failed to fetch subjects");
+    setIsLoading(true)
+    try {
+      const response = await api.get<Subject[]>("/subjects/subjects/")
+      if (response.ok) {
+        const subjectsWithOrganizationName = response.data.map((subject) => {
+          const organization = orgs.find((org) => org.organization_id === subject.organization_id)
+          return {
+            ...subject,
+            organization_name: organization ? organization.organization_name : "Unknown",
+          }
+        })
+        setSubjectPageViewModel(subjectsWithOrganizationName)
+      } else {
+        throw new Error("Failed to fetch subjects")
+      }
+    } catch (error) {
+      console.error("Error fetching subjects:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load subjects. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
     }
-  } catch (error) {
-    console.error("Error fetching subjects:", error);
-    toast({
-      title: "Error",
-      description: "Failed to load subjects. Please try again.",
-      variant: "destructive",
-    });
-  } finally {
-    setIsLoading(false);
   }
-};
-
 
   // Filter subjects based on search query
-  let filteredSubjects = SubjectPageViewModel.filter(
-    (subject) =>
-      subject.subject_name.toString().toLowerCase().includes(searchQuery.toLowerCase()) 
+  const filteredSubjects = SubjectPageViewModel.filter((subject) =>
+    subject.subject_name.toString().toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
   // Delete subject handler
@@ -130,7 +126,7 @@ useEffect(() => {
       const response = await api.delete(`/subjects/subjects/${id}`)
 
       if (response.ok) {
-        fetchSubjects(organizations) 
+        fetchSubjects(organizations)
         toast({
           title: "Success",
           description: "Subject deleted successfully",
@@ -153,9 +149,9 @@ useEffect(() => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Subjects Management</h1>
 
-        <Dialog>
+        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
+            <Button onClick={() => setAddDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Add Subject
             </Button>
@@ -165,11 +161,17 @@ useEffect(() => {
               <DialogTitle>Add New Subject</DialogTitle>
               <DialogDescription>Create a new subject for your learning platform.</DialogDescription>
             </DialogHeader>
-            <SubjectForm subject={undefined}  onSuccess={() => fetchSubjects(organizations)}
-                              organizationOptions={organizations.map((org) => ({
-                                  value: org.organization_id,
-                                  label: org.organization_name,
-                                }))} />
+            <SubjectForm
+              subject={undefined}
+              onSuccess={() => {
+                fetchSubjects(organizations)
+                setAddDialogOpen(false) // Close the dialog after success
+              }}
+              organizationOptions={organizations.map((org) => ({
+                value: org.organization_id,
+                label: org.organization_name,
+              }))}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -216,25 +218,31 @@ useEffect(() => {
                   {filteredSubjects.map((subject) => (
                     <TableRow key={subject.subject_id}>
                       <TableCell className="font-medium">{subject.subject_id}</TableCell>
-                       <TableCell>{subject.subject_name}</TableCell>
+                      <TableCell>{subject.subject_name}</TableCell>
                       <TableCell className="font-medium">{subject.organization_name}</TableCell>
-                     
+
                       <TableCell>{new Date(subject.create_date_time).toLocaleDateString()}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
-                          <Link href={`/admin/subjects/${subject.subject_id}/topics`} onClick={() => {
-                            localStorage.setItem("organizationId", subject.organization_id.toString());
-                            localStorage.setItem("organizationName", subject.organization_name.toString());
-                            }}>
+                          <Link
+                            href={`/admin/subjects/${subject.subject_id}/topics`}
+                            onClick={() => {
+                              localStorage.setItem("organizationId", subject.organization_id.toString())
+                              localStorage.setItem("organizationName", subject.organization_name.toString())
+                            }}
+                          >
                             <Button variant="outline" size="sm">
                               <ChevronRight className="h-4 w-4" />
                               <span className="sr-only">View Topics</span>
                             </Button>
                           </Link>
 
-                          <Dialog>
+                          <Dialog
+                            open={editDialogOpen === subject.subject_id}
+                            onOpenChange={(open) => setEditDialogOpen(open ? subject.subject_id : null)}
+                          >
                             <DialogTrigger asChild>
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(subject.subject_id)}>
                                 <Pencil className="h-4 w-4" />
                                 <span className="sr-only">Edit</span>
                               </Button>
@@ -244,11 +252,17 @@ useEffect(() => {
                                 <DialogTitle>Edit Subject</DialogTitle>
                                 <DialogDescription>Update the subject details.</DialogDescription>
                               </DialogHeader>
-                              <SubjectForm subject={subject} onSuccess={() => fetchSubjects(organizations)}
-                              organizationOptions={organizations.map((org) => ({
+                              <SubjectForm
+                                subject={subject}
+                                onSuccess={() => {
+                                  fetchSubjects(organizations)
+                                  setEditDialogOpen(null) // Close the dialog after success
+                                }}
+                                organizationOptions={organizations.map((org) => ({
                                   value: org.organization_id,
                                   label: org.organization_name,
-                                }))} />
+                                }))}
+                              />
                             </DialogContent>
                           </Dialog>
 
@@ -263,8 +277,8 @@ useEffect(() => {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  This will permanently delete the subject "{subject.subject_name}" and all associated topics.
-                                  This action cannot be undone.
+                                  This will permanently delete the subject "{subject.subject_name}" and all associated
+                                  topics. This action cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -292,71 +306,72 @@ useEffect(() => {
   )
 }
 
-
 interface SubjectFormProps {
-  subject?: Subject;
-  onSuccess: () => void;
-  organizationOptions: { value: number; label: string }[];
+  subject?: Subject
+  onSuccess: () => void
+  organizationOptions: { value: number; label: string }[]
 }
 
 export function SubjectForm({ subject, onSuccess, organizationOptions }: SubjectFormProps) {
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast()
+  const [isLoading, setIsLoading] = useState(false)
 
   const [formData, setFormData] = useState({
     subject_name: subject?.subject_name || "",
     organization_id: subject?.organization_id || 0,
     is_active: subject?.is_active ?? true,
     created_by: subject?.created_by || 0, // hardcode or get from session if needed
-  });
+  })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: name === "organization_id" ? +value : value }));
-  };
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: name === "organization_id" ? +value : value }))
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+    e.preventDefault()
+    setIsLoading(true)
 
     try {
       if (!formData.subject_name || !formData.organization_id) {
-        throw new Error("Please fill in all required fields");
+        throw new Error("Please fill in all required fields")
       }
 
       const payload = {
         ...formData,
         update_date_time: new Date().toISOString(),
-      };
+      }
 
       const response = subject
         ? await api.put(`/subjects/subjects/${subject.subject_id}`, payload)
         : await api.post("subjects/subjects/", {
-            ...payload,
-            create_date_time: new Date().toISOString(),
-          });
+          ...payload,
+          create_date_time: new Date().toISOString(),
+        })
 
       if (response.ok) {
         toast({
           title: "Success",
           description: subject ? "Subject updated successfully" : "Subject created successfully",
-        });
-        onSuccess();
-        
+        })
+        onSuccess()
+        // Close the dialog by returning true
+        return true
       } else {
-        throw new Error(subject ? "Failed to update subject" : "Failed to create subject");
+        throw new Error(subject ? "Failed to update subject" : "Failed to create subject")
       }
     } catch (error) {
-      console.error("Error saving subject:", error);
+      console.error("Error saving subject:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
-      });
+      })
+      return false
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   return (
     <form onSubmit={handleSubmit}>
@@ -398,9 +413,7 @@ export function SubjectForm({ subject, onSuccess, organizationOptions }: Subject
             className="h-6 w-11 rounded-full"
             id="is_active"
             checked={formData.is_active}
-            onCheckedChange={(checked) =>
-              setFormData((prev) => ({ ...prev, is_active: checked }))
-            }
+            onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, is_active: checked }))}
           />
         </div>
       </div>
@@ -414,5 +427,5 @@ export function SubjectForm({ subject, onSuccess, organizationOptions }: Subject
         </Button>
       </DialogFooter>
     </form>
-  );
+  )
 }

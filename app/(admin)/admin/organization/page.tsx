@@ -12,7 +12,7 @@ import { Switch } from "@/components/ui/switch"
 import { Pencil, Plus, Search, Filter, ArrowUpDown } from "lucide-react"
 import { useEffect, useState } from "react"
 import type { Organization } from "../../../types/types"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -89,6 +89,7 @@ export default function OrganizationsPage() {
           description: "Organization created successfully.",
         })
         fetchOrganizations() // Refresh the list
+        setShowModal(false) // Ensure dialog closes
       } else {
         throw new Error("Failed to create organization")
       }
@@ -99,6 +100,7 @@ export default function OrganizationsPage() {
         description: "Failed to create organization. Please try again.",
         variant: "destructive",
       })
+      // Don't close dialog on error so user can try again
     }
   }
 
@@ -115,6 +117,7 @@ export default function OrganizationsPage() {
           description: "Organization updated successfully.",
         })
         fetchOrganizations() // Refresh the list
+        setShowModal(false) // Ensure dialog closes
       } else {
         throw new Error("Failed to update organization")
       }
@@ -125,6 +128,7 @@ export default function OrganizationsPage() {
         description: "Failed to update organization. Please try again.",
         variant: "destructive",
       })
+      // Don't close dialog on error so user can try again
     }
   }
 

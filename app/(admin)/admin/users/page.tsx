@@ -28,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
+import { toast } from "sonner"
 
 // Mock data for users
 const users = [
@@ -212,7 +213,17 @@ export default function UsersPage() {
               <Button variant="outline" onClick={() => setShowAddUserDialog(false)}>
                 Cancel
               </Button>
-              <Button className="bg-[#1e74bb] hover:bg-[#1a65a3]">Create User</Button>
+              <Button
+                className="bg-[#1e74bb] hover:bg-[#1a65a3]"
+                onClick={() => {
+                  // Add your user creation logic here
+                  // After successful creation:
+                  toast.success("User created successfully")
+                  setShowAddUserDialog(false)
+                }}
+              >
+                Create User
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
