@@ -12,17 +12,18 @@ import {
 import { ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { type Key, useEffect, useState } from "react"
+import { useParams } from "next/navigation"
 
-export default function TopicPage({
-  params,
-}: {
-  params: { subject: string; topic: string }
-}) {
+export default function TopicPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [quizzes, setQuizzes] = useState<any>([])
 
-  console.log(params.subject, params.topic)
-  const subject = getSubject(params.subject)
+  // console.log(params.subject, params.topic)
+  // const subject = getSubject(params.subject)
+  const params = useParams()
+  const subjectId = params?.subject as string
+  const topicId = params?.topic as string
+
   // const topic = getTopic(params.subject, params.topic)
 
   // if (!subject || !topic) {
@@ -34,7 +35,7 @@ export default function TopicPage({
   useEffect(() => {
     const fetchProgressData = async () => {
       try {
-        const response = await api.get<any>(`user-quiz-progress/quiz-progress/1?subject_id=${params.subject}&topic_id=${params.topic}`)
+        const response = await api.get<any>(`user-quiz-progress/quiz-progress/1?subject_id=${subjectId}&topic_id=${topicId}`)
         const data = await response.data
         setQuizzes(data)
       } catch (error) {
@@ -91,7 +92,7 @@ export default function TopicPage({
             </BreadcrumbSeparator>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link className="text-white" href={`/subjects/${params.subject}`}>
+                <Link className="text-white" href={`/subjects/${subjectId}`}>
                   Topics
                 </Link>
               </BreadcrumbLink>
@@ -134,7 +135,7 @@ export default function TopicPage({
                 questions={quiz.total_questions}
                 minutes={quiz.estimatedTime || 15}
                 difficulty={quiz.level || "Beginner"}
-                href={`/subjects/${params.subject}/${params.topic}/${quiz.quiz_id}`}
+                href={`/subjects/${subjectId}/${topicId}/${quiz.quiz_id}`}
                 icon={quiz.icon || quizIcons[index % quizIcons.length]}
                 iconBg={quiz.iconBg || iconBgs[index % iconBgs.length]}
                 progress={quiz.progress_percentage} // Use quiz progress or generate random for demo

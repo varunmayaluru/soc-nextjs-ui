@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useParams } from "next/navigation"
 
 // Updated interface to match the API response
 interface TopicProgress {
@@ -19,49 +20,52 @@ interface TopicProgress {
   topic_name: string
 }
 
-export default function SubjectPage({ params }: { params: { subject: string } }) {
+export default function SubjectPage() {
   const [progressData, setProgressData] = useState<TopicProgress[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [subjectName, setSubjectName] = useState<string>("")
 
-  // Get subject name from the URL parameter and format it
-  useEffect(() => {
-    const formatSubjectName = () => {
-      let name = ""
+  const params = useParams()
+  const subjectId = params?.subject as string
 
-      switch (params.subject) {
-        case "arthematic":
-          name = "Mathematics"
-          break
-        case "science":
-          name = "Science"
-          break
-        case "english":
-          name = "English"
-          break
-        case "social-studies":
-          name = "Social Studies"
-          break
-        case "computer-science":
-          name = "Computer Science"
-          break
-        case "hindhi":
-          name = "Hindi"
-          break
-        default:
-          // Capitalize the first letter of each word
-          name = params.subject
-            .split("-")
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ")
-      }
+  // // Get subject name from the URL parameter and format it
+  // useEffect(() => {
+  //   const formatSubjectName = () => {
+  //     let name = ""
 
-      setSubjectName(name)
-    }
+  //     switch (params.subject) {
+  //       case "arthematic":
+  //         name = "Mathematics"
+  //         break
+  //       case "science":
+  //         name = "Science"
+  //         break
+  //       case "english":
+  //         name = "English"
+  //         break
+  //       case "social-studies":
+  //         name = "Social Studies"
+  //         break
+  //       case "computer-science":
+  //         name = "Computer Science"
+  //         break
+  //       case "hindhi":
+  //         name = "Hindi"
+  //         break
+  //       default:
+  //         // Capitalize the first letter of each word
+  //         name = params.subject
+  //           .split("-")
+  //           .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+  //           .join(" ")
+  //     }
 
-    formatSubjectName()
-  }, [params.subject])
+  //     setSubjectName(name)
+  //   }
+
+  //   formatSubjectName()
+  // }, [params.subject])
 
   // Fetch progress data
   useEffect(() => {
@@ -73,7 +77,7 @@ export default function SubjectPage({ params }: { params: { subject: string } })
         // Get user ID from localStorage or use a default
         const userId = localStorage.getItem("userId") || "1"
 
-        const response = await api.get<TopicProgress[]>(`user-topic-progress/topic-progress/${userId}?subject_id=${params.subject}`)
+        const response = await api.get<TopicProgress[]>(`user-topic-progress/topic-progress/${userId}?subject_id=${subjectId}`)
 
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`)
@@ -95,7 +99,7 @@ export default function SubjectPage({ params }: { params: { subject: string } })
     }
 
     fetchProgressData()
-  }, [params.subject])
+  }, [subjectId])
 
   // Helper function to get icon and color based on topic name
   const getTopicVisuals = (topicName: string, topic_id: number) => {
@@ -124,7 +128,7 @@ export default function SubjectPage({ params }: { params: { subject: string } })
     }
 
     // Create a path using the topic_id
-    const path = `/subjects/${params.subject}/${topic_id}`
+    const path = `/subjects/${subjectId}/${topic_id}`
 
     return { icon, color, path }
   }

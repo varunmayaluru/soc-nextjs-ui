@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import { QuizInterface } from "@/components/quiz-interface"
+import { useParams } from "next/navigation"
 
 // Define the Question interface
 interface Question {
@@ -27,14 +28,15 @@ interface Quiz {
   questions: Question[]
 }
 
-export default function QuizPage({
-  params,
-}: {
-  params: { subject: string; topic: string; quiz: string }
-}) {
+export default function QuizPage() {
   const [quiz, setQuiz] = useState<Quiz | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const params = useParams()
+  const subjectId = params?.subject as string
+  const topicId = params?.topic as string
+  const quizId = params?.quiz as string
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -42,7 +44,7 @@ export default function QuizPage({
         setIsLoading(true)
         setError(null)
 
-        console.log(params.subject, params.topic, params.quiz)
+
 
         // Get user ID from localStorage or use a default
         const userId = localStorage.getItem("userId") || "1"
@@ -132,7 +134,7 @@ export default function QuizPage({
 
   return (
     <div className="w-full max-w-none p-0">
-      <QuizInterface quizId={params.quiz} subjectId={params.subject} topicId={params.topic} />
+      <QuizInterface quizId={quizId} subjectId={subjectId} topicId={topicId} />
     </div>
   )
 }
