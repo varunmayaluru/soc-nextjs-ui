@@ -257,7 +257,7 @@ export function QuizInterface({
                   <ChevronLeft className="h-6 w-6 text-white" />
                 </Button>
                 <h2 className="text-xl font-bold">
-                  {currentQuestionId}. {question?.quiz_question_text || quizTitle} ?
+                  {currentQuestionId}. {question?.quiz_question_text || quizTitle}
                 </h2>
                 <Button
                   variant="outline"
