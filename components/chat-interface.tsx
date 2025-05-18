@@ -1,7 +1,7 @@
 "use client"
 
+import { Bot, User } from "lucide-react"
 import { useState } from "react"
-import { Send } from "lucide-react"
 
 type Message = {
   id: number
@@ -21,7 +21,7 @@ export default function ChatInterface() {
     {
       id: 2,
       sender: "assistant",
-      content: `Here are three different versions of 404 error messages for an ecommerce clothing website:
+      content: `Sure! Here are three different versions of 404 error messages for an ecommerce clothing website:
 
 1. Uh-oh! It looks like the page you're looking for isn't here. Please check the URL and try again or return to the homepage to continue shopping.
 
@@ -64,34 +64,39 @@ export default function ChatInterface() {
     <div className="flex flex-col h-[calc(100vh-300px)]">
       <div className="flex-1 overflow-y-auto mb-4 space-y-4">
         {messages.map((message) => (
-          <div key={message.id} className="flex mb-4">
+          <div key={message.id} className="mb-6">
             {message.sender === "assistant" ? (
-              <div className="flex">
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex-shrink-0 mr-2"></div>
-                <div className="max-w-[85%]">
-                  <div className="font-medium text-sm">
-                    Response <span className="text-xs text-gray-500 font-normal">{message.timestamp}</span>
+              <div className="mb-6">
+                <div className="flex items-center mb-2">
+                  <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                    <Bot />
                   </div>
-                  <div className="bg-blue-100 p-3 rounded-lg mt-1 text-sm whitespace-pre-wrap">{message.content}</div>
-                  <div className="flex mt-2 space-x-2">
-                    <button className="bg-gray-200 text-xs px-2 py-1 rounded-full">👍</button>
-                    <button className="bg-gray-200 text-xs px-2 py-1 rounded-full">👎</button>
-                    <button className="bg-blue-100 text-xs px-2 py-1 rounded-full text-blue-700">
-                      Generate Response
-                    </button>
-                    <button className="bg-blue-100 text-xs px-2 py-1 rounded-full text-blue-700">Copy</button>
-                  </div>
+                  <div className="font-medium">Response</div>
+                  <div className="text-xs text-gray-500 ml-2">{message.timestamp}</div>
                 </div>
+                <div className="bg-gray-100 p-4 rounded-lg text-sm whitespace-pre-wrap">{message.content}</div>
               </div>
             ) : (
-              <div className="flex">
-                <div className="w-8 h-8 rounded-full bg-amber-500 flex-shrink-0 mr-2"></div>
-                <div className="max-w-[85%]">
-                  <div className="font-medium text-sm">
-                    You <span className="text-xs text-gray-500 font-normal">{message.timestamp}</span>
+              <div className="mb-6">
+                <div className="flex items-center mb-2">
+                  <div className="w-8 h-8 rounded-full bg-amber-100 overflow-hidden mr-2">
+                    <User />
                   </div>
-                  <div className="bg-gray-100 p-3 rounded-lg mt-1 text-sm">{message.content}</div>
+                  <div className="font-medium">You</div>
+                  <div className="text-xs text-gray-500 ml-2">{message.timestamp}</div>
+                  <button className="ml-auto">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        d="M7 17L17 7M7 7L17 17"
+                        stroke="#CCCCCC"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
                 </div>
+                <div className="text-sm">{message.content}</div>
               </div>
             )}
           </div>
@@ -99,24 +104,73 @@ export default function ChatInterface() {
       </div>
 
       <div className="border-t pt-4">
-        <div className="relative">
+        <div className="flex items-center bg-white rounded-full border border-gray-300">
+          <button className="p-3 text-gray-400">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M12 18.5C15.5899 18.5 18.5 15.5899 18.5 12C18.5 8.41015 15.5899 5.5 12 5.5C8.41015 5.5 5.5 8.41015 5.5 12C5.5 15.5899 8.41015 18.5 12 18.5Z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M19 19L17.5 17.5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+          <button className="p-3 text-gray-400">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M17 8L12 3L7 8"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path d="M12 3V15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
           <input
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type message..."
-            className="w-full border border-gray-300 rounded-full py-2 pl-4 pr-10"
+            className="flex-1 border-none focus:ring-0 py-3 px-3 text-sm"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 handleSendMessage()
               }
             }}
           />
-          <button
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-[#1e74bb]"
-            onClick={handleSendMessage}
-          >
-            <Send className="h-5 w-5" />
+          <button className="p-3 text-gray-400 hover:text-blue-500" onClick={handleSendMessage}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                d="M22 2L11 13"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M22 2L15 22L11 13L2 9L22 2Z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </button>
         </div>
       </div>

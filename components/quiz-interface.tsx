@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AlertCircle, Bot, ChevronLeft, ChevronRight, LinkIcon, Paperclip, Send, User } from "lucide-react"
+import { AlertCircle, Bot, Check, ChevronLeft, ChevronRight, LinkIcon, SquarePen, ThumbsDown, ThumbsUp, User, X } from "lucide-react"
 import { api } from "@/lib/api-client"
 import Link from "next/link"
 
@@ -77,6 +77,7 @@ export function QuizInterface({
     },
   ])
   const [newMessage, setNewMessage] = useState("")
+
 
   useEffect(() => {
     const fetchQuestion = async () => {
@@ -198,21 +199,11 @@ export function QuizInterface({
   ]
 
   return (
-    <div className="mx-auto">
+    <div className="mx-auto bg-white">
       {/* Blue header bar */}
 
       {/* Pagination */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2 flex overflow-x-auto">
-        {paginationNumbers.map((num) => (
-          <button
-            key={num}
-            className={`min-w-[36px] h-9 flex items-center justify-center mx-1 ${num === currentQuestionId ? "text-[#3373b5] font-medium" : "text-gray-500"
-              }`}
-          >
-            {num}
-          </button>
-        ))}
-      </div>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
         {/* Question Panel */}
@@ -243,16 +234,27 @@ export function QuizInterface({
             </div>
           ) : (
             <div>
+              <div className="bg-white border-b border-t mb-4 border-gray-200 px-4 pt-2 flex overflow-x-auto">
+                {paginationNumbers.map((num) => (
+                  <button
+                    key={num}
+                    className={`min-w-[36px] h-9 flex items-center justify-center mx-1 ${num === currentQuestionId ? "text-[#3373b5] font-bold border-b border-[#3373b5]" : "text-gray-500"
+                      }`}
+                  >
+                    {num}
+                  </button>
+                ))}
+              </div>
               {/* Question navigation */}
-              <div className="flex justify-between items-center mb-8">
+              <div className="bg-[#F7F8FA] rounded-tl-2xl rounded-tr-2xl flex justify-between items-center mb-4 py-4 px-4">
                 <Button
                   variant="outline"
                   size="icon"
-                  className="rounded-full bg-gray-300 hover:bg-gray-400 border-none h-12 w-12 flex items-center justify-center"
+                  className="rounded-full bg-[#1E74BB] hover:bg-gray-400 disabled:bg-gray-400 border-none h-12 w-12 flex items-center justify-center"
                   onClick={() => navigateToQuestion("prev")}
                   disabled={currentQuestionId === 1}
                 >
-                  <ChevronLeft className="h-6 w-6 text-gray-700" />
+                  <ChevronLeft className="h-6 w-6 text-white" />
                 </Button>
                 <h2 className="text-xl font-bold">
                   {currentQuestionId}. {question?.quiz_question_text || quizTitle} ?
@@ -260,10 +262,10 @@ export function QuizInterface({
                 <Button
                   variant="outline"
                   size="icon"
-                  className="rounded-full bg-gray-300 hover:bg-gray-400 border-none h-12 w-12 flex items-center justify-center"
+                  className="rounded-full bg-[#1E74BB] hover:bg-[#1E74BB84] disabled:bg-gray-400 border-none h-12 w-12 flex items-center justify-center"
                   onClick={() => navigateToQuestion("next")}
                 >
-                  <ChevronRight className="h-6 w-6 text-gray-700" />
+                  <ChevronRight className="h-6 w-6 text-white" />
                 </Button>
               </div>
 
@@ -271,124 +273,134 @@ export function QuizInterface({
               <RadioGroup
                 value={selectedOption?.toString()}
                 onValueChange={(value) => handleOptionSelect(Number.parseInt(value))}
-                className="space-y-4"
+                className="space-y-4 px-4"
               >
-                {question?.options.map((option) => (
-                  <div
-                    key={option.quiz_question_option_id}
-                    className={`border ${selectedOption === option.quiz_question_option_id
-                      ? "border-[#3373b5] bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
-                      } rounded-full p-2 flex items-center`}
-                  >
+                {question?.options.map((option) => {
+                  const isSelected = selectedOption === option.quiz_question_option_id;
+                  const isCorrect = option.is_correct;
+
+                  return (
                     <div
-                      className={`${selectedOption === option.quiz_question_option_id ? "bg-[#3373b5]" : "bg-white"
-                        } rounded-full flex items-center justify-center ml-2 mr-4`}
-                    >
-                      <RadioGroupItem
-                        value={option.quiz_question_option_id.toString()}
-                        id={`option-${option.quiz_question_option_id}`}
-                        className={selectedOption === option.quiz_question_option_id ? "text-white border-white" : ""}
-                      />
-                    </div>
-                    <Label
-                      htmlFor={`option-${option.quiz_question_option_id}`}
-                      className={`flex-grow cursor-pointer py-2 ${selectedOption === option.quiz_question_option_id ? "text-[#3373b5] font-medium" : ""
+                      key={option.quiz_question_option_id}
+                      className={`border rounded-full flex items-center 
+                         ${isSelected
+                          ? isAnswerChecked
+                            ? isCorrect
+                              ? "border-green-500 bg-white border-2"
+                              : "border-red-500 bg-white border-2"
+                            : "border-[#3373b5] bg-white border-2"
+                          : "border-gray-200 bg-[#F1F1F1] hover:border-gray-300"
                         }`}
                     >
-                      {option.option_text}
-                    </Label>
-                    {isAnswerChecked && option.is_correct && selectedOption === option.quiz_question_option_id && (
-                      <div className="mr-2 text-green-500">✓</div>
-                    )}
-                    {isAnswerChecked && !option.is_correct && selectedOption === option.quiz_question_option_id && (
-                      <div className="mr-2 text-red-500">✗</div>
-                    )}
-                  </div>
-                ))}
+                      <div
+                        className={`
+                              rounded-full flex items-center justify-center ml-4 mr-4
+                              ${isSelected
+                            ? isAnswerChecked
+                              ? isCorrect
+                                ? "bg-[#C2E6B1]"
+                                : "bg-red-100"
+                              : "bg-[#3373b5]"
+                            : "bg-white"
+                          }`}
+                      >
+                        <RadioGroupItem
+                          value={option.quiz_question_option_id.toString()}
+                          id={`option-${option.quiz_question_option_id}`}
+                          className={`
+                                h-5 w-5 
+                                ${isSelected
+                              ? isAnswerChecked
+                                ? isCorrect
+                                  ? "border-green-500 ring-2 text-green-700 ring-green-200"
+                                  : "border-red-500 ring-2 text-red-700 ring-red-200"
+                                : "border-[#3373b5] text-[#3373b5]"
+                              : "border-gray-300"
+                            }
+            `}
+                        />
+                      </div>
+                      <Label
+                        htmlFor={`option-${option.quiz_question_option_id}`}
+                        className={`flex-grow cursor-pointer p-6 
+                          ${isSelected ? "text-[#3373b5] font-medium" : ""}
+                        `}
+                      >
+                        {option.option_text}
+                      </Label>
+
+                    </div>
+                  );
+                })}
               </RadioGroup>
 
+
               {/* Action buttons */}
-              <div className="mt-8 flex justify-between">
-                <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-100 rounded-md">
+              <div className="mt-8 bg-[#F7F8FA] p-4 rounded-bl-2xl rounded-br-2xl flex justify-between">
+                <Button variant="outline" className="border-gray-300 text-gray-600 bg-white hover:bg-gray-100 rounded-md">
                   Skip
                 </Button>
-                <Button className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-md" onClick={checkAnswer}>
+                <Button className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6" onClick={checkAnswer}>
                   SUBMIT
                 </Button>
               </div>
 
-              {/* Relevant links section */}
-              <div className="mt-12 bg-gray-100 p-4 rounded-md">
-                <h3 className="text-lg font-bold mb-4">Relevant links</h3>
-                <div className="flex flex-wrap gap-4">
-                  {relevantLinks.map((link, index) => (
-                    <Link
-                      key={index}
-                      href={link.href}
-                      className="flex items-center text-sm text-gray-700 hover:text-[#3373b5]"
-                    >
-                      <LinkIcon className="h-4 w-4 mr-1" />
-                      {link.title}
-                    </Link>
-                  ))}
+
+              {/* correct wrong answer banner */}
+              {isAnswerChecked && (
+                <div className="flex flex-col items-center">
+                  <div className={`mt-4 p-4 w-[300px] text-center inline-block rounded-md ${isCorrect ? "bg-[#C2E6B1] text-black" : "bg-[#E87E7B] text-white"}`}>
+                    {(isCorrect ? (
+                      <div className="flex items-center">
+                        <ThumbsUp className="mr-4" />
+                        <div className="text-center"><span className="font-bold">Correct!</span> Great Job</div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <ThumbsDown className="mr-4" />
+                        <div className="text-center"><span className="font-bold">Wrong!</span> Better luck next time</div>
+                      </div>
+                    )
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Relevant links section */}
+
             </div>
           )}
         </div>
 
         {/* Chat Panel */}
-        <div className="bg-white border-l border-gray-200 flex flex-col h-full">
-          <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <div className="bg-white border-l border-gray-200 flex flex-col overflow-auto" style={{ height: "calc(100vh - 342px)" }}>
+          <div className="flex-1 overflow-y-auto p-8 space-y-6">
             {messages.map((message) => (
-              <div key={message.id} className="flex mb-4">
+              <div key={message.id} className="mb-6">
                 {message.sender === "user" ? (
-                  <div className="flex w-full">
-                    <div className="mr-3">
-                      <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center">
-                        <User className="h-5 w-5 text-amber-600" />
+                  <div className="mb-6">
+                    <div className="flex items-center mb-2 relative top-4 left-[-6px]">
+                      <div className="w-8 h-8 rounded-sm bg-amber-100 flex items-center justify-center overflow-hidden mr-2">
+                        <User />
                       </div>
+                      <div className="font-medium">You</div>
+                      <div className="text-xs text-gray-500 ml-2">{message.timestamp}</div>
+                      <button className="ml-auto">
+                        <SquarePen size={14} className="text-gray-400" />
+                      </button>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        <span className="font-medium text-sm">You</span>
-                        <span className="text-xs text-gray-500 ml-2">{message.timestamp}</span>
-                        <button className="ml-auto">
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              d="M7 17L17 7M7 7L17 17"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                      <div className="mt-1 text-sm">{message.content}</div>
-                    </div>
+                    <div className="text-sm pl-10">{message.content}</div>
                   </div>
                 ) : (
-                  <div className="flex w-full">
-                    <div className="mr-3">
-                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                        <Bot className="h-5 w-5 text-green-600" />
+                  <div className="mb-6">
+                    <div className="flex items-center mb-2 relative top-4 left-[-6px]">
+                      <div className="w-8 h-8 rounded-sm bg-green-200 flex items-center justify-center mr-2">
+                        <Bot />
                       </div>
+                      <div className="font-medium">Response</div>
+                      <div className="text-xs text-gray-500 ml-2">{message.timestamp}</div>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        <span className="font-medium text-sm">Response</span>
-                        <span className="text-xs text-gray-500 ml-2">{message.timestamp}</span>
-                      </div>
-                      <div className="mt-1 text-sm whitespace-pre-wrap">{message.content}</div>
-                    </div>
+                    <div className="bg-gray-100  rounded-lg text-sm whitespace-pre-wrap pl-10 py-4 pr-4">{message.content}</div>
                   </div>
                 )}
               </div>
@@ -397,27 +409,98 @@ export function QuizInterface({
 
           {/* Chat input */}
           <div className="p-4 border-t border-gray-200">
-            <div className="flex items-center bg-gray-50 rounded-full border border-gray-300">
-              <button className="p-2 text-gray-400">
-                <Paperclip className="h-5 w-5" />
+            <div className="flex items-center bg-white rounded-full border border-gray-300">
+              <button className="p-3 text-gray-400">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M12 18.5C15.5899 18.5 18.5 15.5899 18.5 12C18.5 8.41015 15.5899 5.5 12 5.5C8.41015 5.5 5.5 8.41015 5.5 12C5.5 15.5899 8.41015 18.5 12 18.5Z"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M19 19L17.5 17.5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+              <button className="p-3 text-gray-400">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M17 8L12 3L7 8"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M12 3V15"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </button>
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Type message..."
-                className="flex-1 bg-transparent border-none focus:ring-0 py-2 px-3 text-sm"
+                className="flex-1 border-none focus:ring-0 py-3 px-3 text-sm"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     handleSendMessage()
                   }
                 }}
               />
-              <button className="p-2 text-gray-400" onClick={handleSendMessage}>
-                <Send className="h-5 w-5" />
+              <button className="p-3 text-gray-400 hover:text-blue-500" onClick={handleSendMessage}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M22 2L11 13"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M22 2L15 22L11 13L2 9L22 2Z"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </button>
             </div>
           </div>
+        </div>
+
+      </div>
+      <div className="mt-4 bg-gray-100 p-8 rounded-md">
+        <h3 className="text-lg font-bold mb-4">Relevant links</h3>
+        <div className="flex flex-wrap gap-4">
+          {relevantLinks.map((link, index) => (
+            <Link
+              key={index}
+              href={link.href}
+              className="flex items-center text-sm text-gray-700 hover:text-[#3373b5]"
+            >
+              <LinkIcon className="h-4 w-4 mr-1" />
+              {link.title}
+            </Link>
+          ))}
         </div>
       </div>
     </div>
