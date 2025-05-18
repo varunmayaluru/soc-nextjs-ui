@@ -58,7 +58,10 @@ export default function Dashboard() {
         }
 
         const user = userResponse.data
+        console.log(user)
         const userId = user.user_id.toString()
+
+
         localStorage.setItem("organizationId", user.organization_id.toString())
         localStorage.setItem("userId", userId)
 

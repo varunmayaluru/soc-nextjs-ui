@@ -57,7 +57,7 @@ export default function TopicsPage() {
 
   const subjectId = params.id as string
 
-  const organizationName = localStorage.getItem("organizationName")
+  const organizationName = localStorage.getItem("organizationId")
 
   // Fetch subject and topics on component mount
   useEffect(() => {
@@ -91,7 +91,7 @@ export default function TopicsPage() {
     setIsLoading(true)
     try {
       // This would be replaced with your actual API endpoint
-      const response = await api.get<Topic[]>(`/topics/topics/TopicsBySubjectId/${subjectId}`)
+      const response = await api.get<Topic[]>(`/topics/topics/by-subject/${subjectId}`)
 
       if (response.ok) {
         setTopics(response.data)

@@ -91,7 +91,7 @@ export function QuizInterface({
         const id = questionId || "1" // Default to 1 if no questionId provided
         setCurrentQuestionId(Number(id))
 
-        const response = await api.get<Question>(`questions/questions/quiz-question/${id}?quiz_id=${quizId}`)
+        const response = await api.get<Question>(`questions/questions/quiz-question/${id}?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}`)
 
         if (!response.ok) {
           throw new Error(`Failed to fetch question: ${response.status}`)
@@ -141,7 +141,7 @@ export function QuizInterface({
     setSelectedOption(null)
 
     try {
-      const response = await api.get<Question>(`questions/questions/quiz-question/${newQuestionId}?quiz_id=${quizId}`)
+      const response = await api.get<Question>(`questions/questions/quiz-question/${newQuestionId}?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}`)
 
       if (!response.ok) {
         throw new Error(`Failed to fetch question: ${response.status}`)
