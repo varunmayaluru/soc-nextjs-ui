@@ -200,12 +200,6 @@ export function QuizInterface({
   return (
     <div className="mx-auto">
       {/* Blue header bar */}
-      <div className="bg-[#3373b5] text-white p-4 flex justify-between items-center">
-        <div className="text-sm font-medium">{subjectName}</div>
-        <div className="text-sm font-medium">
-          [Quiz {currentQuestionId} of {totalQuestions}]
-        </div>
-      </div>
 
       {/* Pagination */}
       <div className="bg-white border-b border-gray-200 px-4 py-2 flex overflow-x-auto">

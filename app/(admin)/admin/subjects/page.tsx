@@ -226,10 +226,6 @@ export default function SubjectsPage() {
                         <div className="flex justify-end gap-2">
                           <Link
                             href={`/admin/subjects/${subject.subject_id}/topics`}
-                            onClick={() => {
-                              localStorage.setItem("organizationId", subject.organization_id.toString())
-                              localStorage.setItem("organizationName", subject.organization_name.toString())
-                            }}
                           >
                             <Button variant="outline" size="sm">
                               <ChevronRight className="h-4 w-4" />

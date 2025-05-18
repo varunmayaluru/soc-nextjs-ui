@@ -4,9 +4,11 @@ import { useEffect, useState } from "react"
 import { api } from "@/lib/api-client"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, ChevronRight } from "lucide-react"
 import { QuizInterface } from "@/components/quiz-interface"
 import { useParams } from "next/navigation"
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import Link from "next/link"
 
 // Define the Question interface
 interface Question {
@@ -28,15 +30,80 @@ interface Quiz {
   questions: Question[]
 }
 
+interface Subject {
+
+  organization_id: number
+  subject_id: number
+  subject_name: string
+  is_active: boolean
+  created_by: number
+  create_date_time: number
+  update_date_time: number
+
+}
+
+interface Topic {
+  organization_id: number
+  subject_id: number
+  topic_id: number
+  topic_name: string
+  is_active: boolean
+  created_by: number
+  create_date_time: number
+  update_date_time: number
+}
+
 export default function QuizPage() {
   const [quiz, setQuiz] = useState<Quiz | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [subjectName, setSubjectName] = useState<string>("")
+  const [topicName, setTopicName] = useState<string>("")
 
   const params = useParams()
   const subjectId = params?.subject as string
   const topicId = params?.topic as string
   const quizId = params?.quiz as string
+  let subject = null as unknown as Subject;
+  let topic = null as unknown as Topic;
+
+  useEffect(() => {
+    const fetchSubjectName = async () => {
+      try {
+        const response = await api.get<Subject>(`/subjects/subjects/${subjectId}`)
+
+        if (response.ok) {
+          subject = response.data
+          setSubjectName(subject.subject_name)
+        } else {
+          throw new Error("Failed to fetch subject name")
+        }
+      } catch (error) {
+        console.error("Error fetching subject name:", error)
+      }
+    }
+
+    fetchSubjectName()
+  }, [subjectId])
+
+  useEffect(() => {
+    const fetchTopicName = async () => {
+      try {
+        const response = await api.get<Topic>(`/topics/topics/${topicId}`)
+
+        if (response.ok) {
+          topic = response.data
+          setTopicName(topic.topic_name)
+        } else {
+          throw new Error("Failed to fetch topic name")
+        }
+      } catch (error) {
+        console.error("Error fetching topic name:", error)
+      }
+    }
+
+    fetchTopicName()
+  }, [topicId])
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -133,7 +200,42 @@ export default function QuizPage() {
   }
 
   return (
-    <div className="w-full max-w-none p-0">
+    <div>
+      <div className="bg-[#1e74bb] text-white px-8 py-6 relative">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link className="text-white" href="/">
+                  Home
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator>
+              <ChevronRight className="h-4 w-4" />
+            </BreadcrumbSeparator>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link className="text-white" href={`/subjects/${subjectId}`}>
+                  {subjectName}
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator>
+              <ChevronRight className="h-4 w-4" />
+            </BreadcrumbSeparator>
+            <BreadcrumbItem>
+              <BreadcrumbLink className="text-white" href={`/subjects/${subjectId}/${topicId}`}>{topicName}</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator>
+              <ChevronRight className="h-4 w-4" />
+            </BreadcrumbSeparator>
+            <BreadcrumbItem>
+              <BreadcrumbLink className="text-white">questions</BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
       <QuizInterface quizId={quizId} subjectId={subjectId} topicId={topicId} />
     </div>
   )

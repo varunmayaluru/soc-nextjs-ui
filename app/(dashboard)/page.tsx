@@ -8,14 +8,24 @@ import { api } from "@/lib/api-client"
 // Update the API response type to match the exact structure
 type SubjectApiResponse = {
   subject_id: number
-  organization_id : number
+  organization_id: number
   user_id: number
   total_quizzes: number
   subject_name: string
   completed_quizzes: number
   progress_percentage: number
 
-  }
+}
+
+type User = {
+  email: string
+  first_name: string
+  last_name: string
+  organization_id: number
+  role: string
+  is_active: boolean
+  user_id: number
+}
 
 // Update the Subject type definition
 type Subject = {
@@ -37,19 +47,28 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    async function fetchSubjects() {
+    async function fetchDashboardData() {
       try {
         setIsLoading(true)
 
-        // Use the new API client instead of direct fetch
-        const response = await api.get<SubjectApiResponse[]>("user-subject-progress/subjects/progress/1")
-
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`)
+        // Fetch user info
+        const userResponse = await api.get<User>("users/me")
+        if (!userResponse.ok) {
+          throw new Error(`API error: ${userResponse.status}`)
         }
 
-        // Update the data transformation in the fetchSubjects function
-        const formattedSubjects = response.data.map((subject: SubjectApiResponse) => ({
+        const user = userResponse.data
+        const userId = user.user_id.toString()
+        localStorage.setItem("organizationId", user.organization_id.toString())
+        localStorage.setItem("userId", userId)
+
+        // Fetch subjects using userId
+        const subjectsResponse = await api.get<SubjectApiResponse[]>(`user-subject-progress/subjects/progress/${userId}`)
+        if (!subjectsResponse.ok) {
+          throw new Error(`API error: ${subjectsResponse.status}`)
+        }
+
+        const formattedSubjects = subjectsResponse.data.map((subject: SubjectApiResponse) => ({
           id: subject.subject_id,
           name: subject.subject_name,
           category: getSubjectCategory(subject.subject_name),
@@ -65,14 +84,14 @@ export default function Dashboard() {
         setSubjects(formattedSubjects)
         setError(null)
       } catch (err) {
-        console.error("Error fetching subjects:", err)
-        setError(err instanceof Error ? err.message : "Failed to fetch subjects")
+        console.error("Error in dashboard data fetch:", err)
+        setError(err instanceof Error ? err.message : "Failed to load dashboard data")
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchSubjects()
+    fetchDashboardData()
   }, [])
 
   // Helper functions to assign consistent visual properties
@@ -146,7 +165,7 @@ export default function Dashboard() {
 
       {/* Learning Overview Title */}
       <div className="px-6 pt-6">
-        <h2 className="text-xl font-medium mb-6">Learning Overview</h2>
+        {/* <h2 className="text-xl font-medium mb-6">Learning Overview</h2> */}
 
         {/* Overview Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">

@@ -10,7 +10,7 @@ export default function Header() {
   const { userInfo } = useAuth()
 
   // Get the user's name, fallback to "User" if not available
-  const userName = userInfo?.first_name || "User"
+  const userName = userInfo?.first_name + " " + userInfo?.last_name || "User"
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6">

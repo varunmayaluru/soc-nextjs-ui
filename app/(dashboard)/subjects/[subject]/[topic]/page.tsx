@@ -14,15 +14,42 @@ import Link from "next/link"
 import { type Key, useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 
+interface Subject {
+
+  organization_id: number
+  subject_id: number
+  subject_name: string
+  is_active: boolean
+  created_by: number
+  create_date_time: number
+  update_date_time: number
+
+}
+
+interface Topic {
+  organization_id: number
+  subject_id: number
+  topic_id: number
+  topic_name: string
+  is_active: boolean
+  created_by: number
+  create_date_time: number
+  update_date_time: number
+}
+
 export default function TopicPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [quizzes, setQuizzes] = useState<any>([])
+  const [subjectName, setSubjectName] = useState<string>("")
+  const [topicName, setTopicName] = useState<string>("")
 
   // console.log(params.subject, params.topic)
   // const subject = getSubject(params.subject)
   const params = useParams()
   const subjectId = params?.subject as string
   const topicId = params?.topic as string
+  let subject = null as unknown as Subject;
+  let topic = null as unknown as Topic;
 
   // const topic = getTopic(params.subject, params.topic)
 
@@ -31,6 +58,44 @@ export default function TopicPage() {
   // }
 
   // const quizzes = getQuizzes(params.topic)
+
+  useEffect(() => {
+    const fetchSubjectName = async () => {
+      try {
+        const response = await api.get<Subject>(`/subjects/subjects/${subjectId}`)
+
+        if (response.ok) {
+          subject = response.data
+          setSubjectName(subject.subject_name)
+        } else {
+          throw new Error("Failed to fetch subject name")
+        }
+      } catch (error) {
+        console.error("Error fetching subject name:", error)
+      }
+    }
+
+    fetchSubjectName()
+  }, [subjectId])
+
+  useEffect(() => {
+    const fetchTopicName = async () => {
+      try {
+        const response = await api.get<Topic>(`/topics/topics/${topicId}`)
+
+        if (response.ok) {
+          topic = response.data
+          setTopicName(topic.topic_name)
+        } else {
+          throw new Error("Failed to fetch topic name")
+        }
+      } catch (error) {
+        console.error("Error fetching topic name:", error)
+      }
+    }
+
+    fetchTopicName()
+  }, [topicId])
 
   useEffect(() => {
     const fetchProgressData = async () => {
@@ -82,8 +147,8 @@ export default function TopicPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link className="text-white" href="/subjects">
-                  Subjects
+                <Link className="text-white" href="/">
+                  Home
                 </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
@@ -93,7 +158,7 @@ export default function TopicPage() {
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
                 <Link className="text-white" href={`/subjects/${subjectId}`}>
-                  Topics
+                  {subjectName}
                 </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
@@ -101,7 +166,7 @@ export default function TopicPage() {
               <ChevronRight className="h-4 w-4" />
             </BreadcrumbSeparator>
             <BreadcrumbItem>
-              <BreadcrumbLink className="text-white">quizs</BreadcrumbLink>
+              <BreadcrumbLink className="text-white" href={`/subjects/${subjectId}`}>{topicName}</BreadcrumbLink>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>

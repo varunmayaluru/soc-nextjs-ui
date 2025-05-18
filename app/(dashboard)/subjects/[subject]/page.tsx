@@ -7,6 +7,15 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useParams } from "next/navigation"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import { number } from "framer-motion"
 
 // Updated interface to match the API response
 interface TopicProgress {
@@ -20,6 +29,18 @@ interface TopicProgress {
   topic_name: string
 }
 
+interface Subject {
+
+  organization_id: number
+  subject_id: number
+  subject_name: string
+  is_active: boolean
+  created_by: number
+  create_date_time: number
+  update_date_time: number
+
+}
+
 export default function SubjectPage() {
   const [progressData, setProgressData] = useState<TopicProgress[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -28,44 +49,27 @@ export default function SubjectPage() {
 
   const params = useParams()
   const subjectId = params?.subject as string
+  let subject = null as unknown as Subject;
 
-  // // Get subject name from the URL parameter and format it
-  // useEffect(() => {
-  //   const formatSubjectName = () => {
-  //     let name = ""
+  // Get subject name from the API based on subject ID
+  useEffect(() => {
+    const fetchSubjectName = async () => {
+      try {
+        const response = await api.get<Subject>(`/subjects/subjects/${subjectId}`)
 
-  //     switch (params.subject) {
-  //       case "arthematic":
-  //         name = "Mathematics"
-  //         break
-  //       case "science":
-  //         name = "Science"
-  //         break
-  //       case "english":
-  //         name = "English"
-  //         break
-  //       case "social-studies":
-  //         name = "Social Studies"
-  //         break
-  //       case "computer-science":
-  //         name = "Computer Science"
-  //         break
-  //       case "hindhi":
-  //         name = "Hindi"
-  //         break
-  //       default:
-  //         // Capitalize the first letter of each word
-  //         name = params.subject
-  //           .split("-")
-  //           .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-  //           .join(" ")
-  //     }
+        if (response.ok) {
+          subject = response.data
+          setSubjectName(subject.subject_name)
+        } else {
+          throw new Error("Failed to fetch subject name")
+        }
+      } catch (error) {
+        console.error("Error fetching subject name:", error)
+      }
+    }
 
-  //     setSubjectName(name)
-  //   }
-
-  //   formatSubjectName()
-  // }, [params.subject])
+    fetchSubjectName()
+  }, [subjectId])
 
   // Fetch progress data
   useEffect(() => {
@@ -77,7 +81,9 @@ export default function SubjectPage() {
         // Get user ID from localStorage or use a default
         const userId = localStorage.getItem("userId") || "1"
 
-        const response = await api.get<TopicProgress[]>(`user-topic-progress/topic-progress/${userId}?subject_id=${subjectId}`)
+        const response = await api.get<TopicProgress[]>(
+          `user-topic-progress/topic-progress/${userId}?subject_id=${subjectId}`,
+        )
 
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`)
@@ -85,8 +91,6 @@ export default function SubjectPage() {
 
         if (response.data) {
           setProgressData(response.data)
-
-
         } else {
           throw new Error("No data received from API")
         }
@@ -153,6 +157,21 @@ export default function SubjectPage() {
       <div className="bg-[#1e74bb] text-white p-8">
         <h1 className="text-2xl font-medium mb-2">Welcome to {subjectName}</h1>
         <p>Select a topic below to explore concepts, examples, and practice quizzes.</p>
+      </div>
+
+      {/* Breadcrumb navigation */}
+      <div className="bg-[#1e74bb] pb-2 px-8">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{subjectName}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
       </div>
 
       {/* Topics section */}
