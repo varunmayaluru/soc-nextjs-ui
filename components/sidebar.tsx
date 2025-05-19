@@ -36,15 +36,7 @@ export default function Sidebar() {
           </span>
         </Link>
 
-        <Link
-          href="/users"
-          className="p-3 rounded-md text-gray-500 hover:bg-blue-50 hover:text-[#1e74bb] transition-colors relative group"
-        >
-          <Users className="h-6 w-6" />
-          <span className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-            Users
-          </span>
-        </Link>
+
 
         <Link
           href="/analytics"
@@ -66,15 +58,7 @@ export default function Sidebar() {
           </span>
         </Link>
 
-        <Link
-          href="/admin"
-          className="p-3 rounded-md text-gray-500 hover:bg-blue-50 hover:text-[#1e74bb] transition-colors relative group">
-          
-          <User2Icon className="h-6 w-6" />
-          <span className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-            Admin Login
-          </span>
-        </Link>
+
       </div>
 
       <div className="flex flex-col items-center gap-6">

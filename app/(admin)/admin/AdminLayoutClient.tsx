@@ -25,7 +25,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
   const navItems = [
     { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/admin/organization", icon: Building, label: "Organization" },
-    { href: "/admin/subjects", icon: BookOpen, label: "Subjects & Topics" },
+    { href: "/admin/subjects", icon: BookOpen, label: "Subjects Hub" },
     { href: "/admin/users", icon: Users, label: "Users" },
     { href: "/admin/quizupload", icon: BookAIcon, label: "Quiz Upload" },
     { href: "/admin/settings", icon: Settings, label: "Settings" },
@@ -78,16 +78,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
                       <ChevronRight className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </Link>
                   ))}
-                  <Link
-                    href="/admin/quizzes"
-                    className="group flex items-center justify-between px-3 py-2.5 text-gray-700 rounded-lg hover:bg-brand-light hover:text-brand transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <FileText className="w-5 h-5 text-gray-500 group-hover:text-brand transition-colors" />
-                      <span className="font-medium">Quizzes</span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </Link>
+
                 </nav>
               </div>
 

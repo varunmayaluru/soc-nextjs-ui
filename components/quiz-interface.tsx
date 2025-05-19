@@ -273,7 +273,7 @@ export function QuizInterface({
               <RadioGroup
                 value={selectedOption?.toString()}
                 onValueChange={(value) => handleOptionSelect(Number.parseInt(value))}
-                className="space-y-4 px-4"
+                className="space-y-2 gap-1 px-4 py-4 justify-center"
               >
                 {question?.options.map((option) => {
                   const isSelected = selectedOption === option.quiz_question_option_id;
@@ -282,6 +282,9 @@ export function QuizInterface({
                   return (
                     <div
                       key={option.quiz_question_option_id}
+                      style={{
+                        "width": "650px",
+                      }}
                       className={`border rounded-full flex items-center 
                          ${isSelected
                           ? isAnswerChecked
