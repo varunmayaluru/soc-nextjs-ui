@@ -4,12 +4,11 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import Link from "next/link"
-import { Plus, Pencil, Trash2, Search, BookOpen, ArrowUpDown, FileText } from "lucide-react"
+import { Plus, Pencil, Trash2, ArrowLeft, Search, FileText, ArrowUpDown, Clock, CheckCircle2 } from "lucide-react"
 import { api } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
   Dialog,
@@ -41,8 +40,18 @@ import {
   BreadcrumbList,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
+import { Textarea } from "@/components/ui/textarea"
 
-import type { Subject } from "@/app/types/types"
+type Subject = {
+  subject_id: number
+  subject_name: string
+  organization_id: number
+  is_active: boolean
+  created_by: number
+  create_date_time: string
+}
 
 type Topic = {
   organization_id: number
@@ -54,12 +63,31 @@ type Topic = {
   create_date_time: string
 }
 
-export default function TopicsPage() {
+type Quiz = {
+  quiz_id: number
+  title: string
+  description: string
+  topic_id: number
+  subject_id: number
+  organization_id: number
+  level: string
+  total_questions: number
+  is_active: boolean
+  time_limit: number
+  passing_score: number
+  created_by: number
+  create_date_time: string
+  update_date_time: string
+}
+
+export default function QuizzesPage() {
   const params = useParams()
   const router = useRouter()
   const { toast } = useToast()
+
   const [subject, setSubject] = useState<Subject | null>(null)
-  const [topics, setTopics] = useState<Topic[]>([])
+  const [topic, setTopic] = useState<Topic | null>(null)
+  const [quizzes, setQuizzes] = useState<Quiz[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState<"name" | "date">("name")
@@ -69,14 +97,18 @@ export default function TopicsPage() {
   const [editDialogId, setEditDialogId] = useState<number | null>(null)
 
   const subjectId = params.id as string
+  const topicId = params.topicId as string
 
-  const organizationName = localStorage.getItem("organizationId")
-
-  // Fetch subject and topics on component mount
+  // Fetch subject, topic, and quizzes on component mount
   useEffect(() => {
-    fetchSubject()
-    fetchTopics()
-  }, [subjectId])
+    const fetchData = async () => {
+      await fetchSubject()
+      await fetchTopic()
+      await fetchQuizzes()
+    }
+
+    fetchData()
+  }, [subjectId, topicId])
 
   // Fetch subject from API
   const fetchSubject = async () => {
@@ -98,22 +130,43 @@ export default function TopicsPage() {
     }
   }
 
-  // Fetch topics from API
-  const fetchTopics = async () => {
-    setIsLoading(true)
+  // Fetch topic from API
+  const fetchTopic = async () => {
     try {
-      const response = await api.get<Topic[]>(`/topics/topics/by-subject/${subjectId}`)
+      const response = await api.get<Topic>(`/topics/topics/${topicId}`)
 
       if (response.ok) {
-        setTopics(response.data)
+        setTopic(response.data)
       } else {
-        throw new Error("Failed to fetch topics")
+        throw new Error("Failed to fetch topic")
       }
     } catch (error) {
-      console.error("Error fetching topics:", error)
+      console.error("Error fetching topic:", error)
       toast({
         title: "Error",
-        description: "Failed to load topics. Please try again.",
+        description: "Failed to load topic details. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  // Fetch quizzes from API
+  const fetchQuizzes = async () => {
+    setIsLoading(true)
+    try {
+      // Use the API endpoint for fetching quizzes by topic
+      const response = await api.get<Quiz[]>(`quizzes/quizzes/by-subject-topic/${subjectId}/${topicId}`)
+
+      if (response.ok) {
+        setQuizzes(response.data)
+      } else {
+        throw new Error("Failed to fetch quizzes")
+      }
+    } catch (error) {
+      console.error("Error fetching quizzes:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load quizzes. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -121,12 +174,12 @@ export default function TopicsPage() {
     }
   }
 
-  // Filter and sort topics
-  const filteredTopics = topics
-    .filter((topic) => topic.topic_name.toLowerCase().includes(searchQuery.toLowerCase()))
+  // Filter and sort quizzes
+  const filteredQuizzes = quizzes
+    .filter((quiz) => quiz.title.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       if (sortBy === "name") {
-        return sortOrder === "asc" ? a.topic_name.localeCompare(b.topic_name) : b.topic_name.localeCompare(a.topic_name)
+        return sortOrder === "asc" ? a.title.localeCompare(b.title) : b.title.localeCompare(a.title)
       } else {
         return sortOrder === "asc"
           ? new Date(a.create_date_time).getTime() - new Date(b.create_date_time).getTime()
@@ -134,25 +187,25 @@ export default function TopicsPage() {
       }
     })
 
-  // Delete topic handler
-  const handleDeleteTopic = async (id: number) => {
+  // Delete quiz handler
+  const handleDeleteQuiz = async (id: number) => {
     try {
-      const response = await api.delete(`topics/topics/${id}`)
+      const response = await api.delete(`/quizzes/quizzes/${id}`)
 
       if (response.ok) {
-        setTopics(topics.filter((topic) => topic.topic_id !== id))
+        setQuizzes(quizzes.filter((quiz) => quiz.quiz_id !== id))
         toast({
           title: "Success",
-          description: "Topic deleted successfully",
+          description: "Quiz deleted successfully",
         })
       } else {
-        throw new Error("Failed to delete topic")
+        throw new Error("Failed to delete quiz")
       }
     } catch (error) {
-      console.error("Error deleting topic:", error)
+      console.error("Error deleting quiz:", error)
       toast({
         title: "Error",
-        description: "Failed to delete topic. Please try again.",
+        description: "Failed to delete quiz. Please try again.",
         variant: "destructive",
       })
     }
@@ -160,6 +213,13 @@ export default function TopicsPage() {
 
   const toggleSortOrder = () => {
     setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+  }
+
+  // Format seconds to minutes and seconds
+  const formatTimeLimit = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60)
+    const remainingSeconds = seconds % 60
+    return `${minutes}m ${remainingSeconds}s`
   }
 
   return (
@@ -175,38 +235,52 @@ export default function TopicsPage() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink>{subject?.subject_name || "Topics"}</BreadcrumbLink>
+            <BreadcrumbLink href={`/admin/subjects/${subjectId}/topics`}>{subject?.subject_name}</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink>{topic?.topic_name || "Quizzes"}</BreadcrumbLink>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/admin/subjects/${subjectId}/topics`)}
+            className="mb-2"
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Topics
+          </Button>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BookOpen className="h-6 w-6 text-[#1e74bb]" />
-            {subject?.subject_name || "Loading..."} Topics
+            <FileText className="h-6 w-6 text-[#1e74bb]" />
+            Quizzes for {topic?.topic_name || "Loading..."}
           </h1>
-          <p className="text-gray-500 mt-1">Manage topics for this subject</p>
+          <p className="text-gray-500 mt-1">Manage quizzes for this topic</p>
         </div>
 
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => setAddDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Add Topic
+              Add Quiz
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[550px]">
             <DialogHeader>
-              <DialogTitle>Add New Topic</DialogTitle>
-              <DialogDescription>Create a new topic for {subject?.subject_name}.</DialogDescription>
+              <DialogTitle>Add New Quiz</DialogTitle>
+              <DialogDescription>Create a new quiz for {topic?.topic_name}.</DialogDescription>
             </DialogHeader>
-            <TopicForm
-              subjectId={Number.parseInt(subjectId)}
+            <QuizForm
+              subjectId={Number(subjectId)}
+              topicId={Number(topicId)}
               subjectName={subject?.subject_name || ""}
-              organizationName={organizationName || ""}
+              topicName={topic?.topic_name || ""}
               onSuccess={() => {
-                fetchTopics()
+                fetchQuizzes()
                 setAddDialogOpen(false)
               }}
             />
@@ -216,23 +290,23 @@ export default function TopicsPage() {
 
       <Card className="border border-gray-100 shadow-sm mb-6">
         <CardHeader className="pb-0">
-          <CardTitle className="text-lg">Subject Information</CardTitle>
+          <CardTitle className="text-lg">Topic Information</CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <p className="text-sm font-medium text-gray-500">Subject ID</p>
-              <p>{subject?.subject_id}</p>
+              <p className="text-sm font-medium text-gray-500">Subject</p>
+              <p>{subject?.subject_name || "Loading..."}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-500">Topic</p>
+              <p>{topic?.topic_name || "Loading..."}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Status</p>
-              <Badge variant={subject?.is_active ? "default" : "outline"} className="mt-1">
-                {subject?.is_active ? "Active" : "Inactive"}
+              <Badge variant={topic?.is_active ? "default" : "outline"} className="mt-1">
+                {topic?.is_active ? "Active" : "Inactive"}
               </Badge>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Created</p>
-              <p>{subject?.create_date_time ? new Date(subject.create_date_time).toLocaleDateString() : "N/A"}</p>
             </div>
           </div>
         </CardContent>
@@ -249,7 +323,7 @@ export default function TopicsPage() {
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
               <Input
-                placeholder="Search topics..."
+                placeholder="Search quizzes..."
                 className="pl-8 w-[200px] md:w-[300px]"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -290,56 +364,68 @@ export default function TopicsPage() {
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#1e74bb]"></div>
             </div>
-          ) : filteredTopics.length === 0 ? (
+          ) : filteredQuizzes.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              {searchQuery ? "No topics match your search" : "No topics found. Add your first topic!"}
+              {searchQuery ? "No quizzes match your search" : "No quizzes found. Add your first quiz!"}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredTopics.map((topic) => (
-                <Card key={topic.topic_id} className="overflow-hidden hover:shadow-md transition-shadow">
+              {filteredQuizzes.map((quiz) => (
+                <Card key={quiz.quiz_id} className="overflow-hidden hover:shadow-md transition-shadow">
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">{topic.topic_name}</CardTitle>
-                      <Badge variant={topic.is_active ? "default" : "outline"}>
-                        {topic.is_active ? "Active" : "Inactive"}
+                      <div>
+                        <CardTitle className="text-lg">{quiz.title}</CardTitle>
+                        <CardDescription className="mt-1 line-clamp-2">{quiz.description}</CardDescription>
+                      </div>
+                      <Badge variant={quiz.is_active ? "default" : "outline"}>
+                        {quiz.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="pb-2">
-                    <p className="text-sm text-gray-500">
-                      Created: {new Date(topic.create_date_time).toLocaleDateString()}
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5 text-gray-500" />
+                        <span>{formatTimeLimit(quiz.time_limit)}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-gray-500" />
+                        <span>Pass: {quiz.passing_score}%</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Created: {new Date(quiz.create_date_time).toLocaleDateString()}
                     </p>
                   </CardContent>
                   <CardFooter className="flex justify-between pt-0">
-                    <Link href={`/admin/subjects/${subjectId}/topics/${topic.topic_id}/quizzes`}>
-                      <Button variant="outline" size="sm" className="gap-1">
-                        <FileText className="h-4 w-4" />
-                        Manage Quizzes
-                      </Button>
-                    </Link>
+                    <Button variant="outline" size="sm" className="gap-1">
+                      <FileText className="h-4 w-4" />
+                      Questions
+                    </Button>
                     <div className="flex gap-2">
                       <Dialog
-                        open={editDialogId === topic.topic_id}
-                        onOpenChange={(open) => setEditDialogId(open ? topic.topic_id : null)}
+                        open={editDialogId === quiz.quiz_id}
+                        onOpenChange={(open) => setEditDialogId(open ? quiz.quiz_id : null)}
                       >
                         <DialogTrigger asChild>
                           <Button variant="outline" size="icon">
                             <Pencil className="h-4 w-4" />
                           </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="sm:max-w-[550px]">
                           <DialogHeader>
-                            <DialogTitle>Edit Topic</DialogTitle>
-                            <DialogDescription>Update the topic details.</DialogDescription>
+                            <DialogTitle>Edit Quiz</DialogTitle>
+                            <DialogDescription>Update the quiz details.</DialogDescription>
                           </DialogHeader>
-                          <TopicForm
-                            topic={topic}
-                            subjectId={Number.parseInt(subjectId)}
+                          <QuizForm
+                            quiz={quiz}
+                            subjectId={Number(subjectId)}
+                            topicId={Number(topicId)}
                             subjectName={subject?.subject_name || ""}
-                            organizationName={organizationName || ""}
+                            topicName={topic?.topic_name || ""}
                             onSuccess={() => {
-                              fetchTopics()
+                              fetchQuizzes()
                               setEditDialogId(null)
                             }}
                           />
@@ -356,7 +442,7 @@ export default function TopicsPage() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will permanently delete the topic "{topic.topic_name}" and all associated content.
+                              This will permanently delete the quiz "{quiz.title}" and all associated questions.
                               This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
@@ -364,7 +450,7 @@ export default function TopicsPage() {
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
                               className="bg-red-500 hover:bg-red-600"
-                              onClick={() => handleDeleteTopic(topic.topic_id)}
+                              onClick={() => handleDeleteQuiz(quiz.quiz_id)}
                             >
                               Delete
                             </AlertDialogAction>
@@ -386,9 +472,9 @@ export default function TopicsPage() {
                 <div className="flex justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#1e74bb]"></div>
                 </div>
-              ) : filteredTopics.length === 0 ? (
+              ) : filteredQuizzes.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  {searchQuery ? "No topics match your search" : "No topics found. Add your first topic!"}
+                  {searchQuery ? "No quizzes match your search" : "No quizzes found. Add your first quiz!"}
                 </div>
               ) : (
                 <div className="rounded-md border">
@@ -396,35 +482,37 @@ export default function TopicsPage() {
                     <thead>
                       <tr className="border-b bg-gray-50">
                         <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">ID</th>
-                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Topic Name</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Quiz Name</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Time Limit</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Pass %</th>
                         <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Status</th>
                         <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Created</th>
                         <th className="h-12 px-4 text-right text-sm font-medium text-gray-500">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredTopics.map((topic) => (
-                        <tr key={topic.topic_id} className="border-b hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm">{topic.topic_id}</td>
-                          <td className="px-4 py-3 text-sm font-medium">{topic.topic_name}</td>
+                      {filteredQuizzes.map((quiz) => (
+                        <tr key={quiz.quiz_id} className="border-b hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm">{quiz.quiz_id}</td>
+                          <td className="px-4 py-3 text-sm font-medium">{quiz.title}</td>
+                          <td className="px-4 py-3 text-sm">{formatTimeLimit(quiz.time_limit)}</td>
+                          <td className="px-4 py-3 text-sm">{quiz.passing_score}%</td>
                           <td className="px-4 py-3 text-sm">
-                            <Badge variant={topic.is_active ? "default" : "outline"}>
-                              {topic.is_active ? "Active" : "Inactive"}
+                            <Badge variant={quiz.is_active ? "default" : "outline"}>
+                              {quiz.is_active ? "Active" : "Inactive"}
                             </Badge>
                           </td>
-                          <td className="px-4 py-3 text-sm">{new Date(topic.create_date_time).toLocaleDateString()}</td>
+                          <td className="px-4 py-3 text-sm">{new Date(quiz.create_date_time).toLocaleDateString()}</td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex justify-end gap-2">
-                              <Link href={`/admin/subjects/${subjectId}/topics/${topic.topic_id}/quizzes`}>
-                                <Button variant="outline" size="sm">
-                                  <FileText className="h-4 w-4" />
-                                  <span className="sr-only md:not-sr-only md:ml-2">Quizzes</span>
-                                </Button>
-                              </Link>
+                              <Button variant="outline" size="sm">
+                                <FileText className="h-4 w-4" />
+                                <span className="sr-only md:not-sr-only md:ml-2">Questions</span>
+                              </Button>
 
                               <Dialog
-                                open={editDialogId === topic.topic_id}
-                                onOpenChange={(open) => setEditDialogId(open ? topic.topic_id : null)}
+                                open={editDialogId === quiz.quiz_id}
+                                onOpenChange={(open) => setEditDialogId(open ? quiz.quiz_id : null)}
                               >
                                 <DialogTrigger asChild>
                                   <Button variant="outline" size="sm">
@@ -432,18 +520,19 @@ export default function TopicsPage() {
                                     <span className="sr-only md:not-sr-only md:ml-2">Edit</span>
                                   </Button>
                                 </DialogTrigger>
-                                <DialogContent>
+                                <DialogContent className="sm:max-w-[550px]">
                                   <DialogHeader>
-                                    <DialogTitle>Edit Topic</DialogTitle>
-                                    <DialogDescription>Update the topic details.</DialogDescription>
+                                    <DialogTitle>Edit Quiz</DialogTitle>
+                                    <DialogDescription>Update the quiz details.</DialogDescription>
                                   </DialogHeader>
-                                  <TopicForm
-                                    topic={topic}
-                                    subjectId={Number.parseInt(subjectId)}
+                                  <QuizForm
+                                    quiz={quiz}
+                                    subjectId={Number(subjectId)}
+                                    topicId={Number(topicId)}
                                     subjectName={subject?.subject_name || ""}
-                                    organizationName={organizationName || ""}
+                                    topicName={topic?.topic_name || ""}
                                     onSuccess={() => {
-                                      fetchTopics()
+                                      fetchQuizzes()
                                       setEditDialogId(null)
                                     }}
                                   />
@@ -461,15 +550,15 @@ export default function TopicsPage() {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      This will permanently delete the topic "{topic.topic_name}" and all associated
-                                      content. This action cannot be undone.
+                                      This will permanently delete the quiz "{quiz.title}" and all associated
+                                      questions. This action cannot be undone.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction
                                       className="bg-red-500 hover:bg-red-600"
-                                      onClick={() => handleDeleteTopic(topic.topic_id)}
+                                      onClick={() => handleDeleteQuiz(quiz.quiz_id)}
                                     >
                                       Delete
                                     </AlertDialogAction>
@@ -492,26 +581,36 @@ export default function TopicsPage() {
   )
 }
 
-// Topic Form Component
-interface TopicFormProps {
-  topic?: Topic
+// Quiz Form Component
+interface QuizFormProps {
+  quiz?: Quiz
   subjectId: number
+  topicId: number
   subjectName: string
-  organizationName: string
+  topicName: string
   onSuccess: () => void
 }
 
-function TopicForm({ topic, subjectId, subjectName, organizationName, onSuccess }: TopicFormProps) {
+function QuizForm({ quiz, subjectId, topicId, subjectName, topicName, onSuccess }: QuizFormProps) {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
-    topic_name: topic?.topic_name || "",
-    is_active: topic?.is_active ?? true,
+    title: quiz?.title || "",
+    description: quiz?.description || "",
+    time_limit: quiz?.time_limit || 300, // Default 5 minutes
+    passing_score: quiz?.passing_score || 70,
+    total_questions: quiz?.total_questions || 10,
+    is_active: quiz?.is_active ?? true,
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target
+
+    if (type === "number") {
+      setFormData((prev) => ({ ...prev, [name]: Number(value) }))
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -520,33 +619,42 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, onSuccess 
 
     try {
       // Validate form
-      if (!formData.topic_name) {
-        throw new Error("Topic title is required")
+      if (!formData.title) {
+        throw new Error("Quiz name is required")
       }
+
+      let userId = localStorage.getItem("userId")
+      if (!userId) {
+        userId = "1"
+      }
+
       const organizationId = localStorage.getItem("organizationId")
       const payload = {
         ...formData,
         subject_id: subjectId,
-        organization_id: Number.parseInt(organizationId || ""),
-        created_by: 101,
+        topic_id: topicId,
+        organization_id: Number.parseInt(organizationId || "1"), // Default to 1 if not found
+        created_by: userId, // Hardcoded for now
+        create_date_time: new Date().toISOString(),
+        update_date_time: new Date().toISOString(),
       }
 
-      // This would be replaced with your actual API endpoint
-      const response = topic
-        ? await api.put(`/topics/topics/${topic.topic_id}`, payload)
-        : await api.post("/topics/topics", payload)
+      // API endpoint for creating or updating a quiz
+      const response = quiz
+        ? await api.put(`/quizzes/quizzes/${quiz.quiz_id}`, payload)
+        : await api.post("/quizzes/quizzes/", payload)
 
       if (response.ok) {
         toast({
           title: "Success",
-          description: topic ? "Topic updated successfully" : "Topic created successfully",
+          description: quiz ? "Quiz updated successfully" : "Quiz created successfully",
         })
-        onSuccess() // Make sure this is called
+        onSuccess()
       } else {
-        throw new Error(topic ? "Failed to update topic" : "Failed to create topic")
+        throw new Error(quiz ? "Failed to update quiz" : "Failed to create quiz")
       }
     } catch (error) {
-      console.error("Error saving topic:", error)
+      console.error("Error saving quiz:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An error occurred",
@@ -560,44 +668,95 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, onSuccess 
   return (
     <form onSubmit={handleSubmit}>
       <div className="space-y-4 py-4">
-        <div className="space-y-2">
-          <label htmlFor="title" className="text-sm font-medium">
-            Organization <span className="text-red-500">*</span>
-          </label>
-          <Input id="Organization" name="Organization" value={organizationName} disabled />
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="subject">Subject</Label>
+            <Input id="subject" value={subjectName} disabled />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="topic">Topic</Label>
+            <Input id="topic" value={topicName} disabled />
+          </div>
         </div>
+
         <div className="space-y-2">
-          <label htmlFor="title" className="text-sm font-medium">
-            Subject <span className="text-red-500">*</span>
-          </label>
-          <Input id="Subject" name="Subject" value={subjectName} disabled />
-        </div>
-        <div className="space-y-2">
-          <label htmlFor="title" className="text-sm font-medium">
-            Topic Title <span className="text-red-500">*</span>
-          </label>
+          <Label htmlFor="title">
+            Quiz Name <span className="text-red-500">*</span>
+          </Label>
           <Input
-            id="topic_name"
-            name="topic_name"
-            value={formData.topic_name}
+            id="title"
+            name="title"
+            value={formData.title}
             onChange={handleChange}
-            placeholder="e.g., Arithmetic & Number Sense"
+            placeholder="e.g., Basic Arithmetic Quiz"
             required
           />
         </div>
 
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id="is_active"
-            name="is_active"
-            checked={formData.is_active}
-            onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+        <div className="space-y-2">
+          <Label htmlFor="description">Description</Label>
+          <Textarea
+            id="description"
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            placeholder="Enter a description for this quiz"
+            rows={3}
           />
-          <label htmlFor="is_active" className="text-sm font-medium">
-            Active
-          </label>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="time_limit">Time Limit (seconds)</Label>
+            <Input
+              id="time_limit"
+              name="time_limit"
+              type="number"
+              min="30"
+              value={formData.time_limit}
+              onChange={handleChange}
+            />
+            <p className="text-xs text-gray-500">
+              {Math.floor(formData.time_limit / 60)}m {formData.time_limit % 60}s
+            </p>
+          </div>
+
+
+
+          <div className="space-y-2">
+            <Label htmlFor="passing_score">Passing Percentage</Label>
+            <Input
+              id="passing_score"
+              name="passing_score"
+              type="number"
+              min="1"
+              max="100"
+              value={formData.passing_score}
+              onChange={handleChange}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="total_questions">Total Questions</Label>
+            <Input
+              id="total_questions"
+              name="total_questions"
+              type="number"
+              min="1"
+              max="100"
+              value={formData.total_questions}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Label htmlFor="is_active">Active</Label>
+          <Switch
+            id="is_active"
+            checked={formData.is_active}
+            onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, is_active: checked }))}
+          />
         </div>
       </div>
 
@@ -606,7 +765,7 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, onSuccess 
           {isLoading && (
             <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
           )}
-          {topic ? "Update Topic" : "Create Topic"}
+          {quiz ? "Update Quiz" : "Create Quiz"}
         </Button>
       </DialogFooter>
     </form>

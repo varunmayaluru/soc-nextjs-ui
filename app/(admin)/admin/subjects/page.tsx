@@ -4,13 +4,13 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Plus, Pencil, Trash2, ChevronRight, Search } from "lucide-react"
+import { Plus, Pencil, Trash2, ChevronRight, Search, BookOpen, School, Filter, ArrowUpDown } from "lucide-react"
 import { api } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import type { Organization, Subject } from "../../../types/types"
 import { Label } from "@/components/ui/label"
@@ -44,9 +46,12 @@ export default function SubjectsPage() {
   const { toast } = useToast()
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [subjects, setSubjects] = useState<Subject[]>([])
-  const [SubjectPageViewModel, setSubjectPageViewModel] = useState<SubjectsPageViewModel[]>([])
+  const [subjectPageViewModel, setSubjectPageViewModel] = useState<SubjectsPageViewModel[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [filterOrg, setFilterOrg] = useState<number | null>(null)
+  const [sortBy, setSortBy] = useState<"name" | "date">("name")
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
 
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState<number | null>(null)
@@ -114,15 +119,28 @@ export default function SubjectsPage() {
     }
   }
 
-  // Filter subjects based on search query
-  const filteredSubjects = SubjectPageViewModel.filter((subject) =>
-    subject.subject_name.toString().toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  // Filter and sort subjects
+  const filteredSubjects = subjectPageViewModel
+    .filter(
+      (subject) =>
+        subject.subject_name.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        (filterOrg === null || subject.organization_id === filterOrg),
+    )
+    .sort((a, b) => {
+      if (sortBy === "name") {
+        return sortOrder === "asc"
+          ? a.subject_name.localeCompare(b.subject_name)
+          : b.subject_name.localeCompare(a.subject_name)
+      } else {
+        return sortOrder === "asc"
+          ? new Date(a.create_date_time).getTime() - new Date(b.create_date_time).getTime()
+          : new Date(b.create_date_time).getTime() - new Date(a.create_date_time).getTime()
+      }
+    })
 
   // Delete subject handler
   const handleDeleteSubject = async (id: number) => {
     try {
-      // This would be replaced with your actual API endpoint
       const response = await api.delete(`/subjects/subjects/${id}`)
 
       if (response.ok) {
@@ -142,6 +160,10 @@ export default function SubjectsPage() {
         variant: "destructive",
       })
     }
+  }
+
+  const toggleSortOrder = () => {
+    setSortOrder(sortOrder === "asc" ? "desc" : "asc")
   }
 
   return (
@@ -165,7 +187,7 @@ export default function SubjectsPage() {
               subject={undefined}
               onSuccess={() => {
                 fetchSubjects(organizations)
-                setAddDialogOpen(false) // Close the dialog after success
+                setAddDialogOpen(false)
               }}
               organizationOptions={organizations.map((org) => ({
                 value: org.organization_id,
@@ -176,24 +198,71 @@ export default function SubjectsPage() {
         </Dialog>
       </div>
 
-      <Card className="border border-gray-100 shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle>All Subjects</CardTitle>
-          <CardDescription>Manage your learning platform subjects and their topics</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center mb-4">
-            <div className="relative flex-1">
+      <Tabs defaultValue="grid" className="w-full">
+        <div className="flex justify-between items-center mb-4">
+          <TabsList>
+            <TabsTrigger value="grid">Grid View</TabsTrigger>
+            <TabsTrigger value="table">Table View</TabsTrigger>
+          </TabsList>
+
+          <div className="flex items-center gap-2">
+            <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
               <Input
                 placeholder="Search subjects..."
-                className="pl-8"
+                className="pl-8 w-[200px] md:w-[300px]"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-          </div>
 
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Filter
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setFilterOrg(null)}>All Organizations</DropdownMenuItem>
+                {organizations.map((org) => (
+                  <DropdownMenuItem key={org.organization_id} onClick={() => setFilterOrg(org.organization_id)}>
+                    {org.organization_name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <ArrowUpDown className="h-4 w-4 mr-2" />
+                  Sort
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => {
+                    setSortBy("name")
+                    toggleSortOrder()
+                  }}
+                >
+                  By Name ({sortOrder === "asc" ? "A-Z" : "Z-A"})
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setSortBy("date")
+                    toggleSortOrder()
+                  }}
+                >
+                  By Date ({sortOrder === "asc" ? "Oldest" : "Newest"})
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        <TabsContent value="grid" className="mt-4">
           {isLoading ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#1e74bb]"></div>
@@ -203,101 +272,211 @@ export default function SubjectsPage() {
               {searchQuery ? "No subjects match your search" : "No subjects found. Add your first subject!"}
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Id</TableHead>
-                    <TableHead>Subject Name</TableHead>
-                    <TableHead>Organization Name</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredSubjects.map((subject) => (
-                    <TableRow key={subject.subject_id}>
-                      <TableCell className="font-medium">{subject.subject_id}</TableCell>
-                      <TableCell>{subject.subject_name}</TableCell>
-                      <TableCell className="font-medium">{subject.organization_name}</TableCell>
-
-                      <TableCell>{new Date(subject.create_date_time).toLocaleDateString()}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Link
-                            href={`/admin/subjects/${subject.subject_id}/topics`}
-                          >
-                            <Button variant="outline" size="sm">
-                              <ChevronRight className="h-4 w-4" />
-                              <span className="sr-only">View Topics</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredSubjects.map((subject) => (
+                <Card key={subject.subject_id} className="overflow-hidden hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-2">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-xl">{subject.subject_name}</CardTitle>
+                        <CardDescription className="flex items-center mt-1">
+                          <School className="h-3.5 w-3.5 mr-1" />
+                          {subject.organization_name}
+                        </CardDescription>
+                      </div>
+                      <Badge variant={subject.is_active ? "default" : "outline"}>
+                        {subject.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-gray-500 mb-4">
+                      Created: {new Date(subject.create_date_time).toLocaleDateString()}
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <Link href={`/admin/subjects/${subject.subject_id}/topics`}>
+                        <Button variant="outline" size="sm" className="gap-1">
+                          <BookOpen className="h-4 w-4" />
+                          Manage Topics
+                        </Button>
+                      </Link>
+                      <div className="flex gap-2">
+                        <Dialog
+                          open={editDialogOpen === subject.subject_id}
+                          onOpenChange={(open) => setEditDialogOpen(open ? subject.subject_id : null)}
+                        >
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="icon">
+                              <Pencil className="h-4 w-4" />
                             </Button>
-                          </Link>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Edit Subject</DialogTitle>
+                              <DialogDescription>Update the subject details.</DialogDescription>
+                            </DialogHeader>
+                            <SubjectForm
+                              subject={subject}
+                              onSuccess={() => {
+                                fetchSubjects(organizations)
+                                setEditDialogOpen(null)
+                              }}
+                              organizationOptions={organizations.map((org) => ({
+                                value: org.organization_id,
+                                label: org.organization_name,
+                              }))}
+                            />
+                          </DialogContent>
+                        </Dialog>
 
-                          <Dialog
-                            open={editDialogOpen === subject.subject_id}
-                            onOpenChange={(open) => setEditDialogOpen(open ? subject.subject_id : null)}
-                          >
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(subject.subject_id)}>
-                                <Pencil className="h-4 w-4" />
-                                <span className="sr-only">Edit</span>
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Edit Subject</DialogTitle>
-                                <DialogDescription>Update the subject details.</DialogDescription>
-                              </DialogHeader>
-                              <SubjectForm
-                                subject={subject}
-                                onSuccess={() => {
-                                  fetchSubjects(organizations)
-                                  setEditDialogOpen(null) // Close the dialog after success
-                                }}
-                                organizationOptions={organizations.map((org) => ({
-                                  value: org.organization_id,
-                                  label: org.organization_name,
-                                }))}
-                              />
-                            </DialogContent>
-                          </Dialog>
-
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="sm">
-                                <Trash2 className="h-4 w-4 text-red-500" />
-                                <span className="sr-only">Delete</span>
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will permanently delete the subject "{subject.subject_name}" and all associated
-                                  topics. This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  className="bg-red-500 hover:bg-red-600"
-                                  onClick={() => handleDeleteSubject(subject.subject_id)}
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="icon">
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete the subject "{subject.subject_name}" and all associated
+                                topics. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-red-500 hover:bg-red-600"
+                                onClick={() => handleDeleteSubject(subject.subject_id)}
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </TabsContent>
+
+        <TabsContent value="table" className="mt-4">
+          <Card className="border border-gray-100 shadow-sm">
+            <CardContent className="p-0">
+              {isLoading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#1e74bb]"></div>
+                </div>
+              ) : filteredSubjects.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  {searchQuery ? "No subjects match your search" : "No subjects found. Add your first subject!"}
+                </div>
+              ) : (
+                <div className="rounded-md border">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b bg-gray-50">
+                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">ID</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Subject Name</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Organization</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Status</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Created</th>
+                        <th className="h-12 px-4 text-right text-sm font-medium text-gray-500">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSubjects.map((subject) => (
+                        <tr key={subject.subject_id} className="border-b hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm">{subject.subject_id}</td>
+                          <td className="px-4 py-3 text-sm font-medium">{subject.subject_name}</td>
+                          <td className="px-4 py-3 text-sm">{subject.organization_name}</td>
+                          <td className="px-4 py-3 text-sm">
+                            <Badge variant={subject.is_active ? "default" : "outline"}>
+                              {subject.is_active ? "Active" : "Inactive"}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {new Date(subject.create_date_time).toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex justify-end gap-2">
+                              <Link href={`/admin/subjects/${subject.subject_id}/topics`}>
+                                <Button variant="outline" size="sm">
+                                  <ChevronRight className="h-4 w-4" />
+                                  <span className="sr-only md:not-sr-only md:ml-2">Topics</span>
+                                </Button>
+                              </Link>
+
+                              <Dialog
+                                open={editDialogOpen === subject.subject_id}
+                                onOpenChange={(open) => setEditDialogOpen(open ? subject.subject_id : null)}
+                              >
+                                <DialogTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <Pencil className="h-4 w-4" />
+                                    <span className="sr-only md:not-sr-only md:ml-2">Edit</span>
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                  <DialogHeader>
+                                    <DialogTitle>Edit Subject</DialogTitle>
+                                    <DialogDescription>Update the subject details.</DialogDescription>
+                                  </DialogHeader>
+                                  <SubjectForm
+                                    subject={subject}
+                                    onSuccess={() => {
+                                      fetchSubjects(organizations)
+                                      setEditDialogOpen(null)
+                                    }}
+                                    organizationOptions={organizations.map((org) => ({
+                                      value: org.organization_id,
+                                      label: org.organization_name,
+                                    }))}
+                                  />
+                                </DialogContent>
+                              </Dialog>
+
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                    <span className="sr-only md:not-sr-only md:ml-2">Delete</span>
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      This will permanently delete the subject "{subject.subject_name}" and all
+                                      associated topics. This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      className="bg-red-500 hover:bg-red-600"
+                                      onClick={() => handleDeleteSubject(subject.subject_id)}
+                                    >
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
@@ -341,9 +520,9 @@ export function SubjectForm({ subject, onSuccess, organizationOptions }: Subject
       const response = subject
         ? await api.put(`/subjects/subjects/${subject.subject_id}`, payload)
         : await api.post("subjects/subjects/", {
-          ...payload,
-          create_date_time: new Date().toISOString(),
-        })
+            ...payload,
+            create_date_time: new Date().toISOString(),
+          })
 
       if (response.ok) {
         toast({

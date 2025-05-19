@@ -2,10 +2,20 @@
 
 import type React from "react"
 import Link from "next/link"
-import { Building, BookOpen, LayoutDashboard, Settings, Users, ChevronRight, Menu, X, BookAIcon } from "lucide-react"
+import {
+  Building,
+  BookOpen,
+  LayoutDashboard,
+  Settings,
+  Users,
+  ChevronRight,
+  Menu,
+  X,
+  BookAIcon,
+  FileText,
+} from "lucide-react"
 import { AuthProvider } from "@/components/auth-provider"
 import ProtectedRoute from "@/components/protected-route"
-import Header from "@/components/header"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 
@@ -68,6 +78,16 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
                       <ChevronRight className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </Link>
                   ))}
+                  <Link
+                    href="/admin/quizzes"
+                    className="group flex items-center justify-between px-3 py-2.5 text-gray-700 rounded-lg hover:bg-brand-light hover:text-brand transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5 text-gray-500 group-hover:text-brand transition-colors" />
+                      <span className="font-medium">Quizzes</span>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </Link>
                 </nav>
               </div>
 
