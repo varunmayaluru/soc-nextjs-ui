@@ -55,9 +55,30 @@ export default function LoginPage() {
 
       // Use the login function from auth context with the correct token format
       if (data.access_token) {
-        // Store both the access token and token type
-        login(`${data.token_type} ${data.access_token}`)
-        router.push("/") // Redirect to dashboard after successful login
+        const token = `${data.token_type} ${data.access_token}`
+
+        // Fetch user details to check if admin
+        try {
+          const userResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/me`, {
+            headers: {
+              Authorization: token,
+              Accept: "application/json",
+            },
+          })
+
+          if (userResponse.ok) {
+            const userData = await userResponse.json()
+            // Pass both token and isAdmin flag to login function
+            login(token)
+          } else {
+            // If user details fetch fails, just login without admin check
+            login(token)
+          }
+        } catch (error) {
+          console.error("Error fetching user details:", error)
+          // If API call fails, just login without admin check
+          login(token)
+        }
       } else {
         throw new Error("No token received")
       }

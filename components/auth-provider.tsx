@@ -16,8 +16,10 @@ interface AuthContextType {
   isLoggedIn: boolean
   loading: boolean
   userInfo: UserInfo | null
-  login: (token: string) => void
+  isAdmin: boolean
+  login: (token: string) => Promise<void>
   logout: () => void
+  checkAdminStatus: () => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -51,15 +53,57 @@ function isTokenExpired(decodedToken: UserInfo): boolean {
   return Date.now() >= decodedToken.exp * 1000
 }
 
+// Function to set a cookie with proper attributes
+function setCookie(name: string, value: string, days = 1) {
+  const date = new Date()
+  date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000)
+  const expires = `; expires=${date.toUTCString()}`
+  document.cookie = `${name}=${value}${expires}; path=/; SameSite=Lax`
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [loading, setLoading] = useState(true)
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const router = useRouter()
+
+  // Function to check admin status via API
+  const checkAdminStatus = async (): Promise<boolean> => {
+    const token = localStorage.getItem("authToken")
+    if (!token) return false
+
+    try {
+      console.log("Checking admin status with token")
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/me`, {
+        headers: {
+          Authorization: token,
+          Accept: "application/json",
+        },
+      })
+
+      if (response.ok) {
+        const userData = await response.json()
+        const isAdminUser = userData.role === "admin"
+        console.log("Admin status checked, isAdmin:", isAdminUser)
+
+        // Update state
+        setIsAdmin(isAdminUser)
+        return isAdminUser
+      } else {
+        console.error("Failed to check admin status:", response.status)
+        return false
+      }
+    } catch (error) {
+      console.error("Error checking admin status:", error)
+      return false
+    }
+  }
 
   useEffect(() => {
     // Check if user is logged in
     const token = localStorage.getItem("authToken")
+
     if (token) {
       // Decode and set user info
       const decodedToken = decodeJWT(token)
@@ -71,6 +115,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setIsLoggedIn(true)
         setUserInfo(decodedToken)
+
+        // Check admin status
+        checkAdminStatus().catch(console.error)
       }
     }
     setLoading(false)
@@ -92,30 +139,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(interval)
   }, [isLoggedIn, userInfo])
 
-  const login = (token: string) => {
+  const login = async (token: string) => {
     localStorage.setItem("authToken", token)
-    // Also set the token as a cookie for server-side access
-    document.cookie = `authToken=${token}; path=/; max-age=86400; SameSite=Strict`
+
+    // Set cookie for server-side access with proper attributes
+    setCookie("authToken", token)
 
     // Decode and set user info
     const decodedToken = decodeJWT(token)
     setUserInfo(decodedToken)
-
     setIsLoggedIn(true)
-    router.push("/")
+
+    // Check admin status with API
+    const isAdminUser = await checkAdminStatus()
+
+    // Redirect based on admin status
+    if (isAdminUser) {
+      router.push("/admin") // Redirect to admin dashboard
+    } else {
+      router.push("/") // Redirect to regular dashboard
+    }
   }
 
   const logout = () => {
     localStorage.removeItem("authToken")
-    // Clear the cookie as well
-    document.cookie = "authToken=; path=/; max-age=0; SameSite=Strict"
+
+    // Clear cookies
+    document.cookie = "authToken=; path=/; max-age=0"
+
     setIsLoggedIn(false)
     setUserInfo(null)
+    setIsAdmin(false)
     router.push("/login")
   }
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, loading, userInfo, login, logout }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ isLoggedIn, loading, userInfo, isAdmin, login, logout, checkAdminStatus }}>
+      {children}
+    </AuthContext.Provider>
   )
 }
 

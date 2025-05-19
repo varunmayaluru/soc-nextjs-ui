@@ -116,7 +116,7 @@ export default function QuizPage() {
         // Get user ID from localStorage or use a default
         const userId = localStorage.getItem("userId") || "1"
 
-        const response = await api.get<Quiz>(`questions/questions/quiz-question/1?quiz_id=${params.quiz}`)
+        const response = await api.get<Quiz>(`questions/questions/quiz-question/1?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}`)
 
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`)
