@@ -4,7 +4,20 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { Plus, Pencil, Trash2, ArrowLeft, Search, FileText, ArrowUpDown, Clock, CheckCircle2 } from "lucide-react"
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  ArrowLeft,
+  Search,
+  FileText,
+  ArrowUpDown,
+  Clock,
+  CheckCircle2,
+  BookOpen,
+  BookOpenCheck,
+  Layers,
+} from "lucide-react"
 import { api } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
@@ -92,6 +105,7 @@ export default function QuizzesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState<"name" | "date">("name")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null)
 
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [editDialogId, setEditDialogId] = useState<number | null>(null)
@@ -224,37 +238,62 @@ export default function QuizzesPage() {
 
   return (
     <div>
-      <Breadcrumb className="mb-6">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/admin">Dashboard</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/admin/subjects">Subjects</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href={`/admin/subjects/${subjectId}/topics`}>{subject?.subject_name}</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink>{topic?.topic_name || "Quizzes"}</BreadcrumbLink>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <div className="bg-gradient-to-r from-[#e6f0f9] to-white p-3 rounded-lg mb-6 shadow-sm border border-[#e6f0f9]">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/admin" className="text-gray-600 hover:text-[#1e74bb] transition-colors">
+                <span className="flex items-center">
+                  <Layers className="mr-2 h-4 w-4 text-[#1e74bb]" />
+                  Dashboard
+                </span>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator className="text-[#1e74bb]" />
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/admin/subjects" className="text-gray-600 hover:text-[#1e74bb] transition-colors">
+                <span className="flex items-center">
+                  <BookOpen className="mr-2 h-4 w-4 text-[#1e74bb]" />
+                  Subjects
+                </span>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator className="text-[#1e74bb]" />
+            <BreadcrumbItem>
+              <BreadcrumbLink
+                href={`/admin/subjects/${subjectId}/topics`}
+                className="text-gray-600 hover:text-[#1e74bb] transition-colors"
+              >
+                <span className="flex items-center">
+                  <BookOpenCheck className="mr-2 h-4 w-4 text-[#1e74bb]" />
+                  {subject?.subject_name}
+                </span>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator className="text-[#1e74bb]" />
+            <BreadcrumbItem>
+              <BreadcrumbLink className="font-medium text-[#1e74bb]">
+                <span className="flex items-center">
+                  <FileText className="mr-2 h-4 w-4 text-[#1e74bb]" />
+                  {topic?.topic_name || "Quizzes"}
+                </span>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <Button
+          {/* <Button
             variant="outline"
             size="sm"
             onClick={() => router.push(`/admin/subjects/${subjectId}/topics`)}
-            className="mb-2"
+            className="mb-2 border-gray-200 hover:border-[#1e74bb] hover:text-[#1e74bb]"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Topics
-          </Button>
+          </Button> */}
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <FileText className="h-6 w-6 text-[#1e74bb]" />
             Quizzes for {topic?.topic_name || "Loading..."}
@@ -264,7 +303,7 @@ export default function QuizzesPage() {
 
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setAddDialogOpen(true)}>
+            <Button onClick={() => setAddDialogOpen(true)} className="bg-[#1e74bb] hover:bg-[#1a65a3] text-white">
               <Plus className="mr-2 h-4 w-4" />
               Add Quiz
             </Button>
@@ -288,23 +327,33 @@ export default function QuizzesPage() {
         </Dialog>
       </div>
 
-      <Card className="border border-gray-100 shadow-sm mb-6">
-        <CardHeader className="pb-0">
-          <CardTitle className="text-lg">Topic Information</CardTitle>
+      <Card className="border border-[#e6f0f9] shadow-sm mb-6 overflow-hidden">
+        <CardHeader className="pb-0 bg-gradient-to-r from-[#e6f0f9] to-white">
+          <CardTitle className="text-lg flex items-center">
+            <BookOpenCheck className="mr-2 h-5 w-5" />
+            Topic Information
+          </CardTitle>
         </CardHeader>
-        <CardContent className="pt-4">
+        <CardContent className="pt-6 bg-gradient-to-b from-[#f0f7ff] to-white">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Subject</p>
-              <p>{subject?.subject_name || "Loading..."}</p>
+            <div className="bg-white p-3 rounded-md shadow-sm border border-[#e6f0f9]">
+              <p className="text-sm font-medium text-[#1e74bb]">Subject</p>
+              <p className="font-medium text-gray-800">{subject?.subject_name || "Loading..."}</p>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Topic</p>
-              <p>{topic?.topic_name || "Loading..."}</p>
+            <div className="bg-white p-3 rounded-md shadow-sm border border-[#e6f0f9]">
+              <p className="text-sm font-medium text-[#1e74bb]">Topic</p>
+              <p className="font-medium text-gray-800">{topic?.topic_name || "Loading..."}</p>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Status</p>
-              <Badge variant={topic?.is_active ? "default" : "outline"} className="mt-1">
+            <div className="bg-white p-3 rounded-md shadow-sm border border-[#e6f0f9]">
+              <p className="text-sm font-medium text-[#1e74bb]">Status</p>
+              <Badge
+                variant={topic?.is_active ? "default" : "outline"}
+                className={
+                  topic?.is_active
+                    ? "bg-green-100 text-green-800 hover:bg-green-200 mt-1"
+                    : "bg-gray-100 text-gray-500 mt-1"
+                }
+              >
                 {topic?.is_active ? "Active" : "Inactive"}
               </Badge>
             </div>
@@ -314,9 +363,19 @@ export default function QuizzesPage() {
 
       <Tabs defaultValue="grid" className="w-full">
         <div className="flex justify-between items-center mb-4">
-          <TabsList>
-            <TabsTrigger value="grid">Grid View</TabsTrigger>
-            <TabsTrigger value="table">Table View</TabsTrigger>
+          <TabsList className="bg-gray-100">
+            <TabsTrigger value="grid" className="data-[state=active]:bg-white data-[state=active]:text-[#1e74bb]">
+              <div className="flex items-center">
+                <Layers className="mr-2 h-4 w-4" />
+                Grid View
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="table" className="data-[state=active]:bg-white data-[state=active]:text-[#1e74bb]">
+              <div className="flex items-center">
+                <FileText className="mr-2 h-4 w-4" />
+                Table View
+              </div>
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex items-center gap-2">
@@ -324,7 +383,7 @@ export default function QuizzesPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
               <Input
                 placeholder="Search quizzes..."
-                className="pl-8 w-[200px] md:w-[300px]"
+                className="pl-8 w-[200px] md:w-[300px] border-gray-200 focus-visible:ring-[#1e74bb]"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -332,17 +391,18 @@ export default function QuizzesPage() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="border-gray-200">
                   <ArrowUpDown className="h-4 w-4 mr-2" />
                   Sort
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="border-gray-200">
                 <DropdownMenuItem
                   onClick={() => {
                     setSortBy("name")
                     toggleSortOrder()
                   }}
+                  className="cursor-pointer"
                 >
                   By Name ({sortOrder === "asc" ? "A-Z" : "Z-A"})
                 </DropdownMenuItem>
@@ -351,6 +411,7 @@ export default function QuizzesPage() {
                     setSortBy("date")
                     toggleSortOrder()
                   }}
+                  className="cursor-pointer"
                 >
                   By Date ({sortOrder === "asc" ? "Oldest" : "Newest"})
                 </DropdownMenuItem>
@@ -361,36 +422,80 @@ export default function QuizzesPage() {
 
         <TabsContent value="grid" className="mt-4">
           {isLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#1e74bb]"></div>
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#e6f0f9] border-t-4 border-t-[#1e74bb]"></div>
+              <p className="mt-4 text-[#1e74bb] font-medium">Loading quizzes...</p>
             </div>
           ) : filteredQuizzes.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              {searchQuery ? "No quizzes match your search" : "No quizzes found. Add your first quiz!"}
+            <div className="text-center py-16 bg-gradient-to-b from-[#f0f7ff] to-white rounded-lg border border-[#e6f0f9] shadow-sm">
+              <div className="bg-[#e6f0f9] rounded-full p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <FileText className="h-10 w-10 text-[#1e74bb]" />
+              </div>
+              <h3 className="text-xl font-medium text-[#1e74bb] mb-2">No quizzes found</h3>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                {searchQuery ? "No quizzes match your search" : "Add your first quiz to start testing your students"}
+              </p>
+              <Button
+                onClick={() => setAddDialogOpen(true)}
+                className="bg-[#1e74bb] hover:bg-[#1a65a3] text-white shadow-sm transition-all hover:shadow"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Quiz
+              </Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredQuizzes.map((quiz) => (
-                <Card key={quiz.quiz_id} className="overflow-hidden hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-2">
+                <Card
+                  key={quiz.quiz_id}
+                  className={`overflow-hidden transition-all duration-200 hover:shadow-md ${hoveredCard === quiz.quiz_id ? "border-[#1e74bb] shadow-md" : "border-gray-100"
+                    }`}
+                  onMouseEnter={() => setHoveredCard(quiz.quiz_id)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                >
+                  <CardHeader
+                    className={`pb-2 ${hoveredCard === quiz.quiz_id
+                      ? "bg-gradient-to-r from-[#1e74bb] to-[#4a9eda]"
+                      : "bg-gradient-to-r from-[#e6f0f9] to-white"
+                      }`}
+                  >
                     <div className="flex justify-between items-start">
                       <div>
-                        <CardTitle className="text-lg">{quiz.title}</CardTitle>
-                        <CardDescription className="mt-1 line-clamp-2">{quiz.description}</CardDescription>
+                        <CardTitle
+                          className={`text-lg ${hoveredCard === quiz.quiz_id ? "text-white" : "text-gray-800"}`}
+                        >
+                          {quiz.title}
+                        </CardTitle>
+                        <CardDescription
+                          className={`mt-1 line-clamp-2 ${hoveredCard === quiz.quiz_id ? "text-gray-100" : ""}`}
+                        >
+                          {quiz.description}
+                        </CardDescription>
                       </div>
-                      <Badge variant={quiz.is_active ? "default" : "outline"}>
+                      <Badge
+                        variant={quiz.is_active ? "default" : "outline"}
+                        className={
+                          quiz.is_active
+                            ? hoveredCard === quiz.quiz_id
+                              ? "bg-white text-[#1e74bb] hover:bg-gray-100"
+                              : "bg-green-100 text-green-800 hover:bg-green-200"
+                            : hoveredCard === quiz.quiz_id
+                              ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                              : "text-gray-500"
+                        }
+                      >
                         {quiz.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="pb-2">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3.5 w-3.5 text-gray-500" />
+                    <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+                      <div className="flex items-center gap-1 text-gray-700 bg-[#f0f7ff] p-1.5 rounded">
+                        <Clock className="h-3.5 w-3.5 text-[#1e74bb]" />
                         <span>{formatTimeLimit(quiz.time_limit)}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-gray-500" />
+                      <div className="flex items-center gap-1 text-gray-700 bg-[#f0f7ff] p-1.5 rounded">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-[#1e74bb]" />
                         <span>Pass: {quiz.passing_score}%</span>
                       </div>
                     </div>
@@ -398,8 +503,12 @@ export default function QuizzesPage() {
                       Created: {new Date(quiz.create_date_time).toLocaleDateString()}
                     </p>
                   </CardContent>
-                  <CardFooter className="flex justify-between pt-0">
-                    <Button variant="outline" size="sm" className="gap-1">
+                  <CardFooter className="flex justify-between pt-0 bg-gray-50">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1 border-gray-200 hover:border-[#1e74bb] hover:text-[#1e74bb]"
+                    >
                       <FileText className="h-4 w-4" />
                       Questions
                     </Button>
@@ -409,7 +518,11 @@ export default function QuizzesPage() {
                         onOpenChange={(open) => setEditDialogId(open ? quiz.quiz_id : null)}
                       >
                         <DialogTrigger asChild>
-                          <Button variant="outline" size="icon">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="border-gray-200 hover:border-[#1e74bb] hover:text-[#1e74bb]"
+                          >
                             <Pencil className="h-4 w-4" />
                           </Button>
                         </DialogTrigger>
@@ -434,7 +547,11 @@ export default function QuizzesPage() {
 
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="outline" size="icon">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="border-gray-200 hover:border-red-200 hover:text-red-500"
+                          >
                             <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
                         </AlertDialogTrigger>
@@ -442,8 +559,8 @@ export default function QuizzesPage() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This will permanently delete the quiz "{quiz.title}" and all associated questions.
-                              This action cannot be undone.
+                              This will permanently delete the quiz "{quiz.title}" and all associated questions. This
+                              action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -469,43 +586,72 @@ export default function QuizzesPage() {
           <Card className="border border-gray-100 shadow-sm">
             <CardContent className="p-0">
               {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#1e74bb]"></div>
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#e6f0f9] border-t-4 border-t-[#1e74bb]"></div>
+                  <p className="mt-4 text-[#1e74bb] font-medium">Loading quizzes...</p>
                 </div>
               ) : filteredQuizzes.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  {searchQuery ? "No quizzes match your search" : "No quizzes found. Add your first quiz!"}
+                <div className="text-center py-16 bg-gradient-to-b from-[#f0f7ff] to-white rounded-lg border border-[#e6f0f9] shadow-sm">
+                  <div className="bg-[#e6f0f9] rounded-full p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                    <FileText className="h-10 w-10 text-[#1e74bb]" />
+                  </div>
+                  <h3 className="text-xl font-medium text-[#1e74bb] mb-2">No quizzes found</h3>
+                  <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                    {searchQuery
+                      ? "No quizzes match your search"
+                      : "Add your first quiz to start testing your students"}
+                  </p>
+                  <Button
+                    onClick={() => setAddDialogOpen(true)}
+                    className="bg-[#1e74bb] hover:bg-[#1a65a3] text-white shadow-sm transition-all hover:shadow"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Quiz
+                  </Button>
                 </div>
               ) : (
-                <div className="rounded-md border">
+                <div className="rounded-md border border-gray-100 overflow-hidden">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b bg-gray-50">
-                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">ID</th>
-                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Quiz Name</th>
-                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Time Limit</th>
-                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Pass %</th>
-                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Status</th>
-                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Created</th>
-                        <th className="h-12 px-4 text-right text-sm font-medium text-gray-500">Actions</th>
+                      <tr className="bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white">
+                        <th className="h-12 px-4 text-left text-sm font-medium">ID</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium">Quiz Name</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium">Time Limit</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium">Pass %</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium">Status</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium">Created</th>
+                        <th className="h-12 px-4 text-right text-sm font-medium">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredQuizzes.map((quiz) => (
-                        <tr key={quiz.quiz_id} className="border-b hover:bg-gray-50">
+                      {filteredQuizzes.map((quiz, index) => (
+                        <tr
+                          key={quiz.quiz_id}
+                          className={`border-b hover:bg-[#f0f7ff] transition-colors ${index % 2 === 0 ? "bg-white" : "bg-[#f8fafc]"
+                            }`}
+                        >
                           <td className="px-4 py-3 text-sm">{quiz.quiz_id}</td>
                           <td className="px-4 py-3 text-sm font-medium">{quiz.title}</td>
                           <td className="px-4 py-3 text-sm">{formatTimeLimit(quiz.time_limit)}</td>
                           <td className="px-4 py-3 text-sm">{quiz.passing_score}%</td>
                           <td className="px-4 py-3 text-sm">
-                            <Badge variant={quiz.is_active ? "default" : "outline"}>
+                            <Badge
+                              variant={quiz.is_active ? "default" : "outline"}
+                              className={
+                                quiz.is_active ? "bg-green-100 text-green-800 hover:bg-green-200" : "text-gray-500"
+                              }
+                            >
                               {quiz.is_active ? "Active" : "Inactive"}
                             </Badge>
                           </td>
                           <td className="px-4 py-3 text-sm">{new Date(quiz.create_date_time).toLocaleDateString()}</td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex justify-end gap-2">
-                              <Button variant="outline" size="sm">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1 border-brand text-brand hover:bg-brand-light"
+                              >
                                 <FileText className="h-4 w-4" />
                                 <span className="sr-only md:not-sr-only md:ml-2">Questions</span>
                               </Button>
@@ -515,7 +661,11 @@ export default function QuizzesPage() {
                                 onOpenChange={(open) => setEditDialogId(open ? quiz.quiz_id : null)}
                               >
                                 <DialogTrigger asChild>
-                                  <Button variant="outline" size="sm">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-gray-200 hover:border-[#1e74bb] hover:text-[#1e74bb]"
+                                  >
                                     <Pencil className="h-4 w-4" />
                                     <span className="sr-only md:not-sr-only md:ml-2">Edit</span>
                                   </Button>
@@ -541,8 +691,12 @@ export default function QuizzesPage() {
 
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="outline" size="sm">
-                                    <Trash2 className="h-4 w-4 text-red-500" />
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-gray-200 hover:border-red-200 hover:text-red-500"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
                                     <span className="sr-only md:not-sr-only md:ml-2">Delete</span>
                                   </Button>
                                 </AlertDialogTrigger>
@@ -550,8 +704,8 @@ export default function QuizzesPage() {
                                   <AlertDialogHeader>
                                     <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      This will permanently delete the quiz "{quiz.title}" and all associated
-                                      questions. This action cannot be undone.
+                                      This will permanently delete the quiz "{quiz.title}" and all associated questions.
+                                      This action cannot be undone.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
@@ -671,11 +825,11 @@ function QuizForm({ quiz, subjectId, topicId, subjectName, topicName, onSuccess 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="subject">Subject</Label>
-            <Input id="subject" value={subjectName} disabled />
+            <Input id="subject" value={subjectName} disabled className="bg-gray-50 border-gray-200" />
           </div>
           <div className="space-y-2">
             <Label htmlFor="topic">Topic</Label>
-            <Input id="topic" value={topicName} disabled />
+            <Input id="topic" value={topicName} disabled className="bg-gray-50 border-gray-200" />
           </div>
         </div>
 
@@ -690,6 +844,7 @@ function QuizForm({ quiz, subjectId, topicId, subjectName, topicName, onSuccess 
             onChange={handleChange}
             placeholder="e.g., Basic Arithmetic Quiz"
             required
+            className="border-gray-200 focus-visible:ring-[#1e74bb]"
           />
         </div>
 
@@ -702,6 +857,7 @@ function QuizForm({ quiz, subjectId, topicId, subjectName, topicName, onSuccess 
             onChange={handleChange}
             placeholder="Enter a description for this quiz"
             rows={3}
+            className="border-gray-200 focus-visible:ring-[#1e74bb]"
           />
         </div>
 
@@ -715,13 +871,12 @@ function QuizForm({ quiz, subjectId, topicId, subjectName, topicName, onSuccess 
               min="30"
               value={formData.time_limit}
               onChange={handleChange}
+              className="border-gray-200 focus-visible:ring-[#1e74bb]"
             />
             <p className="text-xs text-gray-500">
               {Math.floor(formData.time_limit / 60)}m {formData.time_limit % 60}s
             </p>
           </div>
-
-
 
           <div className="space-y-2">
             <Label htmlFor="passing_score">Passing Percentage</Label>
@@ -733,6 +888,7 @@ function QuizForm({ quiz, subjectId, topicId, subjectName, topicName, onSuccess 
               max="100"
               value={formData.passing_score}
               onChange={handleChange}
+              className="border-gray-200 focus-visible:ring-[#1e74bb]"
             />
           </div>
 
@@ -746,6 +902,7 @@ function QuizForm({ quiz, subjectId, topicId, subjectName, topicName, onSuccess 
               max="100"
               value={formData.total_questions}
               onChange={handleChange}
+              className="border-gray-200 focus-visible:ring-[#1e74bb]"
             />
           </div>
         </div>
@@ -756,12 +913,13 @@ function QuizForm({ quiz, subjectId, topicId, subjectName, topicName, onSuccess 
             id="is_active"
             checked={formData.is_active}
             onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, is_active: checked }))}
+            className="data-[state=checked]:bg-[#1e74bb]"
           />
         </div>
       </div>
 
       <DialogFooter>
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading} className="bg-[#1e74bb] hover:bg-[#1a65a3] text-white">
           {isLoading && (
             <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
           )}

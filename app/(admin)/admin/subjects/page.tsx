@@ -55,6 +55,7 @@ export default function SubjectsPage() {
 
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState<number | null>(null)
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null)
 
   // Fetch subjects on component mount
   useEffect(() => {
@@ -167,13 +168,53 @@ export default function SubjectsPage() {
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Subjects Management</h1>
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <nav className="flex mb-6" aria-label="Breadcrumb">
+        <ol className="inline-flex items-center space-x-1 md:space-x-3">
+          <li className="inline-flex items-center">
+            <Link href="/admin" className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-brand">
+              <svg
+                className="w-3 h-3 mr-2.5"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2a1 1 0 0 0 1.414 1.414L2 10.414V18a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.586l.293.293a1 1 0 0 0 1.414-1.414Z" />
+              </svg>
+              Admin
+            </Link>
+          </li>
+          <li aria-current="page">
+            <div className="flex items-center">
+              <svg
+                className="w-3 h-3 text-gray-400 mx-1"
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 6 10"
+              >
+                <path
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="m1 9 4-4-4-4"
+                />
+              </svg>
+              <span className="ml-1 text-sm font-medium text-brand md:ml-2">Subjects</span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-gray-800">Subjects Management</h1>
 
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setAddDialogOpen(true)}>
+            <Button onClick={() => setAddDialogOpen(true)} className="bg-brand hover:bg-brand-hover">
               <Plus className="mr-2 h-4 w-4" />
               Add Subject
             </Button>
@@ -200,9 +241,13 @@ export default function SubjectsPage() {
 
       <Tabs defaultValue="grid" className="w-full">
         <div className="flex justify-between items-center mb-4">
-          <TabsList>
-            <TabsTrigger value="grid">Grid View</TabsTrigger>
-            <TabsTrigger value="table">Table View</TabsTrigger>
+          <TabsList className="bg-gray-100">
+            <TabsTrigger value="grid" className="data-[state=active]:bg-brand data-[state=active]:text-white">
+              Grid View
+            </TabsTrigger>
+            <TabsTrigger value="table" className="data-[state=active]:bg-brand data-[state=active]:text-white">
+              Table View
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex items-center gap-2">
@@ -210,7 +255,7 @@ export default function SubjectsPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
               <Input
                 placeholder="Search subjects..."
-                className="pl-8 w-[200px] md:w-[300px]"
+                className="pl-8 w-[200px] md:w-[300px] border-gray-300 focus:border-brand focus:ring-brand"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -218,15 +263,21 @@ export default function SubjectsPage() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="border-gray-300 text-gray-700">
                   <Filter className="h-4 w-4 mr-2" />
                   Filter
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setFilterOrg(null)}>All Organizations</DropdownMenuItem>
+              <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg">
+                <DropdownMenuItem onClick={() => setFilterOrg(null)} className="hover:bg-brand-light">
+                  All Organizations
+                </DropdownMenuItem>
                 {organizations.map((org) => (
-                  <DropdownMenuItem key={org.organization_id} onClick={() => setFilterOrg(org.organization_id)}>
+                  <DropdownMenuItem
+                    key={org.organization_id}
+                    onClick={() => setFilterOrg(org.organization_id)}
+                    className="hover:bg-brand-light"
+                  >
                     {org.organization_name}
                   </DropdownMenuItem>
                 ))}
@@ -235,17 +286,18 @@ export default function SubjectsPage() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="border-gray-300 text-gray-700">
                   <ArrowUpDown className="h-4 w-4 mr-2" />
                   Sort
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg">
                 <DropdownMenuItem
                   onClick={() => {
                     setSortBy("name")
                     toggleSortOrder()
                   }}
+                  className="hover:bg-brand-light"
                 >
                   By Name ({sortOrder === "asc" ? "A-Z" : "Z-A"})
                 </DropdownMenuItem>
@@ -254,6 +306,7 @@ export default function SubjectsPage() {
                     setSortBy("date")
                     toggleSortOrder()
                   }}
+                  className="hover:bg-brand-light"
                 >
                   By Date ({sortOrder === "asc" ? "Oldest" : "Newest"})
                 </DropdownMenuItem>
@@ -265,31 +318,46 @@ export default function SubjectsPage() {
         <TabsContent value="grid" className="mt-4">
           {isLoading ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#1e74bb]"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand"></div>
             </div>
           ) : filteredSubjects.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              {searchQuery ? "No subjects match your search" : "No subjects found. Add your first subject!"}
+            <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-200">
+              <BookOpen className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+              <h3 className="text-lg font-medium text-gray-900 mb-1">No subjects found</h3>
+              <p className="text-gray-500">
+                {searchQuery ? "No subjects match your search criteria" : "Add your first subject to get started!"}
+              </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredSubjects.map((subject) => (
-                <Card key={subject.subject_id} className="overflow-hidden hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-2">
+                <Card
+                  key={subject.subject_id}
+                  className={`overflow-hidden transition-all duration-200 ${hoveredCard === subject.subject_id ? "shadow-md border-brand" : "shadow border-gray-200"
+                    }`}
+                  onMouseEnter={() => setHoveredCard(subject.subject_id)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                >
+                  <CardHeader className="pb-2 bg-gradient-to-r from-brand-light to-white">
                     <div className="flex justify-between items-start">
                       <div>
-                        <CardTitle className="text-xl">{subject.subject_name}</CardTitle>
-                        <CardDescription className="flex items-center mt-1">
+                        <CardTitle className="text-xl text-gray-800">{subject.subject_name}</CardTitle>
+                        <CardDescription className="flex items-center mt-1 text-gray-600">
                           <School className="h-3.5 w-3.5 mr-1" />
                           {subject.organization_name}
                         </CardDescription>
                       </div>
-                      <Badge variant={subject.is_active ? "default" : "outline"}>
+                      <Badge
+                        variant={subject.is_active ? "default" : "outline"}
+                        className={
+                          subject.is_active ? "bg-green-100 text-green-800 hover:bg-green-200" : "text-gray-500"
+                        }
+                      >
                         {subject.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pt-4">
                     <div className="text-sm text-gray-500 mb-4">
                       Created: {new Date(subject.create_date_time).toLocaleDateString()}
                     </div>
@@ -297,10 +365,17 @@ export default function SubjectsPage() {
                       <Link
                         href={{
                           pathname: `/admin/subjects/${subject.subject_id}/topics`,
-                          query: { organization_id: subject.organization_id, organization_name: subject.organization_name },
+                          query: {
+                            organization_id: subject.organization_id,
+                            organization_name: subject.organization_name,
+                          },
                         }}
                       >
-                        <Button variant="outline" size="sm" className="gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 border-brand text-brand hover:bg-brand-light"
+                        >
                           <BookOpen className="h-4 w-4" />
                           Manage Topics
                         </Button>
@@ -311,8 +386,12 @@ export default function SubjectsPage() {
                           onOpenChange={(open) => setEditDialogOpen(open ? subject.subject_id : null)}
                         >
                           <DialogTrigger asChild>
-                            <Button variant="outline" size="icon">
-                              <Pencil className="h-4 w-4" />
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="border-gray-300 hover:border-brand hover:bg-brand-light"
+                            >
+                              <Pencil className="h-4 w-4 text-gray-600" />
                             </Button>
                           </DialogTrigger>
                           <DialogContent>
@@ -336,7 +415,11 @@ export default function SubjectsPage() {
 
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="icon">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="border-gray-300 hover:border-red-300 hover:bg-red-50"
+                            >
                               <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
                           </AlertDialogTrigger>
@@ -369,47 +452,64 @@ export default function SubjectsPage() {
         </TabsContent>
 
         <TabsContent value="table" className="mt-4">
-          <Card className="border border-gray-100 shadow-sm">
+          <Card className="border border-gray-200 shadow-sm overflow-hidden">
             <CardContent className="p-0">
               {isLoading ? (
                 <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#1e74bb]"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand"></div>
                 </div>
               ) : filteredSubjects.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  {searchQuery ? "No subjects match your search" : "No subjects found. Add your first subject!"}
+                <div className="text-center py-12 bg-gray-50">
+                  <BookOpen className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-1">No subjects found</h3>
+                  <p className="text-gray-500">
+                    {searchQuery ? "No subjects match your search criteria" : "Add your first subject to get started!"}
+                  </p>
                 </div>
               ) : (
-                <div className="rounded-md border">
+                <div className="rounded-md">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b bg-gray-50">
-                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">ID</th>
-                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Subject Name</th>
-                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Organization</th>
-                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Status</th>
-                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Created</th>
-                        <th className="h-12 px-4 text-right text-sm font-medium text-gray-500">Actions</th>
+                      <tr className="bg-brand-light border-b border-gray-200">
+                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-700">ID</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-700">Subject Name</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-700">Organization</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-700">Status</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-700">Created</th>
+                        <th className="h-12 px-4 text-right text-sm font-medium text-gray-700">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredSubjects.map((subject) => (
-                        <tr key={subject.subject_id} className="border-b hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm">{subject.subject_id}</td>
-                          <td className="px-4 py-3 text-sm font-medium">{subject.subject_name}</td>
-                          <td className="px-4 py-3 text-sm">{subject.organization_name}</td>
+                      {filteredSubjects.map((subject, index) => (
+                        <tr
+                          key={subject.subject_id}
+                          className={`border-b hover:bg-brand-light transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                            }`}
+                        >
+                          <td className="px-4 py-3 text-sm text-gray-600">{subject.subject_id}</td>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-800">{subject.subject_name}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{subject.organization_name}</td>
                           <td className="px-4 py-3 text-sm">
-                            <Badge variant={subject.is_active ? "default" : "outline"}>
+                            <Badge
+                              variant={subject.is_active ? "default" : "outline"}
+                              className={
+                                subject.is_active ? "bg-green-100 text-green-800 hover:bg-green-200" : "text-gray-500"
+                              }
+                            >
                               {subject.is_active ? "Active" : "Inactive"}
                             </Badge>
                           </td>
-                          <td className="px-4 py-3 text-sm">
+                          <td className="px-4 py-3 text-sm text-gray-600">
                             {new Date(subject.create_date_time).toLocaleDateString()}
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex justify-end gap-2">
                               <Link href={`/admin/subjects/${subject.subject_id}/topics`}>
-                                <Button variant="outline" size="sm">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-brand text-brand hover:bg-brand-light"
+                                >
                                   <ChevronRight className="h-4 w-4" />
                                   <span className="sr-only md:not-sr-only md:ml-2">Topics</span>
                                 </Button>
@@ -420,7 +520,11 @@ export default function SubjectsPage() {
                                 onOpenChange={(open) => setEditDialogOpen(open ? subject.subject_id : null)}
                               >
                                 <DialogTrigger asChild>
-                                  <Button variant="outline" size="sm">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-gray-300 hover:border-brand hover:bg-brand-light"
+                                  >
                                     <Pencil className="h-4 w-4" />
                                     <span className="sr-only md:not-sr-only md:ml-2">Edit</span>
                                   </Button>
@@ -446,7 +550,11 @@ export default function SubjectsPage() {
 
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="outline" size="sm">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-gray-300 hover:border-red-300 hover:bg-red-50"
+                                  >
                                     <Trash2 className="h-4 w-4 text-red-500" />
                                     <span className="sr-only md:not-sr-only md:ml-2">Delete</span>
                                   </Button>
@@ -564,6 +672,7 @@ export function SubjectForm({ subject, onSuccess, organizationOptions }: Subject
             value={formData.subject_name}
             onChange={handleChange}
             placeholder="e.g., Mathematics"
+            className="border-gray-300 focus:border-brand focus:ring-brand"
             required
           />
         </div>
@@ -575,7 +684,7 @@ export function SubjectForm({ subject, onSuccess, organizationOptions }: Subject
             name="organization_id"
             value={formData.organization_id}
             onChange={handleChange}
-            className="w-full border rounded px-2 py-2"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand"
             required
           >
             <option value="">Select Organization</option>
@@ -588,18 +697,20 @@ export function SubjectForm({ subject, onSuccess, organizationOptions }: Subject
         </div>
 
         <div className="flex items-center gap-2">
-          <Label htmlFor="is_active">Active</Label>
+          <Label htmlFor="is_active" className="cursor-pointer">
+            Active
+          </Label>
           <Switch
-            className="h-6 w-11 rounded-full"
             id="is_active"
             checked={formData.is_active}
             onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, is_active: checked }))}
+            className="data-[state=checked]:bg-brand"
           />
         </div>
       </div>
 
       <DialogFooter>
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading} className="bg-brand hover:bg-brand-hover">
           {isLoading && (
             <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
           )}
