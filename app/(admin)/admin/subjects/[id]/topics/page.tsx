@@ -3,9 +3,20 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { Plus, Pencil, Trash2, Search, BookOpen, ArrowUpDown, FileText } from "lucide-react"
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  BookOpen,
+  ArrowUpDown,
+  BookOpenCheck,
+  Layers,
+  FileText,
+  ChevronRight,
+} from "lucide-react"
 import { api } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
@@ -34,13 +45,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 
 import type { Subject } from "@/app/types/types"
 
@@ -64,13 +68,16 @@ export default function TopicsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState<"name" | "date">("name")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null)
 
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [editDialogId, setEditDialogId] = useState<number | null>(null)
 
-  const subjectId = params.id as string
+  const searchParams = useSearchParams() // query params
 
-  const organizationName = localStorage.getItem("organizationId")
+  const subjectId = params.id as string
+  const organizationId = searchParams.get("organization_id")
+  const organizationName = searchParams.get("organization_name")
 
   // Fetch subject and topics on component mount
   useEffect(() => {
@@ -164,69 +171,107 @@ export default function TopicsPage() {
 
   return (
     <div>
-      <Breadcrumb className="mb-6">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/admin">Dashboard</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/admin/subjects">Subjects</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbLink>{subject?.subject_name || "Topics"}</BreadcrumbLink>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BookOpen className="h-6 w-6 text-[#1e74bb]" />
-            {subject?.subject_name || "Loading..."} Topics
-          </h1>
-          <p className="text-gray-500 mt-1">Manage topics for this subject</p>
+      {/* Page Header */}
+      <div className="bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white p-6 rounded-lg shadow-md mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Badge className="bg-white text-[#1e74bb] hover:bg-gray-100">Admin Level</Badge>
+              <Badge className="bg-[#0d4c7a] text-white">Topics Hub</Badge>
+            </div>
+            <h1 className="text-2xl font-bold mb-1">{subject?.subject_name || "Loading..."} Topics</h1>
+            <p className="text-gray-100">Manage topics for this subject</p>
+          </div>
+          <div className="mt-4 md:mt-0">
+            <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => setAddDialogOpen(true)} className="bg-white text-[#1e74bb] hover:bg-gray-100">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Topic
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Topic</DialogTitle>
+                  <DialogDescription>Create a new topic for {subject?.subject_name}.</DialogDescription>
+                </DialogHeader>
+                <TopicForm
+                  subjectId={Number.parseInt(subjectId)}
+                  subjectName={subject?.subject_name || ""}
+                  createdBy={0}
+                  organizationName={organizationName || ""}
+                  organizationId={Number.parseInt(organizationId || "")}
+                  onSuccess={() => {
+                    fetchTopics()
+                    setAddDialogOpen(false)
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
-
-        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setAddDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Topic
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Topic</DialogTitle>
-              <DialogDescription>Create a new topic for {subject?.subject_name}.</DialogDescription>
-            </DialogHeader>
-            <TopicForm
-              subjectId={Number.parseInt(subjectId)}
-              subjectName={subject?.subject_name || ""}
-              organizationName={organizationName || ""}
-              onSuccess={() => {
-                fetchTopics()
-                setAddDialogOpen(false)
-              }}
-            />
-          </DialogContent>
-        </Dialog>
       </div>
 
-      <Card className="border border-gray-100 shadow-sm mb-6">
-        <CardHeader className="pb-0">
+      {/* Breadcrumb */}
+      <nav className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 mb-6" aria-label="Breadcrumb">
+        <ol className="flex items-center flex-wrap">
+          <li className="inline-flex items-center">
+            <Link
+              href="/admin"
+              className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-[#1e74bb] transition-colors"
+            >
+              <Layers className="w-4 h-4 mr-2 text-[#1e74bb]" />
+              Dashboard
+            </Link>
+          </li>
+          <li>
+            <div className="flex items-center mx-2">
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </div>
+          </li>
+          <li>
+            <Link
+              href="/admin/subjects"
+              className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-[#1e74bb] transition-colors"
+            >
+              <BookOpen className="w-4 h-4 mr-2 text-[#1e74bb]" />
+              Subjects
+            </Link>
+          </li>
+          <li>
+            <div className="flex items-center mx-2">
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </div>
+          </li>
+          <li aria-current="page">
+            <div className="flex items-center">
+              <span className="text-sm font-medium text-[#1e74bb] flex items-center">
+                <BookOpenCheck className="w-4 h-4 mr-2" />
+                {subject?.subject_name || "Topics"}
+              </span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+
+      <Card className="border border-gray-100 shadow-sm mb-6 overflow-hidden">
+        <CardHeader className="pb-0 bg-gradient-to-r from-[#e6f0f9] to-white">
           <CardTitle className="text-lg">Subject Information</CardTitle>
         </CardHeader>
         <CardContent className="pt-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <p className="text-sm font-medium text-gray-500">Subject ID</p>
-              <p>{subject?.subject_id}</p>
+              <p className="text-sm font-medium text-gray-500">Subject Name</p>
+              <p className="font-medium">{subject?.subject_name}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Status</p>
-              <Badge variant={subject?.is_active ? "default" : "outline"} className="mt-1">
+              <Badge
+                variant={subject?.is_active ? "default" : "outline"}
+                className={
+                  subject?.is_active ? "bg-green-100 text-green-800 hover:bg-green-200 mt-1" : "text-gray-500 mt-1"
+                }
+              >
                 {subject?.is_active ? "Active" : "Inactive"}
               </Badge>
             </div>
@@ -240,9 +285,19 @@ export default function TopicsPage() {
 
       <Tabs defaultValue="grid" className="w-full">
         <div className="flex justify-between items-center mb-4">
-          <TabsList>
-            <TabsTrigger value="grid">Grid View</TabsTrigger>
-            <TabsTrigger value="table">Table View</TabsTrigger>
+          <TabsList className="bg-gray-100">
+            <TabsTrigger value="grid" className="data-[state=active]:bg-white data-[state=active]:text-[#1e74bb]">
+              <div className="flex items-center">
+                <Layers className="mr-2 h-4 w-4" />
+                Grid View
+              </div>
+            </TabsTrigger>
+            <TabsTrigger value="table" className="data-[state=active]:bg-white data-[state=active]:text-[#1e74bb]">
+              <div className="flex items-center">
+                <BookOpenCheck className="mr-2 h-4 w-4" />
+                Table View
+              </div>
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex items-center gap-2">
@@ -250,7 +305,7 @@ export default function TopicsPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
               <Input
                 placeholder="Search topics..."
-                className="pl-8 w-[200px] md:w-[300px]"
+                className="pl-8 w-[200px] md:w-[300px] border-gray-200 focus-visible:ring-[#1e74bb]"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -258,17 +313,18 @@ export default function TopicsPage() {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="border-gray-200">
                   <ArrowUpDown className="h-4 w-4 mr-2" />
                   Sort
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="border-gray-200">
                 <DropdownMenuItem
                   onClick={() => {
                     setSortBy("name")
                     toggleSortOrder()
                   }}
+                  className="cursor-pointer"
                 >
                   By Name ({sortOrder === "asc" ? "A-Z" : "Z-A"})
                 </DropdownMenuItem>
@@ -277,6 +333,7 @@ export default function TopicsPage() {
                     setSortBy("date")
                     toggleSortOrder()
                   }}
+                  className="cursor-pointer"
                 >
                   By Date ({sortOrder === "asc" ? "Oldest" : "Newest"})
                 </DropdownMenuItem>
@@ -287,33 +344,81 @@ export default function TopicsPage() {
 
         <TabsContent value="grid" className="mt-4">
           {isLoading ? (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#1e74bb]"></div>
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#e6f0f9] border-t-4 border-t-[#1e74bb]"></div>
+              <p className="mt-4 text-[#1e74bb] font-medium">Loading topics...</p>
             </div>
           ) : filteredTopics.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              {searchQuery ? "No topics match your search" : "No topics found. Add your first topic!"}
+            <div className="text-center py-16 bg-gradient-to-b from-[#f0f7ff] to-white rounded-lg border border-[#e6f0f9] shadow-sm">
+              <div className="bg-[#e6f0f9] rounded-full p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <BookOpenCheck className="h-10 w-10 text-[#1e74bb]" />
+              </div>
+              <h3 className="text-xl font-medium text-[#1e74bb] mb-2">No topics found</h3>
+              <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                {searchQuery
+                  ? "No topics match your search"
+                  : "Add your first topic to get started with your curriculum"}
+              </p>
+              <Button
+                onClick={() => setAddDialogOpen(true)}
+                className="bg-[#1e74bb] hover:bg-[#1a65a3] text-white shadow-sm transition-all hover:shadow"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Topic
+              </Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredTopics.map((topic) => (
-                <Card key={topic.topic_id} className="overflow-hidden hover:shadow-md transition-shadow">
-                  <CardHeader className="pb-2">
+                <Card
+                  key={topic.topic_id}
+                  className={`overflow-hidden transition-all duration-200 hover:shadow-md ${hoveredCard === topic.topic_id ? "border-[#1e74bb] shadow-md" : "border-gray-100"
+                    }`}
+                  onMouseEnter={() => setHoveredCard(topic.topic_id)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                >
+                  <CardHeader
+                    className={`pb-2 ${hoveredCard === topic.topic_id
+                      ? "bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white"
+                      : "bg-gradient-to-r from-[#e6f0f9] to-white"
+                      }`}
+                  >
                     <div className="flex justify-between items-start">
-                      <CardTitle className="text-lg">{topic.topic_name}</CardTitle>
-                      <Badge variant={topic.is_active ? "default" : "outline"}>
+                      <CardTitle
+                        className={`text-lg ${hoveredCard === topic.topic_id ? "text-white" : "text-gray-800"}`}
+                      >
+                        {topic.topic_name}
+                      </CardTitle>
+                      <Badge
+                        variant={topic.is_active ? "default" : "outline"}
+                        className={
+                          topic.is_active
+                            ? hoveredCard === topic.topic_id
+                              ? "bg-white text-[#1e74bb] hover:bg-gray-100"
+                              : "bg-green-100 text-green-800 hover:bg-green-200"
+                            : hoveredCard === topic.topic_id
+                              ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                              : "text-gray-500"
+                        }
+                      >
                         {topic.is_active ? "Active" : "Inactive"}
                       </Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="pb-2">
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 mt-2">
                       Created: {new Date(topic.create_date_time).toLocaleDateString()}
                     </p>
                   </CardContent>
-                  <CardFooter className="flex justify-between pt-0">
-                    <Link href={`/admin/subjects/${subjectId}/topics/${topic.topic_id}/quizzes`}>
-                      <Button variant="outline" size="sm" className="gap-1">
+                  <CardFooter className="flex justify-between pt-0 bg-gray-50">
+                    <Link
+                      href={`/admin/subjects/${subjectId}/topics/${topic.topic_id}/quizzes?organization_id=${organizationId}&organization_name=${organizationName}`}
+                    >
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 border-brand text-brand hover:bg-brand-light"
+                      >
                         <FileText className="h-4 w-4" />
                         Manage Quizzes
                       </Button>
@@ -324,8 +429,12 @@ export default function TopicsPage() {
                         onOpenChange={(open) => setEditDialogId(open ? topic.topic_id : null)}
                       >
                         <DialogTrigger asChild>
-                          <Button variant="outline" size="icon">
-                            <Pencil className="h-4 w-4" />
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="border-gray-200 hover:border-[#1e74bb] hover:text-[#1e74bb]"
+                          >
+                            <Pencil className="h-4 w-4 " />
                           </Button>
                         </DialogTrigger>
                         <DialogContent>
@@ -337,6 +446,8 @@ export default function TopicsPage() {
                             topic={topic}
                             subjectId={Number.parseInt(subjectId)}
                             subjectName={subject?.subject_name || ""}
+                            createdBy={Number.parseInt(topic.created_by)}
+                            organizationId={Number.parseInt(organizationId || "")}
                             organizationName={organizationName || ""}
                             onSuccess={() => {
                               fetchTopics()
@@ -348,7 +459,11 @@ export default function TopicsPage() {
 
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="outline" size="icon">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="border-gray-200 hover:border-red-200 hover:text-red-500"
+                          >
                             <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
                         </AlertDialogTrigger>
@@ -383,40 +498,71 @@ export default function TopicsPage() {
           <Card className="border border-gray-100 shadow-sm">
             <CardContent className="p-0">
               {isLoading ? (
-                <div className="flex justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#1e74bb]"></div>
+                <div className="flex flex-col items-center justify-center py-16">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#e6f0f9] border-t-4 border-t-[#1e74bb]"></div>
+                  <p className="mt-4 text-[#1e74bb] font-medium">Loading topics...</p>
                 </div>
               ) : filteredTopics.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  {searchQuery ? "No topics match your search" : "No topics found. Add your first topic!"}
+                <div className="text-center py-16 bg-gradient-to-b from-[#f0f7ff] to-white rounded-lg border border-[#e6f0f9] shadow-sm">
+                  <div className="bg-[#e6f0f9] rounded-full p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                    <BookOpenCheck className="h-10 w-10 text-[#1e74bb]" />
+                  </div>
+                  <h3 className="text-xl font-medium text-[#1e74bb] mb-2">No topics found</h3>
+                  <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                    {searchQuery
+                      ? "No topics match your search"
+                      : "Add your first topic to get started with your curriculum"}
+                  </p>
+                  <Button
+                    onClick={() => setAddDialogOpen(true)}
+                    className="bg-[#1e74bb] hover:bg-[#1a65a3] text-white shadow-sm transition-all hover:shadow"
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Topic
+                  </Button>
                 </div>
               ) : (
-                <div className="rounded-md border">
+                <div className="rounded-md border border-gray-100 overflow-hidden">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b bg-gray-50">
-                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">ID</th>
-                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Topic Name</th>
-                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Status</th>
-                        <th className="h-12 px-4 text-left text-sm font-medium text-gray-500">Created</th>
-                        <th className="h-12 px-4 text-right text-sm font-medium text-gray-500">Actions</th>
+                      <tr className="bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white">
+                        <th className="h-12 px-4 text-left text-sm font-medium">ID</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium">Topic Name</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium">Status</th>
+                        <th className="h-12 px-4 text-left text-sm font-medium">Created</th>
+                        <th className="h-12 px-4 text-right text-sm font-medium">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredTopics.map((topic) => (
-                        <tr key={topic.topic_id} className="border-b hover:bg-gray-50">
+                      {filteredTopics.map((topic, index) => (
+                        <tr
+                          key={topic.topic_id}
+                          className={`border-b hover:bg-[#f0f7ff] transition-colors ${index % 2 === 0 ? "bg-white" : "bg-[#f8fafc]"
+                            }`}
+                        >
                           <td className="px-4 py-3 text-sm">{topic.topic_id}</td>
                           <td className="px-4 py-3 text-sm font-medium">{topic.topic_name}</td>
                           <td className="px-4 py-3 text-sm">
-                            <Badge variant={topic.is_active ? "default" : "outline"}>
+                            <Badge
+                              variant={topic.is_active ? "default" : "outline"}
+                              className={
+                                topic.is_active ? "bg-green-100 text-green-800 hover:bg-green-200" : "text-gray-500"
+                              }
+                            >
                               {topic.is_active ? "Active" : "Inactive"}
                             </Badge>
                           </td>
                           <td className="px-4 py-3 text-sm">{new Date(topic.create_date_time).toLocaleDateString()}</td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex justify-end gap-2">
-                              <Link href={`/admin/subjects/${subjectId}/topics/${topic.topic_id}/quizzes`}>
-                                <Button variant="outline" size="sm">
+                              <Link
+                                href={`/admin/subjects/${subjectId}/topics/${topic.topic_id}/quizzes?organization_id=${organizationId}&organization_name=${organizationName}`}
+                              >
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-gray-200 hover:border-[#1e74bb] hover:text-[#1e74bb]"
+                                >
                                   <FileText className="h-4 w-4" />
                                   <span className="sr-only md:not-sr-only md:ml-2">Quizzes</span>
                                 </Button>
@@ -427,8 +573,12 @@ export default function TopicsPage() {
                                 onOpenChange={(open) => setEditDialogId(open ? topic.topic_id : null)}
                               >
                                 <DialogTrigger asChild>
-                                  <Button variant="outline" size="sm">
-                                    <Pencil className="h-4 w-4" />
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-gray-200 hover:border-[#1e74bb] hover:text-[#1e74bb]"
+                                  >
+                                    <Pencil className="h-4 w-4 text-gray-600" />
                                     <span className="sr-only md:not-sr-only md:ml-2">Edit</span>
                                   </Button>
                                 </DialogTrigger>
@@ -441,6 +591,8 @@ export default function TopicsPage() {
                                     topic={topic}
                                     subjectId={Number.parseInt(subjectId)}
                                     subjectName={subject?.subject_name || ""}
+                                    createdBy={Number.parseInt(topic.created_by)}
+                                    organizationId={Number.parseInt(organizationId || "")}
                                     organizationName={organizationName || ""}
                                     onSuccess={() => {
                                       fetchTopics()
@@ -452,7 +604,11 @@ export default function TopicsPage() {
 
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="outline" size="sm">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-gray-200 hover:border-red-200 hover:text-red-500"
+                                  >
                                     <Trash2 className="h-4 w-4 text-red-500" />
                                     <span className="sr-only md:not-sr-only md:ml-2">Delete</span>
                                   </Button>
@@ -498,15 +654,18 @@ interface TopicFormProps {
   subjectId: number
   subjectName: string
   organizationName: string
+  organizationId: number
+  createdBy: number
   onSuccess: () => void
 }
 
-function TopicForm({ topic, subjectId, subjectName, organizationName, onSuccess }: TopicFormProps) {
+function TopicForm({ topic, subjectId, subjectName, organizationName, organizationId, onSuccess }: TopicFormProps) {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     topic_name: topic?.topic_name || "",
     is_active: topic?.is_active ?? true,
+    created_by: topic?.created_by || 1,
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -523,12 +682,12 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, onSuccess 
       if (!formData.topic_name) {
         throw new Error("Topic title is required")
       }
-      const organizationId = localStorage.getItem("organizationId")
+
       const payload = {
         ...formData,
         subject_id: subjectId,
-        organization_id: Number.parseInt(organizationId || ""),
-        created_by: 101,
+        organization_id: organizationId,
+        created_by: topic?.created_by || 1,
       }
 
       // This would be replaced with your actual API endpoint
@@ -564,13 +723,33 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, onSuccess 
           <label htmlFor="title" className="text-sm font-medium">
             Organization <span className="text-red-500">*</span>
           </label>
-          <Input id="Organization" name="Organization" value={organizationName} disabled />
+          <Input
+            id="Organization"
+            name="Organization"
+            value={organizationName}
+            disabled
+            className="bg-gray-50 border-gray-200"
+          />
         </div>
         <div className="space-y-2">
           <label htmlFor="title" className="text-sm font-medium">
             Subject <span className="text-red-500">*</span>
           </label>
-          <Input id="Subject" name="Subject" value={subjectName} disabled />
+          <Input id="Subject" name="Subject" value={subjectName} disabled className="bg-gray-50 border-gray-200" />
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="title" className="text-sm font-medium">
+            Created by <span className="text-red-500">*</span>
+          </label>
+          <Input
+            id="created_by"
+            name="created_by"
+            value={formData.created_by}
+            onChange={handleChange}
+            placeholder="e.g., 101"
+            required
+            className="border-gray-200 focus-visible:ring-[#1e74bb]"
+          />
         </div>
         <div className="space-y-2">
           <label htmlFor="title" className="text-sm font-medium">
@@ -583,6 +762,7 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, onSuccess 
             onChange={handleChange}
             placeholder="e.g., Arithmetic & Number Sense"
             required
+            className="border-gray-200 focus-visible:ring-[#1e74bb]"
           />
         </div>
 
@@ -593,7 +773,7 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, onSuccess 
             name="is_active"
             checked={formData.is_active}
             onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            className="h-4 w-4 text-[#1e74bb] border-gray-300 rounded focus:ring-[#1e74bb]"
           />
           <label htmlFor="is_active" className="text-sm font-medium">
             Active
@@ -602,7 +782,7 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, onSuccess 
       </div>
 
       <DialogFooter>
-        <Button type="submit" disabled={isLoading}>
+        <Button type="submit" disabled={isLoading} className="bg-[#1e74bb] hover:bg-[#1a65a3] text-white">
           {isLoading && (
             <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
           )}
