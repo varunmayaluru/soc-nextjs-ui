@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Plus, Pencil, Trash2, Search, BookOpen, ArrowUpDown, FileText } from "lucide-react"
 import { api } from "@/lib/api-client"
@@ -68,9 +68,16 @@ export default function TopicsPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [editDialogId, setEditDialogId] = useState<number | null>(null)
 
-  const subjectId = params.id as string
+  // const subjectId = params.id as string
 
-  const organizationName = localStorage.getItem("organizationId")
+  const searchParams = useSearchParams(); // query params
+
+  const subjectId = params.id as string;
+  const organizationId = searchParams.get('organization_id');
+  const organizationName = searchParams.get('organization_name');
+
+  console.log("subjectId:", subjectId);
+  console.log("organizationId:", organizationId);
 
   // Fetch subject and topics on component mount
   useEffect(() => {
@@ -204,7 +211,9 @@ export default function TopicsPage() {
             <TopicForm
               subjectId={Number.parseInt(subjectId)}
               subjectName={subject?.subject_name || ""}
+              createdBy={0}
               organizationName={organizationName || ""}
+              organizationId={Number.parseInt(organizationId || "")}
               onSuccess={() => {
                 fetchTopics()
                 setAddDialogOpen(false)
@@ -221,8 +230,8 @@ export default function TopicsPage() {
         <CardContent className="pt-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <p className="text-sm font-medium text-gray-500">Subject ID</p>
-              <p>{subject?.subject_id}</p>
+              <p className="text-sm font-medium text-gray-500">Subject Name</p>
+              <p>{subject?.subject_name}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-gray-500">Status</p>
@@ -337,6 +346,8 @@ export default function TopicsPage() {
                             topic={topic}
                             subjectId={Number.parseInt(subjectId)}
                             subjectName={subject?.subject_name || ""}
+                            createdBy={Number.parseInt(topic.created_by)}
+                            organizationId={Number.parseInt(organizationId || "")}
                             organizationName={organizationName || ""}
                             onSuccess={() => {
                               fetchTopics()
@@ -441,6 +452,8 @@ export default function TopicsPage() {
                                     topic={topic}
                                     subjectId={Number.parseInt(subjectId)}
                                     subjectName={subject?.subject_name || ""}
+                                    createdBy={Number.parseInt(topic.created_by)}
+                                    organizationId={Number.parseInt(organizationId || "")}
                                     organizationName={organizationName || ""}
                                     onSuccess={() => {
                                       fetchTopics()
@@ -498,15 +511,18 @@ interface TopicFormProps {
   subjectId: number
   subjectName: string
   organizationName: string
+  organizationId: number
+  createdBy: number
   onSuccess: () => void
 }
 
-function TopicForm({ topic, subjectId, subjectName, organizationName, onSuccess }: TopicFormProps) {
+function TopicForm({ topic, subjectId, subjectName, organizationName, organizationId, onSuccess }: TopicFormProps) {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     topic_name: topic?.topic_name || "",
     is_active: topic?.is_active ?? true,
+    created_by: topic?.created_by || 1,
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -523,12 +539,12 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, onSuccess 
       if (!formData.topic_name) {
         throw new Error("Topic title is required")
       }
-      const organizationId = localStorage.getItem("organizationId")
+
       const payload = {
         ...formData,
         subject_id: subjectId,
-        organization_id: Number.parseInt(organizationId || ""),
-        created_by: 101,
+        organization_id: organizationId,
+        created_by: topic?.created_by || 1,
       }
 
       // This would be replaced with your actual API endpoint
@@ -571,6 +587,19 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, onSuccess 
             Subject <span className="text-red-500">*</span>
           </label>
           <Input id="Subject" name="Subject" value={subjectName} disabled />
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="title" className="text-sm font-medium">
+            Created by <span className="text-red-500">*</span>
+          </label>
+          <Input
+            id="created_by"
+            name="created_by"
+            value={formData.created_by}
+            onChange={handleChange}
+            placeholder="e.g., 101"
+            required
+          />
         </div>
         <div className="space-y-2">
           <label htmlFor="title" className="text-sm font-medium">

@@ -294,7 +294,12 @@ export default function SubjectsPage() {
                       Created: {new Date(subject.create_date_time).toLocaleDateString()}
                     </div>
                     <div className="flex justify-between items-center">
-                      <Link href={`/admin/subjects/${subject.subject_id}/topics`}>
+                      <Link
+                        href={{
+                          pathname: `/admin/subjects/${subject.subject_id}/topics`,
+                          query: { organization_id: subject.organization_id, organization_name: subject.organization_name },
+                        }}
+                      >
                         <Button variant="outline" size="sm" className="gap-1">
                           <BookOpen className="h-4 w-4" />
                           Manage Topics
@@ -520,9 +525,9 @@ export function SubjectForm({ subject, onSuccess, organizationOptions }: Subject
       const response = subject
         ? await api.put(`/subjects/subjects/${subject.subject_id}`, payload)
         : await api.post("subjects/subjects/", {
-            ...payload,
-            create_date_time: new Date().toISOString(),
-          })
+          ...payload,
+          create_date_time: new Date().toISOString(),
+        })
 
       if (response.ok) {
         toast({
