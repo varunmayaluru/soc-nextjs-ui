@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { Search, Filter, MoreHorizontal, ArrowUpDown, UserPlus } from "lucide-react"
+import { Search, Filter, MoreHorizontal, ArrowUpDown, UserPlus, Layers, ChevronRight, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -126,108 +126,142 @@ export default function UsersPage() {
     })
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Users</h1>
-          <p className="text-gray-500 mt-1">Manage your platform users</p>
+    <div className="space-y-6 mx-auto">
+      {/* Page Header */}
+      <div className="bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white p-6 rounded-lg shadow-md">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Badge className="bg-white text-[#1e74bb] hover:bg-gray-100">Admin Level</Badge>
+              <Badge className="bg-[#0d4c7a] text-white">User Management</Badge>
+            </div>
+            <h1 className="text-2xl font-bold mb-1">Users</h1>
+            <p className="text-gray-100">Manage your platform users</p>
+          </div>
+          <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
+            <DialogTrigger asChild>
+              <Button className="bg-white text-[#1e74bb] hover:bg-gray-100">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Add User
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[550px]">
+              <DialogHeader>
+                <DialogTitle>Add New User</DialogTitle>
+                <DialogDescription>Create a new user account for your learning platform.</DialogDescription>
+              </DialogHeader>
+
+              <Tabs defaultValue="details" className="mt-4">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="details">User Details</TabsTrigger>
+                  <TabsTrigger value="permissions">Permissions</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="details" className="space-y-4 mt-4">
+                  <div className="grid gap-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="first-name">First name</Label>
+                        <Input id="first-name" placeholder="John" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="last-name">Last name</Label>
+                        <Input id="last-name" placeholder="Doe" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input id="email" placeholder="john.doe@example.com" type="email" />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Password</Label>
+                      <Input id="password" type="password" />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="permissions" className="space-y-4 mt-4">
+                  <div className="grid gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="role">Role</Label>
+                      <Select>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="teacher">Teacher</SelectItem>
+                          <SelectItem value="student">Student</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="status">Status</Label>
+                      <Select defaultValue="active">
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+
+              <DialogFooter className="mt-6">
+                <Button variant="outline" onClick={() => setShowAddUserDialog(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  className="bg-[#1e74bb] hover:bg-[#1a65a3]"
+                  onClick={() => {
+                    // Add your user creation logic here
+                    // After successful creation:
+                    toast.success("User created successfully")
+                    setShowAddUserDialog(false)
+                  }}
+                >
+                  Create User
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
-
-        <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
-          <DialogTrigger asChild>
-            <Button className="bg-[#1e74bb] hover:bg-[#1a65a3]">
-              <UserPlus className="h-4 w-4 mr-2" />
-              Add User
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[550px]">
-            <DialogHeader>
-              <DialogTitle>Add New User</DialogTitle>
-              <DialogDescription>Create a new user account for your learning platform.</DialogDescription>
-            </DialogHeader>
-
-            <Tabs defaultValue="details" className="mt-4">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="details">User Details</TabsTrigger>
-                <TabsTrigger value="permissions">Permissions</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="details" className="space-y-4 mt-4">
-                <div className="grid gap-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="first-name">First name</Label>
-                      <Input id="first-name" placeholder="John" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="last-name">Last name</Label>
-                      <Input id="last-name" placeholder="Doe" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" placeholder="john.doe@example.com" type="email" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input id="password" type="password" />
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="permissions" className="space-y-4 mt-4">
-                <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select role" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="teacher">Teacher</SelectItem>
-                        <SelectItem value="student">Student</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status</Label>
-                    <Select defaultValue="active">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="inactive">Inactive</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
-
-            <DialogFooter className="mt-6">
-              <Button variant="outline" onClick={() => setShowAddUserDialog(false)}>
-                Cancel
-              </Button>
-              <Button
-                className="bg-[#1e74bb] hover:bg-[#1a65a3]"
-                onClick={() => {
-                  // Add your user creation logic here
-                  // After successful creation:
-                  toast.success("User created successfully")
-                  setShowAddUserDialog(false)
-                }}
-              >
-                Create User
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
+
+      {/* Breadcrumb */}
+      <nav className="bg-white p-3 rounded-lg shadow-sm border border-gray-200" aria-label="Breadcrumb">
+        <ol className="flex items-center flex-wrap">
+          <li className="inline-flex items-center">
+            <Link
+              href="/admin"
+              className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-[#1e74bb] transition-colors"
+            >
+              <Layers className="w-4 h-4 mr-2 text-[#1e74bb]" />
+              Dashboard
+            </Link>
+          </li>
+          <li>
+            <div className="flex items-center mx-2">
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </div>
+          </li>
+          <li aria-current="page">
+            <div className="flex items-center">
+              <span className="text-sm font-medium text-[#1e74bb] flex items-center">
+                <Users className="w-4 h-4 mr-2" />
+                Users
+              </span>
+            </div>
+          </li>
+        </ol>
+      </nav>
 
       <Card>
         <CardHeader className="pb-3">

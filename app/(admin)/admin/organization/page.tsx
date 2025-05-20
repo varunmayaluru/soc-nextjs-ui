@@ -15,6 +15,8 @@ import type { Organization } from "../../../types/types"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import Link from "next/link"
+import { Layers, ChevronRight, Building } from "lucide-react"
 
 export default function OrganizationsPage() {
   const [orgs, setOrgs] = useState<Organization[]>([])
@@ -256,113 +258,147 @@ export default function OrganizationsPage() {
     })
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">Organizations</h1>
-          <p className="text-gray-500 mt-1">Manage your learning platform organizations</p>
-        </div>
-
-        <Dialog open={showModal} onOpenChange={setShowModal}>
-          <DialogTrigger asChild>
-            <Button onClick={() => openModal()} className="bg-[#1e74bb] hover:bg-[#1a65a3]">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Organization
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[550px]">
-            <DialogHeader>
-              <DialogTitle>{editingOrg ? "Edit Organization" : "Add Organization"}</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="organization_name">
-                  Organization Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="organization_name"
-                  value={form.organization_name}
-                  onChange={(e) => setForm({ ...form, organization_name: e.target.value })}
-                  placeholder="Enter organization name"
-                  className={nameError.show ? "border-red-500" : ""}
-                />
-                {nameError.show && <p className="text-red-500 text-sm">{nameError.message}</p>}
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="slug">
-                  Slug <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="slug"
-                  value={form.slug}
-                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                  placeholder="Enter slug (e.g., my-organization)"
-                  className={slugError.show ? "border-red-500" : ""}
-                />
-                {slugError.show && <p className="text-red-500 text-sm">{slugError.message}</p>}
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Enter organization description"
-                  rows={3}
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="timezone">
-                  Timezone <span className="text-red-500">*</span>
-                </Label>
-                <Select value={form.timezone} onValueChange={(value) => setForm({ ...form, timezone: value })}>
-                  <SelectTrigger className={timezoneError.show ? "border-red-500" : ""}>
-                    <SelectValue placeholder="Select timezone" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {timezones.map((tz) => (
-                      <SelectItem key={tz} value={tz}>
-                        {tz}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {timezoneError.show && <p className="text-red-500 text-sm">{timezoneError.message}</p>}
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="created_by">Created By</Label>
-                <Input
-                  id="created_by"
-                  value={form.created_by}
-                  onChange={(e) => setForm({ ...form, created_by: e.target.value })}
-                  placeholder="User ID"
-                />
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={form.is_active}
-                  onCheckedChange={(checked) => setForm({ ...form, is_active: checked })}
-                  id="is_active"
-                />
-                <Label htmlFor="is_active">Active</Label>
-              </div>
+    <div className="space-y-6 mx-auto">
+      {/* Page Header */}
+      <div className="bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white p-6 rounded-lg shadow-md">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Badge className="bg-white text-[#1e74bb] hover:bg-gray-100">Admin Level</Badge>
+              <Badge className="bg-[#0d4c7a] text-white">Organizations</Badge>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowModal(false)}>
-                Cancel
+            <h1 className="text-2xl font-bold mb-1">Organizations</h1>
+            <p className="text-gray-100">Manage your learning platform organizations</p>
+          </div>
+          <Dialog open={showModal} onOpenChange={setShowModal}>
+            <DialogTrigger asChild>
+              <Button onClick={() => openModal()} className="bg-white text-[#1e74bb] hover:bg-gray-100">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Organization
               </Button>
-              <Button onClick={handleSubmit} className="bg-[#1e74bb] hover:bg-[#1a65a3]">
-                {editingOrg ? "Update" : "Create"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[550px]">
+              <DialogHeader>
+                <DialogTitle>{editingOrg ? "Edit Organization" : "Add Organization"}</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="organization_name">
+                    Organization Name <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="organization_name"
+                    value={form.organization_name}
+                    onChange={(e) => setForm({ ...form, organization_name: e.target.value })}
+                    placeholder="Enter organization name"
+                    className={nameError.show ? "border-red-500" : ""}
+                  />
+                  {nameError.show && <p className="text-red-500 text-sm">{nameError.message}</p>}
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="slug">
+                    Slug <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="slug"
+                    value={form.slug}
+                    onChange={(e) => setForm({ ...form, slug: e.target.value })}
+                    placeholder="Enter slug (e.g., my-organization)"
+                    className={slugError.show ? "border-red-500" : ""}
+                  />
+                  {slugError.show && <p className="text-red-500 text-sm">{slugError.message}</p>}
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="Enter organization description"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="timezone">
+                    Timezone <span className="text-red-500">*</span>
+                  </Label>
+                  <Select value={form.timezone} onValueChange={(value) => setForm({ ...form, timezone: value })}>
+                    <SelectTrigger className={timezoneError.show ? "border-red-500" : ""}>
+                      <SelectValue placeholder="Select timezone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {timezones.map((tz) => (
+                        <SelectItem key={tz} value={tz}>
+                          {tz}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {timezoneError.show && <p className="text-red-500 text-sm">{timezoneError.message}</p>}
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="created_by">Created By</Label>
+                  <Input
+                    id="created_by"
+                    value={form.created_by}
+                    onChange={(e) => setForm({ ...form, created_by: e.target.value })}
+                    placeholder="User ID"
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={form.is_active}
+                    onCheckedChange={(checked) => setForm({ ...form, is_active: checked })}
+                    id="is_active"
+                  />
+                  <Label htmlFor="is_active">Active</Label>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowModal(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSubmit} className="bg-[#1e74bb] hover:bg-[#1a65a3]">
+                  {editingOrg ? "Update" : "Create"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
+
+      {/* Breadcrumb */}
+      <nav className="bg-white p-3 rounded-lg shadow-sm border border-gray-200" aria-label="Breadcrumb">
+        <ol className="flex items-center flex-wrap">
+          <li className="inline-flex items-center">
+            <Link
+              href="/admin"
+              className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-[#1e74bb] transition-colors"
+            >
+              <Layers className="w-4 h-4 mr-2 text-[#1e74bb]" />
+              Dashboard
+            </Link>
+          </li>
+          <li>
+            <div className="flex items-center mx-2">
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </div>
+          </li>
+          <li aria-current="page">
+            <div className="flex items-center">
+              <span className="text-sm font-medium text-[#1e74bb] flex items-center">
+                <Building className="w-4 h-4 mr-2" />
+                Organizations
+              </span>
+            </div>
+          </li>
+        </ol>
+      </nav>
 
       <Card>
         <CardHeader className="pb-3">

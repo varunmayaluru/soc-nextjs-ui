@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Plus, Pencil, Trash2, ChevronRight, Search, BookOpen, School, Filter, ArrowUpDown } from "lucide-react"
+import { Plus, Pencil, Trash2, ChevronRight, Search, BookOpen, School, Filter, ArrowUpDown, Layers } from "lucide-react"
 import { api } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
@@ -169,55 +169,83 @@ export default function SubjectsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Page Header */}
+      <div className="bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white p-6 rounded-lg shadow-md mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Badge className="bg-white text-[#1e74bb] hover:bg-gray-100">Admin Level</Badge>
+              <Badge className="bg-[#0d4c7a] text-white">Subjects Hub</Badge>
+            </div>
+            <h1 className="text-2xl font-bold mb-1">Subjects Management</h1>
+            <p className="text-gray-100">Create and manage subjects for your learning platform</p>
+          </div>
+          <div className="mt-4 md:mt-0">
+            <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => setAddDialogOpen(true)} className="bg-white text-[#1e74bb] hover:bg-gray-100">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Subject
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Subject</DialogTitle>
+                  <DialogDescription>Create a new subject for your learning platform.</DialogDescription>
+                </DialogHeader>
+                <SubjectForm
+                  subject={undefined}
+                  onSuccess={() => {
+                    fetchSubjects(organizations)
+                    setAddDialogOpen(false)
+                  }}
+                  organizationOptions={organizations.map((org) => ({
+                    value: org.organization_id,
+                    label: org.organization_name,
+                  }))}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+      </div>
+
       {/* Breadcrumb */}
-      <nav className="flex mb-6" aria-label="Breadcrumb">
-        <ol className="inline-flex items-center space-x-1 md:space-x-3">
+      <nav className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 mb-6" aria-label="Breadcrumb">
+        <ol className="flex items-center flex-wrap">
           <li className="inline-flex items-center">
-            <Link href="/admin" className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-brand">
-              <svg
-                className="w-3 h-3 mr-2.5"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path d="m19.707 9.293-2-2-7-7a1 1 0 0 0-1.414 0l-7 7-2 2a1 1 0 0 0 1.414 1.414L2 10.414V18a2 2 0 0 0 2 2h3a1 1 0 0 0 1-1v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4a1 1 0 0 0 1 1h3a2 2 0 0 0 2-2v-7.586l.293.293a1 1 0 0 0 1.414-1.414Z" />
-              </svg>
-              Admin
+            <Link
+              href="/admin"
+              className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-[#1e74bb] transition-colors"
+            >
+              <Layers className="w-4 h-4 mr-2 text-[#1e74bb]" />
+              Dashboard
             </Link>
+          </li>
+          <li>
+            <div className="flex items-center mx-2">
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </div>
           </li>
           <li aria-current="page">
             <div className="flex items-center">
-              <svg
-                className="w-3 h-3 text-gray-400 mx-1"
-                aria-hidden="true"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 6 10"
-              >
-                <path
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="m1 9 4-4-4-4"
-                />
-              </svg>
-              <span className="ml-1 text-sm font-medium text-brand md:ml-2">Subjects</span>
+              <span className="text-sm font-medium text-[#1e74bb] flex items-center">
+                <BookOpen className="w-4 h-4 mr-2" />
+                Subjects
+              </span>
             </div>
           </li>
         </ol>
       </nav>
 
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-800">Subjects Management</h1>
 
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => setAddDialogOpen(true)} className="bg-brand hover:bg-brand-hover">
+            {/* <Button onClick={() => setAddDialogOpen(true)} className="bg-brand hover:bg-brand-hover">
               <Plus className="mr-2 h-4 w-4" />
               Add Subject
-            </Button>
+            </Button> */}
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>

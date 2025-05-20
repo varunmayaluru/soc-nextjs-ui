@@ -5,7 +5,18 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { Plus, Pencil, Trash2, Search, BookOpen, ArrowUpDown, BookOpenCheck, Layers, FileText } from "lucide-react"
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Search,
+  BookOpen,
+  ArrowUpDown,
+  BookOpenCheck,
+  Layers,
+  FileText,
+  ChevronRight,
+} from "lucide-react"
 import { api } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
@@ -34,13 +45,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 
 import type { Subject } from "@/app/types/types"
 
@@ -167,74 +171,88 @@ export default function TopicsPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-r from-[#e6f0f9] to-white p-3 rounded-lg mb-6 shadow-sm border border-[#e6f0f9]">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/admin" className="text-gray-600 hover:text-[#1e74bb] transition-colors">
-                <span className="flex items-center">
-                  <Layers className="mr-2 h-4 w-4 text-[#1e74bb]" />
-                  Dashboard
-                </span>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="text-[#1e74bb]" />
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/admin/subjects" className="text-gray-600 hover:text-[#1e74bb] transition-colors">
-                <span className="flex items-center">
-                  <BookOpen className="mr-2 h-4 w-4 text-[#1e74bb]" />
-                  Subjects
-                </span>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="text-[#1e74bb]" />
-            <BreadcrumbItem>
-              <BreadcrumbLink className="font-medium text-[#1e74bb]">
-                <span className="flex items-center">
-                  <BookOpenCheck className="mr-2 h-4 w-4 text-[#1e74bb]" />
-                  {subject?.subject_name || "Topics"}
-                </span>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BookOpenCheck className="h-6 w-6 text-[#1e74bb]" />
-            {subject?.subject_name || "Loading..."} Topics
-          </h1>
-          <p className="text-gray-500 mt-1">Manage topics for this subject</p>
+      {/* Page Header */}
+      <div className="bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white p-6 rounded-lg shadow-md mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Badge className="bg-white text-[#1e74bb] hover:bg-gray-100">Admin Level</Badge>
+              <Badge className="bg-[#0d4c7a] text-white">Topics Hub</Badge>
+            </div>
+            <h1 className="text-2xl font-bold mb-1">{subject?.subject_name || "Loading..."} Topics</h1>
+            <p className="text-gray-100">Manage topics for this subject</p>
+          </div>
+          <div className="mt-4 md:mt-0">
+            <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => setAddDialogOpen(true)} className="bg-white text-[#1e74bb] hover:bg-gray-100">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Topic
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New Topic</DialogTitle>
+                  <DialogDescription>Create a new topic for {subject?.subject_name}.</DialogDescription>
+                </DialogHeader>
+                <TopicForm
+                  subjectId={Number.parseInt(subjectId)}
+                  subjectName={subject?.subject_name || ""}
+                  createdBy={0}
+                  organizationName={organizationName || ""}
+                  organizationId={Number.parseInt(organizationId || "")}
+                  onSuccess={() => {
+                    fetchTopics()
+                    setAddDialogOpen(false)
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
-
-        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setAddDialogOpen(true)} className="bg-[#1e74bb] hover:bg-[#1a65a3] text-white">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Topic
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Topic</DialogTitle>
-              <DialogDescription>Create a new topic for {subject?.subject_name}.</DialogDescription>
-            </DialogHeader>
-            <TopicForm
-              subjectId={Number.parseInt(subjectId)}
-              subjectName={subject?.subject_name || ""}
-              createdBy={0}
-              organizationName={organizationName || ""}
-              organizationId={Number.parseInt(organizationId || "")}
-              onSuccess={() => {
-                fetchTopics()
-                setAddDialogOpen(false)
-              }}
-            />
-          </DialogContent>
-        </Dialog>
       </div>
+
+      {/* Breadcrumb */}
+      <nav className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 mb-6" aria-label="Breadcrumb">
+        <ol className="flex items-center flex-wrap">
+          <li className="inline-flex items-center">
+            <Link
+              href="/admin"
+              className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-[#1e74bb] transition-colors"
+            >
+              <Layers className="w-4 h-4 mr-2 text-[#1e74bb]" />
+              Dashboard
+            </Link>
+          </li>
+          <li>
+            <div className="flex items-center mx-2">
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </div>
+          </li>
+          <li>
+            <Link
+              href="/admin/subjects"
+              className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-[#1e74bb] transition-colors"
+            >
+              <BookOpen className="w-4 h-4 mr-2 text-[#1e74bb]" />
+              Subjects
+            </Link>
+          </li>
+          <li>
+            <div className="flex items-center mx-2">
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </div>
+          </li>
+          <li aria-current="page">
+            <div className="flex items-center">
+              <span className="text-sm font-medium text-[#1e74bb] flex items-center">
+                <BookOpenCheck className="w-4 h-4 mr-2" />
+                {subject?.subject_name || "Topics"}
+              </span>
+            </div>
+          </li>
+        </ol>
+      </nav>
 
       <Card className="border border-gray-100 shadow-sm mb-6 overflow-hidden">
         <CardHeader className="pb-0 bg-gradient-to-r from-[#e6f0f9] to-white">

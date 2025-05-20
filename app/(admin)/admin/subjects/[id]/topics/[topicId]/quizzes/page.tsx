@@ -8,7 +8,6 @@ import {
   Plus,
   Pencil,
   Trash2,
-  ArrowLeft,
   Search,
   FileText,
   ArrowUpDown,
@@ -17,6 +16,7 @@ import {
   BookOpen,
   BookOpenCheck,
   Layers,
+  ChevronRight,
 } from "lucide-react"
 import { api } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
@@ -46,16 +46,10 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
+import Link from "next/link"
 
 type Subject = {
   subject_id: number
@@ -238,94 +232,101 @@ export default function QuizzesPage() {
 
   return (
     <div>
-      <div className="bg-gradient-to-r from-[#e6f0f9] to-white p-3 rounded-lg mb-6 shadow-sm border border-[#e6f0f9]">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/admin" className="text-gray-600 hover:text-[#1e74bb] transition-colors">
-                <span className="flex items-center">
-                  <Layers className="mr-2 h-4 w-4 text-[#1e74bb]" />
-                  Dashboard
-                </span>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="text-[#1e74bb]" />
-            <BreadcrumbItem>
-              <BreadcrumbLink href="/admin/subjects" className="text-gray-600 hover:text-[#1e74bb] transition-colors">
-                <span className="flex items-center">
-                  <BookOpen className="mr-2 h-4 w-4 text-[#1e74bb]" />
-                  Subjects
-                </span>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="text-[#1e74bb]" />
-            <BreadcrumbItem>
-              <BreadcrumbLink
-                href={`/admin/subjects/${subjectId}/topics`}
-                className="text-gray-600 hover:text-[#1e74bb] transition-colors"
-              >
-                <span className="flex items-center">
-                  <BookOpenCheck className="mr-2 h-4 w-4 text-[#1e74bb]" />
-                  {subject?.subject_name}
-                </span>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="text-[#1e74bb]" />
-            <BreadcrumbItem>
-              <BreadcrumbLink className="font-medium text-[#1e74bb]">
-                <span className="flex items-center">
-                  <FileText className="mr-2 h-4 w-4 text-[#1e74bb]" />
-                  {topic?.topic_name || "Quizzes"}
-                </span>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
-
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <div>
-          {/* <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push(`/admin/subjects/${subjectId}/topics`)}
-            className="mb-2 border-gray-200 hover:border-[#1e74bb] hover:text-[#1e74bb]"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Topics
-          </Button> */}
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <FileText className="h-6 w-6 text-[#1e74bb]" />
-            Quizzes for {topic?.topic_name || "Loading..."}
-          </h1>
-          <p className="text-gray-500 mt-1">Manage quizzes for this topic</p>
+      {/* Page Header */}
+      <div className="bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white p-6 rounded-lg shadow-md mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Badge className="bg-white text-[#1e74bb] hover:bg-gray-100">Admin Level</Badge>
+              <Badge className="bg-[#0d4c7a] text-white">Quizzes Hub</Badge>
+            </div>
+            <h1 className="text-2xl font-bold mb-1">Quizzes for {topic?.topic_name || "Loading..."}</h1>
+            <p className="text-gray-100">Manage quizzes for this topic</p>
+          </div>
+          <div className="mt-4 md:mt-0">
+            <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => setAddDialogOpen(true)} className="bg-white text-[#1e74bb] hover:bg-gray-100">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Quiz
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[550px]">
+                <DialogHeader>
+                  <DialogTitle>Add New Quiz</DialogTitle>
+                  <DialogDescription>Create a new quiz for {topic?.topic_name}.</DialogDescription>
+                </DialogHeader>
+                <QuizForm
+                  subjectId={Number(subjectId)}
+                  topicId={Number(topicId)}
+                  subjectName={subject?.subject_name || ""}
+                  topicName={topic?.topic_name || ""}
+                  onSuccess={() => {
+                    fetchQuizzes()
+                    setAddDialogOpen(false)
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
-
-        <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setAddDialogOpen(true)} className="bg-[#1e74bb] hover:bg-[#1a65a3] text-white">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Quiz
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[550px]">
-            <DialogHeader>
-              <DialogTitle>Add New Quiz</DialogTitle>
-              <DialogDescription>Create a new quiz for {topic?.topic_name}.</DialogDescription>
-            </DialogHeader>
-            <QuizForm
-              subjectId={Number(subjectId)}
-              topicId={Number(topicId)}
-              subjectName={subject?.subject_name || ""}
-              topicName={topic?.topic_name || ""}
-              onSuccess={() => {
-                fetchQuizzes()
-                setAddDialogOpen(false)
-              }}
-            />
-          </DialogContent>
-        </Dialog>
       </div>
+
+      {/* Breadcrumb */}
+      <nav className="bg-white p-3 rounded-lg shadow-sm border border-gray-200 mb-6" aria-label="Breadcrumb">
+        <ol className="flex items-center flex-wrap">
+          <li className="inline-flex items-center">
+            <Link
+              href="/admin"
+              className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-[#1e74bb] transition-colors"
+            >
+              <Layers className="w-4 h-4 mr-2 text-[#1e74bb]" />
+              Dashboard
+            </Link>
+          </li>
+          <li>
+            <div className="flex items-center mx-2">
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </div>
+          </li>
+          <li>
+            <Link
+              href="/admin/subjects"
+              className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-[#1e74bb] transition-colors"
+            >
+              <BookOpen className="w-4 h-4 mr-2 text-[#1e74bb]" />
+              Subjects
+            </Link>
+          </li>
+          <li>
+            <div className="flex items-center mx-2">
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </div>
+          </li>
+          <li>
+            <Link
+              href={`/admin/subjects/${subjectId}/topics`}
+              className="inline-flex items-center text-sm font-medium text-gray-700 hover:text-[#1e74bb] transition-colors"
+            >
+              <BookOpenCheck className="w-4 h-4 mr-2 text-[#1e74bb]" />
+              {subject?.subject_name || "Topics"}
+            </Link>
+          </li>
+          <li>
+            <div className="flex items-center mx-2">
+              <ChevronRight className="w-4 h-4 text-gray-400" />
+            </div>
+          </li>
+          <li aria-current="page">
+            <div className="flex items-center">
+              <span className="text-sm font-medium text-[#1e74bb] flex items-center">
+                <FileText className="w-4 h-4 mr-2" />
+                {topic?.topic_name || "Quizzes"}
+              </span>
+            </div>
+          </li>
+        </ol>
+      </nav>
 
       <Card className="border border-[#e6f0f9] shadow-sm mb-6 overflow-hidden">
         <CardHeader className="pb-0 bg-gradient-to-r from-[#e6f0f9] to-white">
