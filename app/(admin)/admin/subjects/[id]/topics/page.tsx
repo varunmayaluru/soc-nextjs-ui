@@ -16,6 +16,8 @@ import {
   Layers,
   FileText,
   ChevronRight,
+  Clock,
+  CheckCircle2,
 } from "lucide-react"
 import { api } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
@@ -172,20 +174,28 @@ export default function TopicsPage() {
   return (
     <div>
       {/* Page Header */}
-      <div className="bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white p-6 rounded-lg shadow-md mb-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+      <div className="bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white p-6 rounded-lg shadow-md mb-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full transform translate-x-32 -translate-y-24"></div>
+        <div className="absolute bottom-0 left-0 w-40 h-40 bg-white opacity-5 rounded-full transform -translate-x-20 translate-y-20"></div>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Badge className="bg-white text-[#1e74bb] hover:bg-gray-100">Admin Level</Badge>
               <Badge className="bg-[#0d4c7a] text-white">Topics Hub</Badge>
             </div>
-            <h1 className="text-2xl font-bold mb-1">{subject?.subject_name || "Loading..."} Topics</h1>
+            <h1 className="text-2xl font-bold mb-1 flex items-center">
+              <BookOpenCheck className="mr-2 h-6 w-6" />
+              {subject?.subject_name || "Loading..."} Topics
+            </h1>
             <p className="text-gray-100">Manage topics for this subject</p>
           </div>
           <div className="mt-4 md:mt-0">
             <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={() => setAddDialogOpen(true)} className="bg-white text-[#1e74bb] hover:bg-gray-100">
+                <Button
+                  onClick={() => setAddDialogOpen(true)}
+                  className="bg-white text-[#1e74bb] hover:bg-gray-100 shadow-sm"
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Topic
                 </Button>
@@ -255,29 +265,50 @@ export default function TopicsPage() {
       </nav>
 
       <Card className="border border-gray-100 shadow-sm mb-6 overflow-hidden">
-        <CardHeader className="pb-0 bg-gradient-to-r from-[#e6f0f9] to-white">
-          <CardTitle className="text-lg">Subject Information</CardTitle>
+        <CardHeader className="pb-0 bg-gradient-to-r from-[#e6f0f9] to-white relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#1e74bb] opacity-5 rounded-full transform translate-x-16 -translate-y-16"></div>
+          <CardTitle className="text-lg flex items-center">
+            <BookOpen className="mr-2 h-5 w-5 text-[#1e74bb]" />
+            Subject Information
+          </CardTitle>
         </CardHeader>
-        <CardContent className="pt-4">
+        <CardContent className="pt-4 bg-gradient-to-b from-[#f8fafc] to-white">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <p className="text-sm font-medium text-gray-500">Subject Name</p>
-              <p className="font-medium">{subject?.subject_name}</p>
+            <div className="bg-white p-4 rounded-md shadow-sm border border-[#e6f0f9] flex items-start gap-3">
+              <div className="bg-[#e6f0f9] p-2 rounded-full">
+                <BookOpen className="h-5 w-5 text-[#1e74bb]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Subject Name</p>
+                <p className="font-medium text-gray-800">{subject?.subject_name}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Status</p>
-              <Badge
-                variant={subject?.is_active ? "default" : "outline"}
-                className={
-                  subject?.is_active ? "bg-green-100 text-green-800 hover:bg-green-200 mt-1" : "text-gray-500 mt-1"
-                }
-              >
-                {subject?.is_active ? "Active" : "Inactive"}
-              </Badge>
+            <div className="bg-white p-4 rounded-md shadow-sm border border-[#e6f0f9] flex items-start gap-3">
+              <div className="bg-[#e6f0f9] p-2 rounded-full">
+                <CheckCircle2 className="h-5 w-5 text-[#1e74bb]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Status</p>
+                <Badge
+                  variant={subject?.is_active ? "default" : "outline"}
+                  className={
+                    subject?.is_active ? "bg-green-100 text-green-800 hover:bg-green-200 mt-1" : "text-gray-500 mt-1"
+                  }
+                >
+                  {subject?.is_active ? "Active" : "Inactive"}
+                </Badge>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Created</p>
-              <p>{subject?.create_date_time ? new Date(subject.create_date_time).toLocaleDateString() : "N/A"}</p>
+            <div className="bg-white p-4 rounded-md shadow-sm border border-[#e6f0f9] flex items-start gap-3">
+              <div className="bg-[#e6f0f9] p-2 rounded-full">
+                <Clock className="h-5 w-5 text-[#1e74bb]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Created</p>
+                <p className="text-gray-800">
+                  {subject?.create_date_time ? new Date(subject.create_date_time).toLocaleDateString() : "N/A"}
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -368,27 +399,44 @@ export default function TopicsPage() {
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTopics.map((topic) => (
                 <Card
                   key={topic.topic_id}
-                  className={`overflow-hidden transition-all duration-200 hover:shadow-md ${hoveredCard === topic.topic_id ? "border-[#1e74bb] shadow-md" : "border-gray-100"
+                  className={`overflow-hidden transition-all duration-300 group hover:shadow-lg ${hoveredCard === topic.topic_id ? "border-[#1e74bb] shadow-md translate-y-[-4px]" : "border-gray-100"
                     }`}
                   onMouseEnter={() => setHoveredCard(topic.topic_id)}
                   onMouseLeave={() => setHoveredCard(null)}
                 >
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#e6f0f9] to-transparent opacity-50 rounded-bl-full pointer-events-none"></div>
                   <CardHeader
-                    className={`pb-2 ${hoveredCard === topic.topic_id
-                      ? "bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white"
-                      : "bg-gradient-to-r from-[#e6f0f9] to-white"
+                    className={`pb-2 relative ${hoveredCard === topic.topic_id
+                        ? "bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white"
+                        : "bg-gradient-to-r from-[#e6f0f9] to-white"
                       }`}
                   >
                     <div className="flex justify-between items-start">
-                      <CardTitle
-                        className={`text-lg ${hoveredCard === topic.topic_id ? "text-white" : "text-gray-800"}`}
-                      >
-                        {topic.topic_name}
-                      </CardTitle>
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`rounded-full p-2 ${hoveredCard === topic.topic_id ? "bg-white text-[#1e74bb]" : "bg-[#1e74bb] text-white"
+                            }`}
+                        >
+                          <BookOpenCheck className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <CardTitle
+                            className={`text-lg ${hoveredCard === topic.topic_id ? "text-white" : "text-gray-800"}`}
+                          >
+                            {topic.topic_name}
+                          </CardTitle>
+                          <p
+                            className={`text-xs mt-1 ${hoveredCard === topic.topic_id ? "text-gray-100" : "text-gray-500"
+                              }`}
+                          >
+                            ID: {topic.topic_id}
+                          </p>
+                        </div>
+                      </div>
                       <Badge
                         variant={topic.is_active ? "default" : "outline"}
                         className={
@@ -405,19 +453,28 @@ export default function TopicsPage() {
                       </Badge>
                     </div>
                   </CardHeader>
-                  <CardContent className="pb-2">
-                    <p className="text-sm text-gray-500 mt-2">
-                      Created: {new Date(topic.create_date_time).toLocaleDateString()}
-                    </p>
+                  <CardContent className="pb-2 pt-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Clock className="h-4 w-4 text-gray-400" />
+                      <p className="text-sm text-gray-500">
+                        Created: {new Date(topic.create_date_time).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <div className="h-1 w-full bg-gray-100 mb-3 overflow-hidden rounded-full">
+                      <div
+                        className="h-full bg-[#1e74bb] rounded-full"
+                        style={{ width: topic.is_active ? "100%" : "30%" }}
+                      ></div>
+                    </div>
                   </CardContent>
-                  <CardFooter className="flex justify-between pt-0 bg-gray-50">
+                  <CardFooter className="flex justify-between pt-0 bg-gray-50 border-t border-gray-100">
                     <Link
                       href={`/admin/subjects/${subjectId}/topics/${topic.topic_id}/quizzes?organization_id=${organizationId}&organization_name=${organizationName}`}
                     >
                       <Button
                         variant="outline"
                         size="sm"
-                        className="gap-1 border-brand text-brand hover:bg-brand-light"
+                        className="gap-1 border-[#1e74bb] text-[#1e74bb] hover:bg-[#e6f0f9] group-hover:bg-[#1e74bb] group-hover:text-white transition-colors"
                       >
                         <FileText className="h-4 w-4" />
                         Manage Quizzes
@@ -432,9 +489,9 @@ export default function TopicsPage() {
                           <Button
                             variant="outline"
                             size="icon"
-                            className="border-gray-200 hover:border-[#1e74bb] hover:text-[#1e74bb]"
+                            className="border-gray-200 hover:border-[#1e74bb] hover:text-[#1e74bb] transition-all"
                           >
-                            <Pencil className="h-4 w-4 " />
+                            <Pencil className="h-4 w-4" />
                           </Button>
                         </DialogTrigger>
                         <DialogContent>
@@ -462,7 +519,7 @@ export default function TopicsPage() {
                           <Button
                             variant="outline"
                             size="icon"
-                            className="border-gray-200 hover:border-red-200 hover:text-red-500"
+                            className="border-gray-200 hover:border-red-200 hover:text-red-500 transition-all"
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>

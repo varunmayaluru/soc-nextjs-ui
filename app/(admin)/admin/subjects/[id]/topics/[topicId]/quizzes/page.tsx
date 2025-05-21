@@ -21,7 +21,7 @@ import {
 import { api } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
   Dialog,
@@ -233,20 +233,28 @@ export default function QuizzesPage() {
   return (
     <div>
       {/* Page Header */}
-      <div className="bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white p-6 rounded-lg shadow-md mb-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+      <div className="bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white p-6 rounded-lg shadow-md mb-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full transform translate-x-32 -translate-y-24"></div>
+        <div className="absolute bottom-0 left-0 w-40 h-40 bg-white opacity-5 rounded-full transform -translate-x-20 translate-y-20"></div>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Badge className="bg-white text-[#1e74bb] hover:bg-gray-100">Admin Level</Badge>
               <Badge className="bg-[#0d4c7a] text-white">Quizzes Hub</Badge>
             </div>
-            <h1 className="text-2xl font-bold mb-1">Quizzes for {topic?.topic_name || "Loading..."}</h1>
+            <h1 className="text-2xl font-bold mb-1 flex items-center">
+              <FileText className="mr-2 h-6 w-6" />
+              Quizzes for {topic?.topic_name || "Loading..."}
+            </h1>
             <p className="text-gray-100">Manage quizzes for this topic</p>
           </div>
           <div className="mt-4 md:mt-0">
             <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
               <DialogTrigger asChild>
-                <Button onClick={() => setAddDialogOpen(true)} className="bg-white text-[#1e74bb] hover:bg-gray-100">
+                <Button
+                  onClick={() => setAddDialogOpen(true)}
+                  className="bg-white text-[#1e74bb] hover:bg-gray-100 shadow-sm"
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Add Quiz
                 </Button>
@@ -329,34 +337,50 @@ export default function QuizzesPage() {
       </nav>
 
       <Card className="border border-[#e6f0f9] shadow-sm mb-6 overflow-hidden">
-        <CardHeader className="pb-0 bg-gradient-to-r from-[#e6f0f9] to-white">
+        <CardHeader className="pb-0 bg-gradient-to-r from-[#e6f0f9] to-white relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-[#1e74bb] opacity-5 rounded-full transform translate-x-16 -translate-y-16"></div>
           <CardTitle className="text-lg flex items-center">
-            <BookOpenCheck className="mr-2 h-5 w-5" />
+            <BookOpenCheck className="mr-2 h-5 w-5 text-[#1e74bb]" />
             Topic Information
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6 bg-gradient-to-b from-[#f0f7ff] to-white">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white p-3 rounded-md shadow-sm border border-[#e6f0f9]">
-              <p className="text-sm font-medium text-[#1e74bb]">Subject</p>
-              <p className="font-medium text-gray-800">{subject?.subject_name || "Loading..."}</p>
+            <div className="bg-white p-4 rounded-md shadow-sm border border-[#e6f0f9] flex items-start gap-3">
+              <div className="bg-[#e6f0f9] p-2 rounded-full">
+                <BookOpen className="h-5 w-5 text-[#1e74bb]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[#1e74bb]">Subject</p>
+                <p className="font-medium text-gray-800">{subject?.subject_name || "Loading..."}</p>
+              </div>
             </div>
-            <div className="bg-white p-3 rounded-md shadow-sm border border-[#e6f0f9]">
-              <p className="text-sm font-medium text-[#1e74bb]">Topic</p>
-              <p className="font-medium text-gray-800">{topic?.topic_name || "Loading..."}</p>
+            <div className="bg-white p-4 rounded-md shadow-sm border border-[#e6f0f9] flex items-start gap-3">
+              <div className="bg-[#e6f0f9] p-2 rounded-full">
+                <BookOpenCheck className="h-5 w-5 text-[#1e74bb]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[#1e74bb]">Topic</p>
+                <p className="font-medium text-gray-800">{topic?.topic_name || "Loading..."}</p>
+              </div>
             </div>
-            <div className="bg-white p-3 rounded-md shadow-sm border border-[#e6f0f9]">
-              <p className="text-sm font-medium text-[#1e74bb]">Status</p>
-              <Badge
-                variant={topic?.is_active ? "default" : "outline"}
-                className={
-                  topic?.is_active
-                    ? "bg-green-100 text-green-800 hover:bg-green-200 mt-1"
-                    : "bg-gray-100 text-gray-500 mt-1"
-                }
-              >
-                {topic?.is_active ? "Active" : "Inactive"}
-              </Badge>
+            <div className="bg-white p-4 rounded-md shadow-sm border border-[#e6f0f9] flex items-start gap-3">
+              <div className="bg-[#e6f0f9] p-2 rounded-full">
+                <CheckCircle2 className="h-5 w-5 text-[#1e74bb]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[#1e74bb]">Status</p>
+                <Badge
+                  variant={topic?.is_active ? "default" : "outline"}
+                  className={
+                    topic?.is_active
+                      ? "bg-green-100 text-green-800 hover:bg-green-200 mt-1 border border-green-200"
+                      : "bg-gray-100 text-gray-500 mt-1 border border-gray-200"
+                  }
+                >
+                  {topic?.is_active ? "Active" : "Inactive"}
+                </Badge>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -428,87 +452,114 @@ export default function QuizzesPage() {
               <p className="mt-4 text-[#1e74bb] font-medium">Loading quizzes...</p>
             </div>
           ) : filteredQuizzes.length === 0 ? (
-            <div className="text-center py-16 bg-gradient-to-b from-[#f0f7ff] to-white rounded-lg border border-[#e6f0f9] shadow-sm">
-              <div className="bg-[#e6f0f9] rounded-full p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-                <FileText className="h-10 w-10 text-[#1e74bb]" />
+            <div className="text-center py-16 bg-gradient-to-b from-[#f0f7ff] to-white rounded-lg border border-[#e6f0f9] shadow-sm relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[#1e74bb] opacity-5 rounded-full transform translate-x-32 -translate-y-24"></div>
+              <div className="absolute bottom-0 left-0 w-40 h-40 bg-[#1e74bb] opacity-5 rounded-full transform -translate-x-20 translate-y-20"></div>
+              <div className="relative z-10">
+                <div className="bg-[#e6f0f9] rounded-full p-5 w-24 h-24 mx-auto mb-4 flex items-center justify-center shadow-inner">
+                  <FileText className="h-12 w-12 text-[#1e74bb]" />
+                </div>
+                <h3 className="text-xl font-medium text-[#1e74bb] mb-2">No quizzes found</h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  {searchQuery ? "No quizzes match your search" : "Add your first quiz to start testing your students"}
+                </p>
+                <Button
+                  onClick={() => setAddDialogOpen(true)}
+                  className="bg-[#1e74bb] hover:bg-[#1a65a3] text-white shadow-md transition-all hover:shadow-lg px-6"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Quiz
+                </Button>
               </div>
-              <h3 className="text-xl font-medium text-[#1e74bb] mb-2">No quizzes found</h3>
-              <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                {searchQuery ? "No quizzes match your search" : "Add your first quiz to start testing your students"}
-              </p>
-              <Button
-                onClick={() => setAddDialogOpen(true)}
-                className="bg-[#1e74bb] hover:bg-[#1a65a3] text-white shadow-sm transition-all hover:shadow"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Quiz
-              </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredQuizzes.map((quiz) => (
-                <Card
+                <div
                   key={quiz.quiz_id}
-                  className={`overflow-hidden transition-all duration-200 hover:shadow-md ${hoveredCard === quiz.quiz_id ? "border-[#1e74bb] shadow-md" : "border-gray-100"
+                  className={`group relative bg-white rounded-lg shadow-md border overflow-hidden transition-all duration-300 hover:shadow-xl ${hoveredCard === quiz.quiz_id ? "border-[#1e74bb] translate-y-[-4px]" : "border-gray-100"
                     }`}
                   onMouseEnter={() => setHoveredCard(quiz.quiz_id)}
                   onMouseLeave={() => setHoveredCard(null)}
                 >
-                  <CardHeader
-                    className={`pb-2 ${hoveredCard === quiz.quiz_id
-                      ? "bg-gradient-to-r from-[#1e74bb] to-[#4a9eda]"
-                      : "bg-gradient-to-r from-[#e6f0f9] to-white"
-                      }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle
-                          className={`text-lg ${hoveredCard === quiz.quiz_id ? "text-white" : "text-gray-800"}`}
-                        >
-                          {quiz.title}
-                        </CardTitle>
-                        <CardDescription
-                          className={`mt-1 line-clamp-2 ${hoveredCard === quiz.quiz_id ? "text-gray-100" : ""}`}
-                        >
-                          {quiz.description}
-                        </CardDescription>
-                      </div>
-                      <Badge
-                        variant={quiz.is_active ? "default" : "outline"}
-                        className={
-                          quiz.is_active
-                            ? hoveredCard === quiz.quiz_id
-                              ? "bg-white text-[#1e74bb] hover:bg-gray-100"
-                              : "bg-green-100 text-green-800 hover:bg-green-200"
-                            : hoveredCard === quiz.quiz_id
-                              ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                              : "text-gray-500"
-                        }
+                  {/* Decorative diagonal element */}
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-[#e6f0f9] transform rotate-45 translate-x-12 -translate-y-12 z-0"></div>
+
+                  {/* Status badge */}
+                  <div className="absolute top-3 right-3 z-10">
+                    <Badge
+                      variant={quiz.is_active ? "default" : "outline"}
+                      className={
+                        quiz.is_active
+                          ? "bg-green-100 text-green-800 hover:bg-green-200 border border-green-200"
+                          : "bg-gray-100 text-gray-500 border border-gray-200"
+                      }
+                    >
+                      {quiz.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  </div>
+
+                  {/* Main content */}
+                  <div className="p-5 relative z-10">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div
+                        className={`rounded-full p-2.5 ${hoveredCard === quiz.quiz_id ? "bg-[#1e74bb] text-white" : "bg-[#e6f0f9] text-[#1e74bb]"
+                          } transition-colors duration-300`}
                       >
-                        {quiz.is_active ? "Active" : "Inactive"}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pb-2">
-                    <div className="grid grid-cols-2 gap-2 text-sm mt-2">
-                      <div className="flex items-center gap-1 text-gray-700 bg-[#f0f7ff] p-1.5 rounded">
-                        <Clock className="h-3.5 w-3.5 text-[#1e74bb]" />
-                        <span>{formatTimeLimit(quiz.time_limit)}</span>
+                        <FileText className="h-5 w-5" />
                       </div>
-                      <div className="flex items-center gap-1 text-gray-700 bg-[#f0f7ff] p-1.5 rounded">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-[#1e74bb]" />
-                        <span>Pass: {quiz.passing_score}%</span>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-800 group-hover:text-[#1e74bb] transition-colors duration-300">
+                          {quiz.title}
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">{quiz.description}</p>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Created: {new Date(quiz.create_date_time).toLocaleDateString()}
-                    </p>
-                  </CardContent>
-                  <CardFooter className="flex justify-between pt-0 bg-gray-50">
+
+                    {/* Quiz details */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div className="bg-[#f8fafc] rounded-lg p-3 border border-gray-100">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-[#1e74bb]" />
+                          <span className="text-sm font-medium text-gray-700">{formatTimeLimit(quiz.time_limit)}</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Time Limit</p>
+                      </div>
+                      <div className="bg-[#f8fafc] rounded-lg p-3 border border-gray-100">
+                        <div className="flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-[#1e74bb]" />
+                          <span className="text-sm font-medium text-gray-700">{quiz.passing_score}%</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Passing Score</p>
+                      </div>
+                    </div>
+
+                    {/* Progress indicator */}
+                    <div className="mb-4">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs font-medium text-gray-500">Questions</span>
+                        <span className="text-xs font-medium text-[#1e74bb]">{quiz.total_questions}</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-[#1e74bb] rounded-full"
+                          style={{ width: `${(quiz.total_questions / 20) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center text-xs text-gray-500 mb-4">
+                      <Clock className="h-3.5 w-3.5 mr-1.5" />
+                      <span>Created: {new Date(quiz.create_date_time).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions footer */}
+                  <div className="flex justify-between items-center p-3 bg-gray-50 border-t border-gray-100">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-1 border-gray-200 hover:border-[#1e74bb] hover:text-[#1e74bb]"
+                      className="gap-1 border-[#1e74bb] text-[#1e74bb] hover:bg-[#e6f0f9] group-hover:bg-[#1e74bb] group-hover:text-white transition-colors"
                     >
                       <FileText className="h-4 w-4" />
                       Questions
@@ -522,7 +573,7 @@ export default function QuizzesPage() {
                           <Button
                             variant="outline"
                             size="icon"
-                            className="border-gray-200 hover:border-[#1e74bb] hover:text-[#1e74bb]"
+                            className="border-gray-200 hover:border-[#1e74bb] hover:text-[#1e74bb] transition-all"
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
@@ -551,7 +602,7 @@ export default function QuizzesPage() {
                           <Button
                             variant="outline"
                             size="icon"
-                            className="border-gray-200 hover:border-red-200 hover:text-red-500"
+                            className="border-gray-200 hover:border-red-200 hover:text-red-500 transition-all"
                           >
                             <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
@@ -576,8 +627,8 @@ export default function QuizzesPage() {
                         </AlertDialogContent>
                       </AlertDialog>
                     </div>
-                  </CardFooter>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
           )}
