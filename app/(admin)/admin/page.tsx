@@ -1,19 +1,19 @@
-import StatsCards from "@/components/admin/stats-cards"
-import { DashboardCharts } from "@/components/admin/dashboard-charts"
-import { RecentActivity } from "@/components/admin/recent-activity"
-import { QuickActions } from "@/components/admin/quick-actions"
 import { CalendarDateRangePicker } from "@/components/admin/date-range-picker"
 import { Button } from "@/components/ui/button"
 import { Download, RefreshCw } from "lucide-react"
+import CompactStatsCards from "@/components/admin/compact-stats-cards"
+import { CompactDashboardCharts } from "@/components/admin/compact-dashboard-charts"
+import { CompactActivity } from "@/components/admin/compact-activity"
+import { CompactQuickActions } from "@/components/admin/compact-quick-actions"
 
 export default function AdminDashboard() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {/* Dashboard Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between bg-white p-4 rounded-lg border shadow-sm">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
             Welcome back, Admin. Here's an overview of your learning platform.
           </p>
         </div>
@@ -32,19 +32,21 @@ export default function AdminDashboard() {
       </div>
 
       {/* Stats Cards */}
-      <StatsCards />
+      <div className="bg-white p-4 rounded-lg border shadow-sm">
+        <CompactStatsCards />
+      </div>
 
       {/* Charts */}
-      <DashboardCharts />
+      <CompactDashboardCharts />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
           {/* Recent Activity */}
-          <RecentActivity />
+          <CompactActivity />
         </div>
         <div>
           {/* Quick Actions */}
-          <QuickActions />
+          <CompactQuickActions />
         </div>
       </div>
     </div>

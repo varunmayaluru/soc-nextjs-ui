@@ -194,7 +194,7 @@ export function RecentActivity() {
                     transition={{ duration: 0.2, delay: index * 0.05 }}
                   >
                     <Avatar className="h-10 w-10 border">
-                      <AvatarImage src={activity.user.avatar || "/placeholder.svg"} alt={activity.user.name} />
+                      <AvatarImage src={activity?.user.avatar || "/placeholder.svg"} alt={activity.user.name} />
                       <AvatarFallback className="bg-[#1e74bb] text-white">
                         {activity.user.name
                           .split(" ")

@@ -109,7 +109,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
         <div className="flex flex-col flex-grow pt-5 overflow-y-auto bg-white border-r shadow-sm">
           <div className="flex items-center justify-between px-6">
             <Link href="/admin" className="flex items-center">
-              <span className="text-xl font-bold text-[#1e74bb]">Admin Portal</span>
+              <span className="text-xl font-bold text-[#1e74bb]">Admin </span><span className="text-xl pl-1 text-muted-foreground font-bold"> Portal</span>
             </Link>
           </div>
           <div className="mt-8 flex-1 px-4">
