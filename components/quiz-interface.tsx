@@ -1,13 +1,25 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AlertCircle, Bot, Check, ChevronLeft, ChevronRight, LinkIcon, SquarePen, ThumbsDown, ThumbsUp, User, X } from "lucide-react"
+import {
+  AlertCircle,
+  Bot,
+  ChevronLeft,
+  ChevronRight,
+  LinkIcon,
+  SquarePen,
+  ThumbsDown,
+  ThumbsUp,
+  User,
+} from "lucide-react"
 import { api } from "@/lib/api-client"
 import Link from "next/link"
+import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition"
+import { Mic, MicOff, Loader2, Send } from "lucide-react"
 
 interface Option {
   quiz_question_option_id: number
@@ -66,7 +78,7 @@ export function QuizInterface({
     {
       id: 2,
       sender: "response",
-      content: `Sure! Here are three different versions of 404 error messages for an ecommerce clothing website:
+      content: `Here are three different versions of 404 error messages for an ecommerce clothing website:
 
 1. Uh-oh! It looks like the page you're looking for isn't here. Please check the URL and try again or return to the homepage to continue shopping.
 
@@ -77,7 +89,26 @@ export function QuizInterface({
     },
   ])
   const [newMessage, setNewMessage] = useState("")
+  const chatContainerRef = useRef<HTMLDivElement>(null)
 
+  // Speech recognition setup
+  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition, isMicrophoneAvailable } =
+    useSpeechRecognition()
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Update message input when transcript changes
+  useEffect(() => {
+    if (transcript) {
+      setNewMessage(transcript)
+    }
+  }, [transcript])
+
+  // Scroll to bottom of chat when messages change
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
+    }
+  }, [messages])
 
   useEffect(() => {
     const fetchQuestion = async () => {
@@ -91,7 +122,9 @@ export function QuizInterface({
         const id = questionId || "1" // Default to 1 if no questionId provided
         setCurrentQuestionId(Number(id))
 
-        const response = await api.get<Question>(`questions/questions/quiz-question/${id}?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}`)
+        const response = await api.get<Question>(
+          `questions/questions/quiz-question/${id}?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}`,
+        )
 
         if (!response.ok) {
           throw new Error(`Failed to fetch question: ${response.status}`)
@@ -108,7 +141,7 @@ export function QuizInterface({
     }
 
     fetchQuestion()
-  }, [quizId, questionId])
+  }, [quizId, questionId, subjectId, topicId])
 
   const handleOptionSelect = (optionId: number) => {
     setSelectedOption(optionId)
@@ -141,7 +174,9 @@ export function QuizInterface({
     setSelectedOption(null)
 
     try {
-      const response = await api.get<Question>(`questions/questions/quiz-question/${newQuestionId}?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}`)
+      const response = await api.get<Question>(
+        `questions/questions/quiz-question/${newQuestionId}?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}`,
+      )
 
       if (!response.ok) {
         throw new Error(`Failed to fetch question: ${response.status}`)
@@ -157,6 +192,33 @@ export function QuizInterface({
     }
   }
 
+  const toggleListening = async () => {
+    if (!browserSupportsSpeechRecognition) {
+      alert("Your browser does not support speech recognition.")
+      return
+    }
+
+    if (!isMicrophoneAvailable) {
+      alert("Microphone permission is required for speech recognition.")
+      return
+    }
+
+    if (listening) {
+      SpeechRecognition.stopListening()
+    } else {
+      setIsLoading(true)
+      resetTranscript()
+      try {
+        await SpeechRecognition.startListening({ continuous: true })
+      } catch (error) {
+        console.error("Error starting speech recognition:", error)
+        alert("Failed to start speech recognition. Please try again.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+  }
+
   const handleSendMessage = () => {
     if (newMessage.trim() === "") return
 
@@ -164,18 +226,24 @@ export function QuizInterface({
       id: messages.length + 1,
       sender: "user",
       content: newMessage,
-      timestamp: "1 min ago",
+      timestamp: "Just now",
     }
 
     setMessages([...messages, userMessage])
     setNewMessage("")
+    resetTranscript()
+
+    // Stop listening if active
+    if (listening) {
+      SpeechRecognition.stopListening()
+    }
 
     // Simulate response
     setTimeout(() => {
       const responseMessage: Message = {
         id: messages.length + 2,
         sender: "response",
-        content: `Sure! Here are three different versions of 404 error messages for an ecommerce clothing website:
+        content: `Here are three different versions of 404 error messages for an ecommerce clothing website:
 
 1. Uh-oh! It looks like the page you're looking for isn't here. Please check the URL and try again or return to the homepage to continue shopping.
 
@@ -203,7 +271,6 @@ export function QuizInterface({
       {/* Blue header bar */}
 
       {/* Pagination */}
-
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
         {/* Question Panel */}
@@ -238,8 +305,9 @@ export function QuizInterface({
                 {paginationNumbers.map((num) => (
                   <button
                     key={num}
-                    className={`min-w-[36px] h-9 flex items-center justify-center mx-1 ${num === currentQuestionId ? "text-[#3373b5] font-bold border-b border-[#3373b5]" : "text-gray-500"
-                      }`}
+                    className={`min-w-[36px] h-9 flex items-center justify-center mx-1 ${
+                      num === currentQuestionId ? "text-[#3373b5] font-bold border-b border-[#3373b5]" : "text-gray-500"
+                    }`}
                   >
                     {num}
                   </button>
@@ -276,81 +344,86 @@ export function QuizInterface({
                 className="space-y-2 gap-1 px-4 py-4 justify-center"
               >
                 {question?.options.map((option) => {
-                  const isSelected = selectedOption === option.quiz_question_option_id;
-                  const isCorrect = option.is_correct;
+                  const isSelected = selectedOption === option.quiz_question_option_id
+                  const isCorrect = option.is_correct
 
                   return (
                     <div
                       key={option.quiz_question_option_id}
-
                       className={`border min-w-[600px] max-w-[750px] rounded-full flex items-center 
-                         ${isSelected
-                          ? isAnswerChecked
-                            ? isCorrect
-                              ? "border-green-500 bg-green-50 border-2 "
-                              : "border-red-500 bg-red-50 border-2"
-                            : "border-[#3373b5] bg-white border-2"
-                          : "border-gray-200 bg-[#F1F1F1] hover:border-gray-300"
-                        }`}
+                         ${
+                           isSelected
+                             ? isAnswerChecked
+                               ? isCorrect
+                                 ? "border-green-500 bg-green-50 border-2 "
+                                 : "border-red-500 bg-red-50 border-2"
+                               : "border-[#3373b5] bg-white border-2"
+                             : "border-gray-200 bg-[#F1F1F1] hover:border-gray-300"
+                         }`}
                     >
                       <div
                         className={`
                               rounded-full flex items-center ml-4 mr-4
-                              ${isSelected
-                            ? isAnswerChecked
-                              ? isCorrect
-                                ? "bg-[#C2E6B1]"
-                                : "bg-red-100"
-                              : "bg-[#3373b5]"
-                            : "bg-white"
-                          }`}
+                              ${
+                                isSelected
+                                  ? isAnswerChecked
+                                    ? isCorrect
+                                      ? "bg-[#C2E6B1]"
+                                      : "bg-red-100"
+                                    : "bg-[#3373b5]"
+                                  : "bg-white"
+                              }`}
                       >
                         <RadioGroupItem
                           value={option.quiz_question_option_id.toString()}
                           id={`option-${option.quiz_question_option_id}`}
                           className={`
                                 h-5 w-5 
-                                ${isSelected
-                              ? isAnswerChecked
-                                ? isCorrect
-                                  ? "border-green-500 ring-2 text-green-700 bg-green-500 ring-green-200"
-                                  : "border-red-500 ring-2 text-red-700 ring-red-200"
-                                : "border-[#3373b5] text-[#3373b5]"
-                              : "border-gray-300"
-                            }
+                                ${
+                                  isSelected
+                                    ? isAnswerChecked
+                                      ? isCorrect
+                                        ? "border-green-500 ring-2 text-green-700 bg-green-500 ring-green-200"
+                                        : "border-red-500 ring-2 text-red-700 ring-red-200"
+                                      : "border-[#3373b5] text-[#3373b5]"
+                                    : "border-gray-300"
+                                }
             `}
                         />
                       </div>
                       <Label
                         htmlFor={`option-${option.quiz_question_option_id}`}
                         className={`flex-grow cursor-pointer h-16 text-md flex items-center
-                          ${isSelected ? isAnswerChecked ? isCorrect ? "text-green-600 font-medium " : "text-red-600 font-medium" : "text-[#3373b5] font-medium" : ""}
+                          ${isSelected ? (isAnswerChecked ? (isCorrect ? "text-green-600 font-medium " : "text-red-600 font-medium") : "text-[#3373b5] font-medium") : ""}
                         `}
                       >
                         {option.option_text}
                       </Label>
-
                     </div>
-                  );
+                  )
                 })}
               </RadioGroup>
-
 
               {/* correct wrong answer banner */}
               {isAnswerChecked && (
                 <div className="flex flex-col items-center">
-                  <div className={` p-4 w-[300px] text-center inline-block rounded-md ${isCorrect ? "bg-[#C2E6B1] text-black" : "bg-[#E87E7B] text-white"}`}>
-                    {(isCorrect ? (
+                  <div
+                    className={` p-4 w-[300px] text-center inline-block rounded-md ${isCorrect ? "bg-[#C2E6B1] text-black" : "bg-[#E87E7B] text-white"}`}
+                  >
+                    {isCorrect ? (
                       <div className="flex items-center">
                         <ThumbsUp className="mr-4" />
-                        <div className="text-center"><span className="font-bold">Correct!</span> Great Job</div>
+                        <div className="text-center">
+                          <span className="font-bold">Correct!</span> Great Job
+                        </div>
                       </div>
                     ) : (
                       <div className="flex items-center">
                         <ThumbsDown className="mr-4" />
-                        <div className="text-center"><span className="font-bold">Wrong!</span> Better luck next time</div>
+                        <div className="text-center">
+                          <span className="font-bold">Wrong!</span> Better luck next time
+                        </div>
                       </div>
-                    )
                     )}
                   </div>
                 </div>
@@ -358,7 +431,10 @@ export function QuizInterface({
 
               {/* Action buttons */}
               <div className="mt-8 bg-[#F7F8FA] p-4 rounded-bl-2xl rounded-br-2xl flex justify-between">
-                <Button variant="outline" className="border-gray-300 text-gray-600 bg-white hover:bg-gray-100 rounded-md">
+                <Button
+                  variant="outline"
+                  className="border-gray-300 text-gray-600 bg-white hover:bg-gray-100 rounded-md"
+                >
                   Skip
                 </Button>
                 <Button className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6" onClick={checkAnswer}>
@@ -366,17 +442,17 @@ export function QuizInterface({
                 </Button>
               </div>
 
-
-
               {/* Relevant links section */}
-
             </div>
           )}
         </div>
 
         {/* Chat Panel */}
-        <div className="bg-white border-l border-gray-200 flex flex-col overflow-auto" style={{ height: "calc(100vh - 342px)" }}>
-          <div className="flex-1 overflow-y-auto p-8 space-y-6">
+        <div
+          className="bg-white border-l border-gray-200 flex flex-col overflow-auto"
+          style={{ height: "calc(100vh - 342px)" }}
+        >
+          <div className="flex-1 overflow-y-auto p-8 space-y-6" ref={chatContainerRef}>
             {messages.map((message) => (
               <div key={message.id} className="mb-6">
                 {message.sender === "user" ? (
@@ -402,7 +478,9 @@ export function QuizInterface({
                       <div className="font-medium">Response</div>
                       <div className="text-xs text-gray-500 ml-2">{message.timestamp}</div>
                     </div>
-                    <div className="bg-gray-100  rounded-lg text-sm whitespace-pre-wrap pl-10 py-4 pr-4">{message.content}</div>
+                    <div className="bg-gray-100  rounded-lg text-sm whitespace-pre-wrap pl-10 py-4 pr-4">
+                      {message.content}
+                    </div>
                   </div>
                 )}
               </div>
@@ -467,38 +545,40 @@ export function QuizInterface({
                   }
                 }}
               />
+              <button
+                className={`p-3 ${listening ? "text-red-500" : "text-gray-400 hover:text-blue-500"}`}
+                onClick={toggleListening}
+                disabled={isLoading || !browserSupportsSpeechRecognition}
+                title={listening ? "Stop listening" : "Start voice input"}
+              >
+                {isLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : listening ? (
+                  <MicOff className="h-5 w-5" />
+                ) : (
+                  <Mic className="h-5 w-5" />
+                )}
+              </button>
               <button className="p-3 text-gray-400 hover:text-blue-500" onClick={handleSendMessage}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M22 2L11 13"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M22 2L15 22L11 13L2 9L22 2Z"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <Send className="h-5 w-5" />
               </button>
             </div>
+            {listening && (
+              <div className="text-xs text-center mt-2 text-red-500 animate-pulse">Listening... Speak now</div>
+            )}
+            {!browserSupportsSpeechRecognition && (
+              <div className="text-xs text-center mt-2 text-gray-500">
+                Speech recognition is not supported in your browser
+              </div>
+            )}
           </div>
         </div>
-
       </div>
       <div className="mt-4 bg-gray-100 p-8 rounded-md">
         <h3 className="text-lg font-bold mb-4">Relevant links</h3>
         <div className="flex flex-wrap gap-4">
           {relevantLinks.map((link, index) => (
-            <Link
-              key={index}
-              href={link.href}
-              className="flex items-center text-sm text-gray-700 hover:text-[#3373b5]"
-            >
+            <Link key={index} href={link.href} className="flex items-center text-sm text-gray-700 hover:text-[#3373b5]">
               <LinkIcon className="h-4 w-4 mr-1" />
               {link.title}
             </Link>
