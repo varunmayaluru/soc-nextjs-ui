@@ -30,7 +30,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link"
 import { toast } from "sonner"
 import { api } from "@/lib/api-client"
-
+import { Organization } from "@/app/types/types"
+import { useEffect } from "react"
 // Mock data for users
 const users = [
   {
@@ -106,8 +107,58 @@ const [organizationError, setOrganizationError] = useState({ show: false, messag
 const [roleError, setRoleError] = useState({ show: false, message: "" })
 const [isActiveError, setIsActiveError] = useState({ show: false, message: "" })
 const [emailVerifiedError, setEmailVerifiedError] = useState({ show: false, message: "" })
+// State to hold organizations
+const [organizations, setOrganizations] = useState<Organization[]>([])
+// State to hold users, initially set to mock data
+//const [users, setUsers] = useState<(users)
 
-const [formErrors, setFormErrors] = useState<string[]>([])
+// call ngonInit to fetch organizations
+
+useEffect(() => {
+  const fetchOrganizations = async () => {
+    try {
+      const response = await api.get<Organization[]>("/organizations/organizations/organizations")
+      console.log("Organizations fetched:", response.data)
+      // Handle the fetched organizations as needed
+      if (response.status === 200) {
+        setOrganizations(response.data)
+      } else {
+        toast.error(`Failed to fetch organizations. Server responded with status ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Error fetching organizations:", error)
+      toast.error("Failed to fetch organizations")
+      // Handle error appropriately, e.g., show a toast notification
+      setOrganizations([]) // Reset organizations on error
+    }
+  } 
+  fetchOrganizations()
+}, [])
+
+const bindUsersToOrganization = async (organizationId: number) => {
+
+  console.log("Selected organization:", organizationId);
+  const response = await api.get(`/organizations/organizations/organizations/${organizationId}`)
+    .then((response) => {
+      if (response.status === 200 && Array.isArray(response.data)) {
+        // If you want to update the users grid, you need a users state
+       //setUsers(response.data)
+        console.log("Filtered users for organization:", organizationId, response.data)
+      } else {
+        toast.error("Failed to fetch users for organization")
+      }
+    })
+    .catch((error) => {
+      console.error("Error fetching users for organization:", error)
+      toast.error("Error fetching users for organization")
+    })
+  // Filter users based on the selected organization
+  const filteredUsers = users.filter((user) => user.id === "1")
+
+  // setUsers(filteredUsers)
+  console.log("Filtered users for organization:", organizationId, filteredUsers)
+  // You can also update the UI or perform any other actions needed with the filtered users
+}
 
   type UserForm = {
   firstName: string
@@ -173,7 +224,6 @@ const [form, setForm] = useState<UserForm>({
     setRoleError({ show: false, message: "" })
     setIsActiveError({ show: false, message: "" })
     setEmailVerifiedError({ show: false, message: "" })
-    setFormErrors([])
   }
 
    const validateForm = () => {
@@ -206,10 +256,6 @@ const [form, setForm] = useState<UserForm>({
       setIsActiveError({ show: true, message: "User must be active" })
       return false
     }
-    if (!form.emailVerified) {
-      setEmailError({ show: true, message: "Email must be verified" })
-      return false
-    }
     if (form.firstName.length < 2) {
       setNameError({ show: true, message: "First and Last Name must be at least 2 characters" })
       return false
@@ -234,6 +280,10 @@ const [form, setForm] = useState<UserForm>({
       setRoleError({ show: true, message: "Role is required" })
       return false
     }
+    // if (!form.emailVerified) {
+    //   setEmailError({ show: true, message: "Email must be verified" })
+    //   return false
+    // }
     // if (!form.isActive) {
     //   setNameError({ show: true, message: "User must be active" })
     //   return false
@@ -543,6 +593,28 @@ const [form, setForm] = useState<UserForm>({
         </CardHeader>
         <CardContent>
           <div className="flex flex-col space-y-4">
+            <div className="flex items-center gap-4 px-6 pb-2">
+            <Label htmlFor="organization-filter" className="mr-2">
+              Organization
+            </Label>
+            <Select
+              value={form.organization_id}
+              // onValueChange={(value) => setForm({ ...form, organization_id: value })}
+              onValueChange={(value) => {bindUsersToOrganization(2)}}>
+              <SelectTrigger id="organization-filter" className="w-[180px] bg-white">
+              <SelectValue placeholder="Select organization" />
+              </SelectTrigger>
+              <SelectContent>
+              {/* Render organizations dynamically, first value is default */}
+              {/* <SelectItem value="Select organization">Select organization</SelectItem> */}
+              {(Array.isArray(organizations) ? organizations : []).map((org) => (
+                <SelectItem key={org.organization_id} value={org.organization_name}>
+                {org.organization_name}
+                </SelectItem>
+              ))}
+              </SelectContent>
+            </Select>
+            </div>
             <div className="flex flex-col sm:flex-row justify-between gap-4">
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
