@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Link from "next/link"
 import { toast } from "sonner"
+import { api } from "@/lib/api-client"
 
 // Mock data for users
 const users = [
@@ -97,6 +98,44 @@ export default function UsersPage() {
     column: "name",
     direction: "asc",
   })
+const [nameError, setNameError] = useState({ show: false, message: "" })
+const [lastNameError, setLastNameError] = useState({ show: false, message: "" })
+const [emailError, setEmailError] = useState({ show: false, message: "" })
+const [passwordError, setPasswordError] = useState({ show: false, message: "" })
+const [organizationError, setOrganizationError] = useState({ show: false, message: "" })
+const [roleError, setRoleError] = useState({ show: false, message: "" })
+const [isActiveError, setIsActiveError] = useState({ show: false, message: "" })
+const [emailVerifiedError, setEmailVerifiedError] = useState({ show: false, message: "" })
+
+const [formErrors, setFormErrors] = useState<string[]>([])
+
+  type UserForm = {
+  firstName: string
+  lastName: string
+  email: string
+  password: string
+  organization: string
+  role: string
+  isActive: boolean
+  emailVerified: boolean
+  create_date_time: string
+  update_date_time: string
+  status: string
+}
+
+const [form, setForm] = useState<UserForm>({
+  firstName: "",
+  lastName: "",
+  email: "",
+  password: "",
+  organization: "",
+  role: "",
+  isActive: true,
+  emailVerified: false,
+  create_date_time: new Date().toISOString(),
+  update_date_time: new Date().toISOString(),
+  status: "Active",
+})
 
   // Sort function
   const sortData = (column: string) => {
@@ -124,6 +163,142 @@ export default function UsersPage() {
       if (a[column] > b[column]) return 1 * direction
       return 0
     })
+
+  const clearErrors = () => {
+    setNameError({ show: false, message: "" })
+    setLastNameError({ show: false, message: "" })
+    setEmailError({ show: false, message: "" })
+    setPasswordError({ show: false, message: "" })
+    setOrganizationError({ show: false, message: "" })
+    setRoleError({ show: false, message: "" })
+    setIsActiveError({ show: false, message: "" })
+    setEmailVerifiedError({ show: false, message: "" })
+    setFormErrors([])
+  }
+
+   const validateForm = () => {
+    clearErrors()
+    if (form.firstName === "") {
+      setNameError({ show: true, message: "First Name Required" })
+      return false
+    }
+    if (form.lastName === "") {
+      setLastNameError({ show: true, message: "Last Name are Required" })
+      return false
+    }
+    if (form.email === "") {
+      setEmailError({ show: true, message: "Email is Required" })
+      return false
+    }
+    if (form.password === "") {
+      setPasswordError({ show: true, message: "Password is Required" })
+      return false
+    }
+    if (form.organization === "") {
+      setOrganizationError({ show: true, message: "Organization is Required" })
+      return false
+    }
+    if (form.role === "") {
+      setRoleError({ show: true, message: "Role is Required" })
+      return false
+    }
+    if (!form.isActive) {
+      setIsActiveError({ show: true, message: "User must be active" })
+      return false
+    }
+    if (!form.emailVerified) {
+      setEmailError({ show: true, message: "Email must be verified" })
+      return false
+    }
+    if (form.firstName.length < 2) {
+      setNameError({ show: true, message: "First and Last Name must be at least 2 characters" })
+      return false
+    }
+    if (form.lastName.length < 2) {
+      setLastNameError({ show: true, message: "First and Last Name must be at least 2 characters" })
+      return false
+    }
+    if (!/\S+@\S+\.\S+/.test(form.email)) {
+      setEmailError({ show: true, message: "Email is not valid" })
+      return false
+    }
+    if (form.password.length < 6) {
+      setPasswordError({ show: true, message: "Password must be at least 6 characters" })
+      return false
+    }
+    if (form.organization === "") {
+      setOrganizationError({ show: true, message: "Organization is required" })
+      return false
+    }
+    if (form.role === "") {
+      setRoleError({ show: true, message: "Role is required" })
+      return false
+    }
+    // if (!form.isActive) {
+    //   setNameError({ show: true, message: "User must be active" })
+    //   return false
+    // }
+    // if (!form.emailVerified) {
+    //   setNameError({ show: true, message: "Email must be verified" })
+    //   return false
+    // }
+    // If all validations pass, clear errors and return true
+    clearErrors()
+    return true
+  }
+
+  const handleSubmit = () => {
+    if (!validateForm()) {
+      return
+    }
+    // Here you would typically send the form data to your backend API
+    createUser(form);
+    // Reset form after successful submission
+    ResetForm();
+  }
+  function ResetForm() {
+    setForm({
+      firstName: "",
+      lastName: "",
+      email: "",
+      password: "",
+      organization: "",
+      role: "",
+      isActive: true,
+      emailVerified: false,
+      create_date_time: new Date().toISOString(),
+      update_date_time: new Date().toISOString(),
+      status: "Active",
+    })
+  }
+  // Create a new user (mock implementation)
+  const createUser = async (
+    newUser: Omit<UserForm, "status"> & { status?: string }
+  ) => {
+    try {
+      // Here you would typically send the newUser data to your backend API
+      newUser = {
+        ...form,
+        create_date_time: new Date().toISOString(),
+        update_date_time: new Date().toISOString(),
+      }
+      console.log("Creating user:", newUser)
+      // Simulate API call with a delay
+      const response = await api.post<UserForm>("/users/register", newUser)
+
+      console.log("User created response:", response);
+      if (response.status !== 201 && response.status !== 200) {
+        toast.error(`Failed to create user. Server responded with status ${response.status}`);
+        return;
+      }
+      toast.success("User created successfully");
+      setShowAddUserDialog(false)
+    }
+     catch (error) {
+      console.error("Error creating user:", error)
+      toast.error("Error creating user. Please try again.")
+    }
+  }
 
   return (
     <div className="space-y-6 mx-auto">
@@ -162,23 +337,127 @@ export default function UsersPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="first-name">First name</Label>
-                        <Input id="first-name" placeholder="John" />
+                        <Input
+                          id="first-name"
+                          value={form.firstName}
+                          onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                          placeholder="Enter first name"
+                          className={nameError.show ? "border-red-500" : ""}/>
+                        {
+                        nameError.show && form.firstName === "" && (
+                         <p className="text-red-500 text-sm">{nameError.message || "First name is required"}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="last-name">Last name</Label>
-                        <Input id="last-name" placeholder="Doe" />
+                        <Input
+                          id="last-name"
+                          value={form.lastName}
+                          onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                          placeholder="Last name"
+                          className={lastNameError.show ? "border-red-500" : ""}
+                        />
+                        {lastNameError.show && form.lastName === "" && (
+                        <p className="text-red-500 text-sm">{lastNameError.message || "Last name is required"}</p>)}
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
-                      <Input id="email" placeholder="john.doe@example.com" type="email" />
+                      <Input
+                      id="email"
+                      placeholder="john.doe@example.com"
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => setForm({ ...form, email: e.target.value })}
+                      className={emailError.show ? "border-red-500" : ""}
+                      />
+                      {emailError.show && form.email === "" && (
+                      <p className="text-red-500 text-sm">{emailError.message || "Email is required"}</p>)}
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="password">Password</Label>
-                      <Input id="password" type="password" />
+                      <Input
+                      id="password"
+                      type="password"
+                      value={form.password}
+                      onChange={(e) => setForm({ ...form, password: e.target.value })}
+                      placeholder="Enter password"
+                      className={passwordError.show && form.password === "" ? "border-red-500" : ""}
+                      />
+                      {passwordError.show && form.password === "" && (
+                      <p className="text-red-500 text-sm">{passwordError.message || "Password is required"}</p>
+                      )}
                     </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="organization-id">Organization</Label>
+                      <Select
+                        value={form.organization}
+                        onValueChange={(value) => setForm({ ...form, organization: value })}
+                      >
+                        <SelectTrigger className={organizationError.show && form.organization === "" ? "border-red-500" : ""}>
+                          <SelectValue placeholder="Select organization" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="org1">Organization 1</SelectItem>
+                          <SelectItem value="org2">Organization 2</SelectItem>
+                          <SelectItem value="org3">Organization 3</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {organizationError.show && form.organization === "" && (
+                        <p className="text-red-500 text-sm">{organizationError.message || "Organization is required"}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="role-dropdown">Role</Label>
+                        <Select
+                        value={form.role}
+                        onValueChange={(value) => setForm({ ...form, role: value })}
+                        >
+                        <SelectTrigger className={roleError.show && form.role === "" ? "border-red-500" : ""}>
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="teacher">Teacher</SelectItem>
+                          <SelectItem value="student">Student</SelectItem>
+                        </SelectContent>
+                        </Select>
+                        {roleError.show && form.role === "" && (
+                        <p className="text-red-500 text-sm">{roleError.message || "Role is required"}</p>
+                        )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-6 mt-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                      type="checkbox"
+                      id="is-active"
+                      className="accent-[#1e74bb] w-4 h-4"
+                      checked={form.isActive}
+                      onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+                      />
+                      <Label htmlFor="is-active">Is Active</Label>
+                    </div>
+                    {/* {nameError.show && form.isActive === false && (
+                      <p className="text-red-500 text-sm">{nameError.message || "User must be active"}</p>
+                    )} */}
+                    <div className="flex items-center space-x-2">
+                      <input
+                      type="checkbox"
+                      id="email-verified"
+                      className="accent-[#1e74bb] w-4 h-4"
+                      checked={form.emailVerified}
+                      onChange={(e) => setForm({ ...form, emailVerified: e.target.checked })}
+                      />
+                      <Label htmlFor="email-verified">Email Verified</Label>
+                    </div>
+                    {/* {nameError.show && !form.emailVerified && (
+                      <p className="text-red-500 text-sm">{nameError.message || "Email must be verified"}</p>
+                    )} */}
                   </div>
                 </TabsContent>
 
@@ -220,13 +499,7 @@ export default function UsersPage() {
                 </Button>
                 <Button
                   className="bg-[#1e74bb] hover:bg-[#1a65a3]"
-                  onClick={() => {
-                    // Add your user creation logic here
-                    // After successful creation:
-                    toast.success("User created successfully")
-                    setShowAddUserDialog(false)
-                  }}
-                >
+                  onClick={handleSubmit}>
                   Create User
                 </Button>
               </DialogFooter>
