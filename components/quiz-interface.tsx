@@ -23,12 +23,15 @@ import {
   Trash2,
   X,
   Check,
+  Mic,
+  MicOff,
 } from "lucide-react"
 import { api } from "@/lib/api-client"
 import Link from "next/link"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { MathRenderer } from "@/components/math-renderer"
-import { MathInputHelper } from "./math-input-helper"
+import { MathInputHelper } from "@/components/math-input-helper"
+import { set } from "date-fns"
 
 interface Option {
   quiz_question_option_id: number
@@ -62,6 +65,11 @@ interface DrawingTool {
   color: string
 }
 
+interface convoMessage {
+  role: string
+  content: string
+}
+
 export function QuizInterface({
   quizId,
   questionId,
@@ -83,26 +91,7 @@ export function QuizInterface({
   const [totalQuestions, setTotalQuestions] = useState(10)
   const [quizTitle, setQuizTitle] = useState("Algebra Fundamentals Quiz")
   const [subjectName, setSubjectName] = useState("Mathematics / Athematic / Counting and Number Recognition")
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 1,
-      sender: "user",
-      content: "you're a UX writer now. Generate 3 versions of 404 error messages for a ecommerce clothing website.",
-      timestamp: "1 min ago",
-    },
-    {
-      id: 2,
-      sender: "response",
-      content: `Here are three different versions of 404 error messages for an ecommerce clothing website:
-
-1. Uh-oh! It looks like the page you're looking for isn't here. Please check the URL and try again or return to the homepage to continue shopping.
-
-2. Whoops! We can't seem to find the page you're looking for. Please double-check the URL or use our collection of stylish clothes and accessories.
-
-3. Sorry, the page you're trying to access isn't available. It's possible that the item has sold out or the page has`,
-      timestamp: "Just now",
-    },
-  ])
+  const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState("")
   const [questionIds, setQuestionIds] = useState<number[]>([])
   const [isProcessingMath, setIsProcessingMath] = useState(false)
@@ -116,6 +105,63 @@ export function QuizInterface({
     color: "#000000",
   })
   const [lastPos, setLastPos] = useState<{ x: number; y: number } | null>(null)
+  const [isListening, setIsListening] = useState(false)
+  const [speechSupported, setSpeechSupported] = useState(false)
+  const [contextAnswer, setContextAnswer] = useState("")
+  const [feedbackCounter, setFeedbackCounter] = useState(0);
+
+  const [actualAnswer, setActualAnswer] = useState("")
+  const [conversationMessages, setConversationMessages] = useState<convoMessage[]>([])
+  const recognitionRef = useRef<any>(null)
+
+  // Check if speech recognition is supported
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (SpeechRecognition) {
+      setSpeechSupported(true)
+      recognitionRef.current = new SpeechRecognition()
+      recognitionRef.current.continuous = true
+      recognitionRef.current.interimResults = true
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = Array.from(event.results)
+          .map((result: any) => result[0])
+          .map((result) => result.transcript)
+          .join("")
+
+        setNewMessage(transcript)
+      }
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false)
+      }
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error)
+        setIsListening(false)
+      }
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+    }
+  }, [])
+
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop()
+      setIsListening(false)
+    } else {
+      try {
+        recognitionRef.current?.start()
+        setIsListening(true)
+      } catch (error) {
+        console.error("Error starting speech recognition:", error)
+      }
+    }
+  }
 
   // Fetch quiz details to get total questions
   // useEffect(() => {
@@ -188,13 +234,127 @@ export function QuizInterface({
     setIsAnswerChecked(false)
   }
 
-  const checkAnswer = () => {
+  const checkAnswer = async (question: Question | null) => {
+
+    console.log(question)
     if (selectedOption === null) return
 
     const selectedOptionData = question?.options.find((option) => option.quiz_question_option_id === selectedOption)
 
     setIsCorrect(selectedOptionData?.is_correct || false)
     setIsAnswerChecked(true)
+
+    if (selectedOptionData?.is_correct === false) {
+      const payload = {
+        user_content: question?.quiz_question_text,
+        model: "gpt-4o",
+        collection_name: "linear_algebra",
+        top_k: 5
+      }
+
+      try {
+
+        const message: Message[] = [
+          {
+            id: 1,
+            sender: "response",
+            content: question?.quiz_question_text || "",
+            timestamp: "Just now",
+          },
+          {
+            id: 2,
+            sender: "user",
+            content: selectedOptionData?.option_text,
+            timestamp: "Just now",
+          },
+          {
+            id: 3,
+            sender: "response",
+            content: 'I\'ll help you understand this question better.',
+            timestamp: "Just now",
+          },
+          {
+            id: 3,
+            sender: "user",
+            content: 'Ok!',
+            timestamp: "Just now",
+          },
+        ]
+
+        setMessages([...message])
+
+        let obj = [
+          {
+            "role": "assistant",
+            "content": question?.quiz_question_text || "",
+          },
+          {
+            "role": "user",
+            "content": selectedOptionData?.option_text,
+          },
+          {
+            "role": "assistant",
+            "content": 'I\'ll help you understand this question better.',
+          },
+          {
+            "role": "user",
+            "content": 'Ok!',
+          },
+        ]
+
+        setConversationMessages([...obj])
+
+
+        const response = await api.post<any>('/genai/socratic/contextual-answer', payload);
+
+        if (response.ok && response.data) {
+          console.log("Response data:", response.data)
+
+          const data = response.data
+          setContextAnswer(data?.assistant_response)
+
+          const payload = {
+            model: "gpt-4o",
+            complex_question: question?.quiz_question_text,
+            actual_answer: data.assistant_response,
+            correct_answer: question?.options.find((option) => option.is_correct)?.option_text,
+            student_answer: selectedOption.toString()
+          }
+
+          const convo = await api.post<any>('/genai/socratic/initial', payload);
+
+          if (convo.ok && convo.data) {
+            console.log("Response data:", convo.data)
+
+            const userMessage: Message = {
+              id: messages.length + 1,
+              sender: "response",
+              content: convo.data.sub_question,
+              timestamp: "Just now",
+            }
+
+            const userMessageObj = {
+              "role": "assistant",
+              "content": convo.data.sub_question,
+            }
+
+            setActualAnswer(convo.data.sub_question)
+
+
+            setMessages((prev) => [...prev, userMessage])
+
+            setConversationMessages((prev) => [...prev, userMessageObj])
+
+
+          }
+        }
+
+      } catch (err) {
+        console.error("Error fetching question:", err)
+      }
+    }
+
+
   }
 
   const navigateToQuestion = async (direction: "prev" | "next") => {
@@ -208,37 +368,137 @@ export function QuizInterface({
     setCurrentQuestionId(newQuestionId)
   }
 
-  const handleSendMessage = () => {
-    if (newMessage.trim() === "") return
+
+  const handleSendMessage = async () => {
+    if (newMessage.trim() === "") return;
+
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    }
 
     const userMessage: Message = {
       id: messages.length + 1,
       sender: "user",
       content: newMessage,
       timestamp: "Just now",
-    }
+    };
 
-    setMessages([...messages, userMessage])
-    setNewMessage("")
+    const userMessageObj = {
+      role: "user",
+      content: newMessage,
+    };
 
-    // Simulate response
-    setTimeout(() => {
-      const responseMessage: Message = {
-        id: messages.length + 2,
-        sender: "response",
-        content: `I'll help you understand this question better. 
+    setMessages([...messages, userMessage]);
+    setNewMessage("");
+    setConversationMessages((prev) => [...prev, userMessageObj]);
 
-The question "${question?.quiz_question_text}" is asking about ${question?.quiz_question_text.toLowerCase().includes("algebra") ? "algebraic concepts" : "mathematical principles"}.
+    const payload = {
+      messages: [
+        { role: "assistant", content: actualAnswer },
+        { role: "user", content: newMessage },
+      ],
+      model: "gpt-4o",
+      actual_answer: contextAnswer,
+    };
 
-Let me break down the options:
-${question?.options.map((opt, idx) => `${idx + 1}. ${opt.option_text}`).join("\n")}
+    try {
+      const isCompletePayload = {
+        complex_question: question?.quiz_question_text,
+        messages: conversationMessages,
+        model: "gpt-4o",
+        actual_answer: contextAnswer,
+      };
 
-Focus on understanding the key concepts and apply the appropriate formula to solve this problem.`,
-        timestamp: "Just now",
+      const isContinueResponse = await api.post<any>('genai/missing-context/evaluate', isCompletePayload);
+      const isContinue = isContinueResponse.data.is_complete;
+
+      console.log("isContinue", isContinue);
+
+      if (!isContinue) {
+        if (feedbackCounter < 5) {
+          // Step 1: Generate Feedback
+          const response = await api.post<any>('/genai/feedback/generate', payload);
+          let feedback = `Feedback\n\n${response.data.feedback}`;
+
+          const tempobj = {
+            role: "assistant",
+            content: feedback,
+          };
+
+          setConversationMessages((prev) => [...prev, tempobj]);
+
+          // Step 2: Follow-Up Socratic
+          const Feedbackpayload = {
+            complex_question: question?.quiz_question_text,
+            student_answer: selectedOption?.toString(),
+            correct_answer: question?.options.find((option) => option.is_correct)?.option_text,
+            messages: conversationMessages,
+            model: "gpt-4o",
+            actual_answer: contextAnswer,
+          };
+
+          const res = await api.post<any>('/genai/follow-up-socratic/ask', Feedbackpayload);
+
+          feedback += `\n\n${res.data.sub_question}`;
+
+          if (res.ok && res.data) {
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: messages.length + 1,
+                sender: "response",
+                content: feedback,
+                timestamp: "Just now",
+              },
+            ]);
+          }
+
+          // 🔁 Increment feedback counter
+          setFeedbackCounter(prev => prev + 1);
+        } else {
+          // 👇 After 5 times, hit the final feedback API
+
+          let summaryPayload = {
+            complex_question: question?.quiz_question_text,
+            messages: conversationMessages,
+            model: "gpt-4o",
+            actual_answer: contextAnswer,
+          };
+
+          let knowledgeGapPayload = {
+            messages: conversationMessages,
+            model: "gpt-4o",
+            actual_answer: contextAnswer,
+          }
+
+
+          console.log("final feedback api");
+          const finalRes = await api.post<any>('/genai/user-summary/generate', summaryPayload);
+          const knowledgeGap = await api.post<any>('/genai/knowledge-gap/analyze', knowledgeGapPayload);
+
+          let finalFeedback = `User Summary:\n\n${finalRes.data.summary}`;
+
+          finalFeedback += `\n\nKnowledge Gap:\n\n${knowledgeGap.data.knowledge_gap}`;
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: messages.length + 1,
+              sender: "response",
+              content: finalFeedback,
+              timestamp: "Just now",
+            },
+          ]);
+        }
       }
-      setMessages((prev) => [...prev, responseMessage])
-    }, 1000)
-  }
+    } catch (err) {
+      console.error("Error fetching question:", err);
+    }
+  };
+
+
+
 
   const processMathImage = async (file: File) => {
     setIsProcessingMath(true)
@@ -453,7 +713,8 @@ Focus on understanding the key concepts and apply the appropriate formula to sol
                   <ChevronLeft className="h-6 w-6 text-white" />
                 </Button>
                 <h2 className="text-xl font-bold">
-                  {currentQuestionId}. {question?.quiz_question_text || quizTitle}
+                  {/* {currentQuestionId}. {question?.quiz_question_text || quizTitle} */}
+                  <MathRenderer content={currentQuestionId + ". " + question?.quiz_question_text || ""} />
                 </h2>
                 <Button
                   variant="outline"
@@ -523,7 +784,7 @@ Focus on understanding the key concepts and apply the appropriate formula to sol
                           ${isSelected ? (isAnswerChecked ? (isCorrect ? "text-green-600 font-medium " : "text-red-600 font-medium") : "text-[#3373b5] font-medium") : ""}
                         `}
                       >
-                        {option.option_text}
+                        <MathRenderer content={option.option_text} />
                       </Label>
                     </div>
                   )
@@ -565,7 +826,7 @@ Focus on understanding the key concepts and apply the appropriate formula to sol
                 </Button>
                 <Button
                   className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6"
-                  onClick={checkAnswer}
+                  onClick={() => checkAnswer(question)}
                   disabled={selectedOption === null}
                 >
                   SUBMIT
@@ -584,7 +845,7 @@ Focus on understanding the key concepts and apply the appropriate formula to sol
             {messages.map((message) => (
               <div key={message.id} className="mb-6">
                 {message.sender === "user" ? (
-                  <div className="mb-6">
+                  <div className="mb-2">
                     <div className="flex items-center mb-2 relative top-4 left-[-6px]">
                       <div className="w-8 h-8 rounded-sm bg-amber-100 flex items-center justify-center overflow-hidden mr-2">
                         <User />
@@ -600,7 +861,7 @@ Focus on understanding the key concepts and apply the appropriate formula to sol
                     </div>
                   </div>
                 ) : (
-                  <div className="mb-6">
+                  <div className="mb-2">
                     <div className="flex items-center mb-2 relative top-4 left-[-6px]">
                       <div className="w-8 h-8 rounded-sm bg-green-200 flex items-center justify-center mr-2">
                         <Bot />
@@ -659,38 +920,29 @@ Focus on understanding the key concepts and apply the appropriate formula to sol
               >
                 <PencilIcon size={20} />
               </button>
-              <button className="p-3 text-gray-400">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path
-                    d="M21 15V19C21 19.5304 20.7893 20.0391 20.4142 20.4142C20.0391 20.7893 19.5304 21 19 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V15"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M17 8L12 3L7 8"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M12 3V15"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
+              {speechSupported && (
+                <button
+                  className={`p-3 ${isListening ? "text-red-500 hover:text-red-600" : "text-gray-400 hover:text-gray-600"}`}
+                  onClick={toggleListening}
+                  title={isListening ? "Stop recording" : "Start recording"}
+                >
+                  {isListening ? (
+                    <div className="relative">
+                      <MicOff size={20} />
+                      <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    </div>
+                  ) : (
+                    <Mic size={20} />
+                  )}
+                </button>
+              )}
               <MathInputHelper onInsert={insertMathSymbol} />
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type math like x^2, sqrt(4), 1/2, or use $ for LaTeX..."
-                className="flex-1 border-none focus:ring-0 py-3 px-3 text-sm"
+                placeholder={isListening ? "Listening..." : "Type math like x^2, sqrt(4), 1/2, or use $ for LaTeX..."}
+                className={`flex-1 border-none focus:ring-0 py-3 px-3 text-sm ${isListening ? "bg-red-50" : ""}`}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     handleSendMessage()
@@ -721,7 +973,9 @@ Focus on understanding the key concepts and apply the appropriate formula to sol
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-2 text-center">
-              Upload or draw math expressions to convert them to text
+              {isListening
+                ? "Speak clearly... Click the microphone again to stop."
+                : "Upload, draw, or dictate math expressions"}
             </p>
           </div>
         </div>
@@ -841,3 +1095,4 @@ Focus on understanding the key concepts and apply the appropriate formula to sol
     </div>
   )
 }
+
