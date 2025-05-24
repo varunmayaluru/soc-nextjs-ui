@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -15,11 +17,18 @@ import {
   ThumbsDown,
   ThumbsUp,
   User,
+  ImageIcon,
+  PencilIcon,
+  Eraser,
+  Trash2,
+  X,
+  Check,
 } from "lucide-react"
 import { api } from "@/lib/api-client"
 import Link from "next/link"
-import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition"
-import { Mic, MicOff, Loader2, Send } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { MathRenderer } from "@/components/math-renderer"
+import { MathInputHelper } from "./math-input-helper"
 
 interface Option {
   quiz_question_option_id: number
@@ -45,6 +54,12 @@ interface Message {
   sender: "user" | "response"
   content: string
   timestamp: string
+}
+
+interface DrawingTool {
+  type: "pen" | "eraser"
+  size: number
+  color: string
 }
 
 export function QuizInterface({
@@ -89,26 +104,49 @@ export function QuizInterface({
     },
   ])
   const [newMessage, setNewMessage] = useState("")
-  const chatContainerRef = useRef<HTMLDivElement>(null)
+  const [questionIds, setQuestionIds] = useState<number[]>([])
+  const [isProcessingMath, setIsProcessingMath] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isDrawing, setIsDrawing] = useState(false)
+  const [isCanvasOpen, setIsCanvasOpen] = useState(false)
+  const [currentTool, setCurrentTool] = useState<DrawingTool>({
+    type: "pen",
+    size: 3,
+    color: "#000000",
+  })
+  const [lastPos, setLastPos] = useState<{ x: number; y: number } | null>(null)
 
-  // Speech recognition setup
-  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition, isMicrophoneAvailable } =
-    useSpeechRecognition()
-  const [isLoading, setIsLoading] = useState(false)
+  // Fetch quiz details to get total questions
+  // useEffect(() => {
+  //   const fetchQuizDetails = async () => {
+  //     try {
+  //       const response = await api.get(`/v1/quizzes/quizzes/${quizId}`)
 
-  // Update message input when transcript changes
-  useEffect(() => {
-    if (transcript) {
-      setNewMessage(transcript)
-    }
-  }, [transcript])
+  //       if (response.ok && response.data) {
+  //         // Set quiz title if available
+  //         if (response.data.title) {
+  //           setQuizTitle(response.data.title)
+  //         }
 
-  // Scroll to bottom of chat when messages change
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight
-    }
-  }, [messages])
+  //         // Set total questions if available
+  //         if (response.data.total_questions) {
+  //           setTotalQuestions(response.data.total_questions)
+  //         }
+
+  //         // Generate question IDs based on total questions
+  //         if (response.data.total_questions) {
+  //           const ids = Array.from({ length: response.data.total_questions }, (_, i) => i + 1)
+  //           setQuestionIds(ids)
+  //         }
+  //       }
+  //     } catch (err) {
+  //       console.error("Error fetching quiz details:", err)
+  //     }
+  //   }
+
+  //   fetchQuizDetails()
+  // }, [quizId])
 
   useEffect(() => {
     const fetchQuestion = async () => {
@@ -119,17 +157,21 @@ export function QuizInterface({
 
       try {
         // Use the provided questionId or fetch the first question for the quiz
-        const id = questionId || "1" // Default to 1 if no questionId provided
+        const id = questionId || currentQuestionId?.toString() || "1"
         setCurrentQuestionId(Number(id))
 
-        const response = await api.get<Question>(`questions/questions/quiz-question/${id}?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}`)
+        // Use the exact API endpoint format from the provided example
+        const endpoint = `/questions/questions/quiz-question/${id}?quiz_id=${quizId}&subject_id=${subjectId || 1}&topic_id=${topicId || 1}`
+        console.log("Fetching question from:", endpoint)
+
+        const response = await api.get<Question>(endpoint)
 
         if (!response.ok) {
           throw new Error(`Failed to fetch question: ${response.status}`)
         }
 
-        const data = await response.data
-        setQuestion(data)
+        console.log("Question data:", response.data)
+        setQuestion(response.data)
       } catch (err) {
         console.error("Error fetching question:", err)
         setError("Failed to load question. Please try again.")
@@ -139,7 +181,7 @@ export function QuizInterface({
     }
 
     fetchQuestion()
-  }, [quizId, questionId, subjectId, topicId])
+  }, [quizId, questionId, currentQuestionId, subjectId, topicId])
 
   const handleOptionSelect = (optionId: number) => {
     setSelectedOption(optionId)
@@ -161,60 +203,9 @@ export function QuizInterface({
     // Simple navigation logic - in a real app, you'd fetch the actual next/prev question IDs
     const newQuestionId = direction === "next" ? currentQuestionId + 1 : currentQuestionId - 1
 
-    if (newQuestionId < 1) return // Prevent going below question 1
+    if (newQuestionId < 1 || newQuestionId > totalQuestions) return // Prevent going beyond question range
 
     setCurrentQuestionId(newQuestionId)
-
-    // Reset states
-    setLoading(true)
-    setError(null)
-    setIsAnswerChecked(false)
-    setSelectedOption(null)
-
-    try {
-      const response = await api.get<Question>(
-        `questions/questions/quiz-question/${newQuestionId}?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}`,
-      )
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch question: ${response.status}`)
-      }
-
-      const data = await response.data
-      setQuestion(data)
-    } catch (err) {
-      console.error("Error fetching question:", err)
-      setError("Failed to load question. Please try again.")
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const toggleListening = async () => {
-    if (!browserSupportsSpeechRecognition) {
-      alert("Your browser does not support speech recognition.")
-      return
-    }
-
-    if (!isMicrophoneAvailable) {
-      alert("Microphone permission is required for speech recognition.")
-      return
-    }
-
-    if (listening) {
-      SpeechRecognition.stopListening()
-    } else {
-      setIsLoading(true)
-      resetTranscript()
-      try {
-        await SpeechRecognition.startListening({ continuous: true })
-      } catch (error) {
-        console.error("Error starting speech recognition:", error)
-        alert("Failed to start speech recognition. Please try again.")
-      } finally {
-        setIsLoading(false)
-      }
-    }
   }
 
   const handleSendMessage = () => {
@@ -229,47 +220,186 @@ export function QuizInterface({
 
     setMessages([...messages, userMessage])
     setNewMessage("")
-    resetTranscript()
-
-    // Stop listening if active
-    if (listening) {
-      SpeechRecognition.stopListening()
-    }
 
     // Simulate response
     setTimeout(() => {
       const responseMessage: Message = {
         id: messages.length + 2,
         sender: "response",
-        content: `Here are three different versions of 404 error messages for an ecommerce clothing website:
+        content: `I'll help you understand this question better. 
 
-1. Uh-oh! It looks like the page you're looking for isn't here. Please check the URL and try again or return to the homepage to continue shopping.
+The question "${question?.quiz_question_text}" is asking about ${question?.quiz_question_text.toLowerCase().includes("algebra") ? "algebraic concepts" : "mathematical principles"}.
 
-2. Whoops! We can't seem to find the page you're looking for. Please double-check the URL or use our collection of stylish clothes and accessories.
+Let me break down the options:
+${question?.options.map((opt, idx) => `${idx + 1}. ${opt.option_text}`).join("\n")}
 
-3. Sorry, the page you're trying to access isn't available. It's possible that the item has sold out or the page has`,
+Focus on understanding the key concepts and apply the appropriate formula to solve this problem.`,
         timestamp: "Just now",
       }
       setMessages((prev) => [...prev, responseMessage])
     }, 1000)
   }
 
-  // Generate pagination numbers
-  const paginationNumbers = Array.from({ length: 20 }, (_, i) => i + 1)
+  const processMathImage = async (file: File) => {
+    setIsProcessingMath(true)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const response = await fetch("/api/mathpix", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to process math image")
+      }
+
+      const data = await response.json()
+
+      if (data.latex) {
+        // Add the LaTeX to the message input
+        setNewMessage((prevMessage) => prevMessage + " " + data.latex)
+      }
+    } catch (error) {
+      console.error("Error processing math image:", error)
+      // You might want to show a toast notification here
+    } finally {
+      setIsProcessingMath(false)
+    }
+  }
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file && file.type.startsWith("image/")) {
+      processMathImage(file)
+    }
+  }
+
+  // Canvas drawing functions
+  const initCanvas = () => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    // Set canvas background to white
+    ctx.fillStyle = "#ffffff"
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+  }
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    setIsDrawing(true)
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const rect = canvas.getBoundingClientRect()
+    const x = "touches" in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left
+    const y = "touches" in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top
+
+    setLastPos({ x, y })
+  }
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing || !lastPos) return
+
+    e.preventDefault() // Add this line to prevent scrolling on touch devices
+
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const rect = canvas.getBoundingClientRect()
+    const x = "touches" in e ? e.touches[0].clientX - rect.left : e.clientX - rect.left
+    const y = "touches" in e ? e.touches[0].clientY - rect.top : e.clientY - rect.top
+
+    ctx.beginPath()
+    ctx.moveTo(lastPos.x, lastPos.y)
+    ctx.lineTo(x, y)
+
+    if (currentTool.type === "pen") {
+      ctx.strokeStyle = currentTool.color
+      ctx.lineWidth = currentTool.size
+    } else if (currentTool.type === "eraser") {
+      ctx.strokeStyle = "#ffffff"
+      ctx.lineWidth = currentTool.size * 3
+    }
+
+    ctx.lineCap = "round"
+    ctx.lineJoin = "round"
+    ctx.stroke()
+
+    setLastPos({ x, y })
+  }
+
+  const stopDrawing = () => {
+    setIsDrawing(false)
+    setLastPos(null)
+  }
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    ctx.fillStyle = "#ffffff"
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+  }
+
+  const captureCanvas = async () => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    try {
+      // Convert canvas to blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob)
+        }, "image/png")
+      })
+
+      // Create a File object from the blob
+      const file = new File([blob], "math-drawing.png", { type: "image/png" })
+
+      // Process the image with Mathpix
+      await processMathImage(file)
+
+      // Close the canvas dialog
+      setIsCanvasOpen(false)
+    } catch (error) {
+      console.error("Error capturing canvas:", error)
+    }
+  }
+
+  useEffect(() => {
+    if (isCanvasOpen) {
+      initCanvas()
+    }
+  }, [isCanvasOpen])
+
+  // Generate pagination numbers based on total questions
+  const paginationNumbers =
+    questionIds.length > 0 ? questionIds : Array.from({ length: totalQuestions }, (_, i) => i + 1)
 
   // Mock relevant links
   const relevantLinks = [
-    { title: "Why Atomic Radius Decreases", href: "#" },
-    { title: "Why Atomic Radius Decreases", href: "#" },
-    { title: "Nuclear Charge vs Shielding", href: "#" },
+    { title: "Understanding Algebra Fundamentals", href: "#" },
+    { title: "Solving Linear Equations", href: "#" },
+    { title: "Mathematical Formulas Reference", href: "#" },
   ]
+
+  const insertMathSymbol = (symbol: string) => {
+    setNewMessage((prev) => prev + symbol)
+  }
 
   return (
     <div className="mx-auto bg-white">
-      {/* Blue header bar */}
-
-      {/* Pagination */}
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
         {/* Question Panel */}
         <div className="bg-white p-6">
@@ -303,6 +433,7 @@ export function QuizInterface({
                 {paginationNumbers.map((num) => (
                   <button
                     key={num}
+                    onClick={() => setCurrentQuestionId(num)}
                     className={`min-w-[36px] h-9 flex items-center justify-center mx-1 ${num === currentQuestionId ? "text-[#3373b5] font-bold border-b border-[#3373b5]" : "text-gray-500"
                       }`}
                   >
@@ -329,6 +460,7 @@ export function QuizInterface({
                   size="icon"
                   className="rounded-full bg-[#1E74BB] hover:bg-[#1E74BB84] disabled:bg-gray-400 border-none h-12 w-12 flex items-center justify-center"
                   onClick={() => navigateToQuestion("next")}
+                  disabled={currentQuestionId === totalQuestions}
                 >
                   <ChevronRight className="h-6 w-6 text-white" />
                 </Button>
@@ -431,12 +563,14 @@ export function QuizInterface({
                 >
                   Skip
                 </Button>
-                <Button className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6" onClick={checkAnswer}>
+                <Button
+                  className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6"
+                  onClick={checkAnswer}
+                  disabled={selectedOption === null}
+                >
                   SUBMIT
                 </Button>
               </div>
-
-              {/* Relevant links section */}
             </div>
           )}
         </div>
@@ -446,7 +580,7 @@ export function QuizInterface({
           className="bg-white border-l border-gray-200 flex flex-col overflow-auto"
           style={{ height: "calc(100vh - 342px)" }}
         >
-          <div className="flex-1 overflow-y-auto p-8 space-y-6" ref={chatContainerRef}>
+          <div className="flex-1 overflow-y-auto p-8 space-y-6">
             {messages.map((message) => (
               <div key={message.id} className="mb-6">
                 {message.sender === "user" ? (
@@ -461,7 +595,9 @@ export function QuizInterface({
                         <SquarePen size={14} className="text-gray-400" />
                       </button>
                     </div>
-                    <div className="text-sm pl-10">{message.content}</div>
+                    <div className="text-sm pl-10">
+                      <MathRenderer content={message.content} />
+                    </div>
                   </div>
                 ) : (
                   <div className="mb-6">
@@ -472,8 +608,8 @@ export function QuizInterface({
                       <div className="font-medium">Response</div>
                       <div className="text-xs text-gray-500 ml-2">{message.timestamp}</div>
                     </div>
-                    <div className="bg-gray-100  rounded-lg text-sm whitespace-pre-wrap pl-10 py-4 pr-4">
-                      {message.content}
+                    <div className="bg-gray-100 rounded-lg text-sm whitespace-pre-wrap pl-10 py-4 pr-4">
+                      <MathRenderer content={message.content} />
                     </div>
                   </div>
                 )}
@@ -483,6 +619,7 @@ export function QuizInterface({
 
           {/* Chat input */}
           <div className="p-4 border-t border-gray-200">
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
             <div className="flex items-center bg-white rounded-full border border-gray-300">
               <button className="p-3 text-gray-400">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -501,6 +638,26 @@ export function QuizInterface({
                     strokeLinejoin="round"
                   />
                 </svg>
+              </button>
+              <button
+                className="p-3 text-gray-400 hover:text-gray-600"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isProcessingMath}
+                title="Upload math image"
+              >
+                {isProcessingMath ? (
+                  <div className="animate-spin h-5 w-5 border-2 border-gray-400 border-t-transparent rounded-full" />
+                ) : (
+                  <ImageIcon size={20} />
+                )}
+              </button>
+              <button
+                className="p-3 text-gray-400 hover:text-gray-600"
+                onClick={() => setIsCanvasOpen(true)}
+                disabled={isProcessingMath}
+                title="Draw math expression"
+              >
+                <PencilIcon size={20} />
               </button>
               <button className="p-3 text-gray-400">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -527,11 +684,12 @@ export function QuizInterface({
                   />
                 </svg>
               </button>
+              <MathInputHelper onInsert={insertMathSymbol} />
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Type message..."
+                placeholder="Type math like x^2, sqrt(4), 1/2, or use $ for LaTeX..."
                 className="flex-1 border-none focus:ring-0 py-3 px-3 text-sm"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -540,31 +698,31 @@ export function QuizInterface({
                 }}
               />
               <button
-                className={`p-3 ${listening ? "text-red-500" : "text-gray-400 hover:text-blue-500"}`}
-                onClick={toggleListening}
-                disabled={isLoading || !browserSupportsSpeechRecognition}
-                title={listening ? "Stop listening" : "Start voice input"}
+                className={`p-3 ${newMessage.trim() ? "text-[#3373b5] hover:text-[#2a5d92]" : "text-gray-400"}`}
+                onClick={handleSendMessage}
+                disabled={!newMessage.trim()}
               >
-                {isLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : listening ? (
-                  <MicOff className="h-5 w-5" />
-                ) : (
-                  <Mic className="h-5 w-5" />
-                )}
-              </button>
-              <button className="p-3 text-gray-400 hover:text-blue-500" onClick={handleSendMessage}>
-                <Send className="h-5 w-5" />
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                    d="M22 2L11 13"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M22 2L15 22L11 13L2 9L22 2Z"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </button>
             </div>
-            {listening && (
-              <div className="text-xs text-center mt-2 text-red-500 animate-pulse">Listening... Speak now</div>
-            )}
-            {!browserSupportsSpeechRecognition && (
-              <div className="text-xs text-center mt-2 text-gray-500">
-                Speech recognition is not supported in your browser
-              </div>
-            )}
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              Upload or draw math expressions to convert them to text
+            </p>
           </div>
         </div>
       </div>
@@ -579,6 +737,107 @@ export function QuizInterface({
           ))}
         </div>
       </div>
+
+      {/* Drawing Canvas Dialog */}
+      <Dialog open={isCanvasOpen} onOpenChange={setIsCanvasOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Draw Math Expression</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col space-y-4">
+            <div className="border border-gray-300 rounded-md overflow-hidden bg-white">
+              <canvas
+                ref={canvasRef}
+                width={550}
+                height={300}
+                className="touch-none"
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+                onTouchStart={startDrawing}
+                onTouchMove={draw}
+                onTouchEnd={stopDrawing}
+              />
+            </div>
+            <div className="flex justify-between items-center">
+              <div className="flex space-x-2">
+                <Button
+                  variant={currentTool.type === "pen" ? "default" : "outline"}
+                  size="sm"
+                  className="flex items-center gap-1"
+                  onClick={() => setCurrentTool({ ...currentTool, type: "pen" })}
+                >
+                  <PencilIcon size={16} />
+                  <span>Pen</span>
+                </Button>
+                <Button
+                  variant={currentTool.type === "eraser" ? "default" : "outline"}
+                  size="sm"
+                  className="flex items-center gap-1"
+                  onClick={() => setCurrentTool({ ...currentTool, type: "eraser" })}
+                >
+                  <Eraser size={16} />
+                  <span>Eraser</span>
+                </Button>
+                <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={clearCanvas}>
+                  <Trash2 size={16} />
+                  <span>Clear</span>
+                </Button>
+              </div>
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1"
+                  onClick={() => setIsCanvasOpen(false)}
+                >
+                  <X size={16} />
+                  <span>Cancel</span>
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex items-center gap-1 bg-[#3373b5] hover:bg-[#2a5d92]"
+                  onClick={captureCanvas}
+                  disabled={isProcessingMath}
+                >
+                  {isProcessingMath ? (
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-1" />
+                  ) : (
+                    <Check size={16} />
+                  )}
+                  <span>Recognize</span>
+                </Button>
+              </div>
+            </div>
+            <div className="flex justify-center items-center">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm">Line Size:</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={currentTool.size}
+                  onChange={(e) => setCurrentTool({ ...currentTool, size: Number.parseInt(e.target.value) })}
+                  className="w-24"
+                />
+              </div>
+              {currentTool.type === "pen" && (
+                <div className="flex items-center space-x-2 ml-4">
+                  <span className="text-sm">Color:</span>
+                  <input
+                    type="color"
+                    value={currentTool.color}
+                    onChange={(e) => setCurrentTool({ ...currentTool, color: e.target.value })}
+                    className="w-8 h-8 p-0 border-0"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
