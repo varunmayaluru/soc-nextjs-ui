@@ -114,7 +114,7 @@ const [formErrors, setFormErrors] = useState<string[]>([])
   lastName: string
   email: string
   password: string
-  organization: string
+  organization_id: string
   role: string
   isActive: boolean
   emailVerified: boolean
@@ -128,7 +128,7 @@ const [form, setForm] = useState<UserForm>({
   lastName: "",
   email: "",
   password: "",
-  organization: "",
+  organization_id: "",
   role: "",
   isActive: true,
   emailVerified: false,
@@ -194,7 +194,7 @@ const [form, setForm] = useState<UserForm>({
       setPasswordError({ show: true, message: "Password is Required" })
       return false
     }
-    if (form.organization === "") {
+    if (form.organization_id === "") {
       setOrganizationError({ show: true, message: "Organization is Required" })
       return false
     }
@@ -226,7 +226,7 @@ const [form, setForm] = useState<UserForm>({
       setPasswordError({ show: true, message: "Password must be at least 6 characters" })
       return false
     }
-    if (form.organization === "") {
+    if (form.organization_id === "") {
       setOrganizationError({ show: true, message: "Organization is required" })
       return false
     }
@@ -262,7 +262,7 @@ const [form, setForm] = useState<UserForm>({
       lastName: "",
       email: "",
       password: "",
-      organization: "",
+      organization_id: "",
       role: "",
       isActive: true,
       emailVerified: false,
@@ -393,21 +393,21 @@ const [form, setForm] = useState<UserForm>({
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="organization-id">Organization</Label>
+                      <Label htmlFor="organization_id">Organization</Label>
                       <Select
-                        value={form.organization}
-                        onValueChange={(value) => setForm({ ...form, organization: value })}
+                        value={form.organization_id}
+                        onValueChange={(value) => setForm({ ...form, organization_id: value })}
                       >
-                        <SelectTrigger className={organizationError.show && form.organization === "" ? "border-red-500" : ""}>
-                          <SelectValue placeholder="Select organization" />
+                        <SelectTrigger className={organizationError.show && form.organization_id === "" ? "border-red-500" : ""}>
+                          <SelectValue placeholder="Select organization_id" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="org1">Organization 1</SelectItem>
-                          <SelectItem value="org2">Organization 2</SelectItem>
-                          <SelectItem value="org3">Organization 3</SelectItem>
+                          <SelectItem value="1">Organization 1</SelectItem>
+                          <SelectItem value="2">Organization 2</SelectItem>
+                          <SelectItem value="3">Organization 3</SelectItem>
                         </SelectContent>
                       </Select>
-                      {organizationError.show && form.organization === "" && (
+                      {organizationError.show && form.organization_id === "" && (
                         <p className="text-red-500 text-sm">{organizationError.message || "Organization is required"}</p>
                       )}
                     </div>
