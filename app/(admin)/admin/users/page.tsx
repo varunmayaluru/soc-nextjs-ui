@@ -32,63 +32,64 @@ import { toast } from "sonner"
 import { api } from "@/lib/api-client"
 import { Organization } from "@/app/types/types"
 import { useEffect } from "react"
+import { set } from "date-fns"
 // Mock data for users
-const users = [
-  {
-    id: "1",
-    name: "John Doe",
-    email: "john.doe@example.com",
-    role: "Student",
-    status: "Active",
-    lastActive: "2 hours ago",
-    avatar: "/stylized-jd-initials.png",
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    email: "jane.smith@example.com",
-    role: "Teacher",
-    status: "Active",
-    lastActive: "1 day ago",
-    avatar: "/javascript-code.png",
-  },
-  {
-    id: "3",
-    name: "Robert Johnson",
-    email: "robert.johnson@example.com",
-    role: "Admin",
-    status: "Active",
-    lastActive: "Just now",
-    avatar: "/abstract-rj.png",
-  },
-  {
-    id: "4",
-    name: "Emily Davis",
-    email: "emily.davis@example.com",
-    role: "Student",
-    status: "Inactive",
-    lastActive: "1 week ago",
-    avatar: "/ed-initials-abstract.png",
-  },
-  {
-    id: "5",
-    name: "Michael Wilson",
-    email: "michael.wilson@example.com",
-    role: "Student",
-    status: "Active",
-    lastActive: "3 days ago",
-    avatar: "/intertwined-letters.png",
-  },
-  {
-    id: "6",
-    name: "Sarah Brown",
-    email: "sarah.brown@example.com",
-    role: "Teacher",
-    status: "Active",
-    lastActive: "5 hours ago",
-    avatar: "/stylized-letter-sb.png",
-  },
-]
+// const users = [
+//   {
+//     id: "1",
+//     name: "John Doe",
+//     email: "john.doe@example.com",
+//     role: "Student",
+//     status: "Active",
+//     lastActive: "2 hours ago",
+//     avatar: "/stylized-jd-initials.png",
+//   },
+//   {
+//     id: "2",
+//     name: "Jane Smith",
+//     email: "jane.smith@example.com",
+//     role: "Teacher",
+//     status: "Active",
+//     lastActive: "1 day ago",
+//     avatar: "/javascript-code.png",
+//   },
+//   {
+//     id: "3",
+//     name: "Robert Johnson",
+//     email: "robert.johnson@example.com",
+//     role: "Admin",
+//     status: "Active",
+//     lastActive: "Just now",
+//     avatar: "/abstract-rj.png",
+//   },
+//   {
+//     id: "4",
+//     name: "Emily Davis",
+//     email: "emily.davis@example.com",
+//     role: "Student",
+//     status: "Inactive",
+//     lastActive: "1 week ago",
+//     avatar: "/ed-initials-abstract.png",
+//   },
+//   {
+//     id: "5",
+//     name: "Michael Wilson",
+//     email: "michael.wilson@example.com",
+//     role: "Student",
+//     status: "Active",
+//     lastActive: "3 days ago",
+//     avatar: "/intertwined-letters.png",
+//   },
+//   {
+//     id: "6",
+//     name: "Sarah Brown",
+//     email: "sarah.brown@example.com",
+//     role: "Teacher",
+//     status: "Active",
+//     lastActive: "5 hours ago",
+//     avatar: "/stylized-letter-sb.png",
+//   },
+// ]
 
 export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -109,14 +110,23 @@ const [isActiveError, setIsActiveError] = useState({ show: false, message: "" })
 const [emailVerifiedError, setEmailVerifiedError] = useState({ show: false, message: "" })
 // State to hold organizations
 const [organizations, setOrganizations] = useState<Organization[]>([])
-// State to hold users, initially set to mock data
-//const [users, setUsers] = useState<(users)
+const [selectedOrganization, setSelectedOrganization] = useState<string>("")
+const [users, setUsers] = useState<UserForm[]>([])
 
 // call ngonInit to fetch organizations
 
 useEffect(() => {
-  const fetchOrganizations = async () => {
+  fetchOrganizations()
+  setTimeout(() => {
+    if (organizations.length > 0) {
+             bindUsersToOrganization(organizations[0].organization_name)
+             }
+  }, 10);
+}, [])
+
+const fetchOrganizations = async () => {
     try {
+      setOrganizations([]) // Reset organizations before fetching
       const response = await api.get<Organization[]>("/organizations/organizations/organizations")
       console.log("Organizations fetched:", response.data)
       // Handle the fetched organizations as needed
@@ -126,63 +136,55 @@ useEffect(() => {
         toast.error(`Failed to fetch organizations. Server responded with status ${response.status}`);
       }
     } catch (error) {
-      console.error("Error fetching organizations:", error)
       toast.error("Failed to fetch organizations")
-      // Handle error appropriately, e.g., show a toast notification
       setOrganizations([]) // Reset organizations on error
     }
-  } 
-  fetchOrganizations()
-}, [])
+  }
 
-const bindUsersToOrganization = async (organizationId: number) => {
-
-  console.log("Selected organization:", organizationId);
-  const response = await api.get(`/organizations/organizations/organizations/${organizationId}`)
+const bindUsersToOrganization = async (organizationName: string) => {
+  setSelectedOrganization(organizationName);
+  setUsers([]);
+  console.log("Selected organization:", organizationName);
+  const orgId = organizations.find(org => org.organization_name === organizationName)?.organization_id;
+  const response = await api.get(`/users/organizations/${orgId}/users`)
     .then((response) => {
       if (response.status === 200 && Array.isArray(response.data)) {
         // If you want to update the users grid, you need a users state
-       //setUsers(response.data)
-        console.log("Filtered users for organization:", organizationId, response.data)
+       setUsers(response.data)
       } else {
         toast.error("Failed to fetch users for organization")
       }
     })
     .catch((error) => {
-      console.error("Error fetching users for organization:", error)
+      setUsers([]);
       toast.error("Error fetching users for organization")
     })
-  // Filter users based on the selected organization
-  const filteredUsers = users.filter((user) => user.id === "1")
-
-  // setUsers(filteredUsers)
-  console.log("Filtered users for organization:", organizationId, filteredUsers)
-  // You can also update the UI or perform any other actions needed with the filtered users
 }
 
   type UserForm = {
-  firstName: string
-  lastName: string
+  first_name: string
+  last_name: string
   email: string
   password: string
   organization_id: string
   role: string
-  isActive: boolean
-  emailVerified: boolean
+  is_active: boolean
+  email_verified: boolean
   create_date_time: string
   update_date_time: string
   status: string
+  user_id?:string
 }
 
 const [form, setForm] = useState<UserForm>({
-  firstName: "",
-  lastName: "",
+  first_name: "",
+  last_name: "",
   email: "",
   password: "",
   organization_id: "",
   role: "",
-  isActive: true,
-  emailVerified: false,
+  is_active: true,
+  email_verified: false,
   create_date_time: new Date().toISOString(),
   update_date_time: new Date().toISOString(),
   status: "Active",
@@ -198,8 +200,8 @@ const [form, setForm] = useState<UserForm>({
   const filteredUsers = users
     .filter((user) => {
       const matchesSearch =
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase())
+        (user.first_name?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+        (user.email?.toLowerCase() || "").includes(searchQuery.toLowerCase())
 
       const matchesRole = roleFilter === "all" || user.role === roleFilter
       const matchesStatus = statusFilter === "all" || user.status === statusFilter
@@ -210,8 +212,8 @@ const [form, setForm] = useState<UserForm>({
       const column = sortConfig.column as keyof (typeof users)[0]
       const direction = sortConfig.direction === "asc" ? 1 : -1
 
-      if (a[column] < b[column]) return -1 * direction
-      if (a[column] > b[column]) return 1 * direction
+      // if (a[column] < b[column]) return -1 * direction
+      // if (a[column] > b[column]) return 1 * direction
       return 0
     })
 
@@ -228,11 +230,11 @@ const [form, setForm] = useState<UserForm>({
 
    const validateForm = () => {
     clearErrors()
-    if (form.firstName === "") {
+    if (form.first_name === "") {
       setNameError({ show: true, message: "First Name Required" })
       return false
     }
-    if (form.lastName === "") {
+    if (form.last_name === "") {
       setLastNameError({ show: true, message: "Last Name are Required" })
       return false
     }
@@ -252,15 +254,15 @@ const [form, setForm] = useState<UserForm>({
       setRoleError({ show: true, message: "Role is Required" })
       return false
     }
-    if (!form.isActive) {
+    if (!form.is_active) {
       setIsActiveError({ show: true, message: "User must be active" })
       return false
     }
-    if (form.firstName.length < 2) {
+    if (form.first_name.length < 2) {
       setNameError({ show: true, message: "First and Last Name must be at least 2 characters" })
       return false
     }
-    if (form.lastName.length < 2) {
+    if (form.last_name.length < 2) {
       setLastNameError({ show: true, message: "First and Last Name must be at least 2 characters" })
       return false
     }
@@ -308,14 +310,14 @@ const [form, setForm] = useState<UserForm>({
   }
   function ResetForm() {
     setForm({
-      firstName: "",
-      lastName: "",
+      first_name: "",
+      last_name: "",
       email: "",
       password: "",
       organization_id: "",
       role: "",
-      isActive: true,
-      emailVerified: false,
+      is_active: true,
+      email_verified: false,
       create_date_time: new Date().toISOString(),
       update_date_time: new Date().toISOString(),
       status: "Active",
@@ -389,12 +391,12 @@ const [form, setForm] = useState<UserForm>({
                         <Label htmlFor="first-name">First name</Label>
                         <Input
                           id="first-name"
-                          value={form.firstName}
-                          onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                          value={form.first_name}
+                          onChange={(e) => setForm({ ...form, first_name: e.target.value })}
                           placeholder="Enter first name"
                           className={nameError.show ? "border-red-500" : ""}/>
                         {
-                        nameError.show && form.firstName === "" && (
+                        nameError.show && form.first_name === "" && (
                          <p className="text-red-500 text-sm">{nameError.message || "First name is required"}</p>
                         )}
                       </div>
@@ -402,12 +404,12 @@ const [form, setForm] = useState<UserForm>({
                         <Label htmlFor="last-name">Last name</Label>
                         <Input
                           id="last-name"
-                          value={form.lastName}
-                          onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                          value={form.last_name}
+                          onChange={(e) => setForm({ ...form, last_name: e.target.value })}
                           placeholder="Last name"
                           className={lastNameError.show ? "border-red-500" : ""}
                         />
-                        {lastNameError.show && form.lastName === "" && (
+                        {lastNameError.show && form.last_name === "" && (
                         <p className="text-red-500 text-sm">{lastNameError.message || "Last name is required"}</p>)}
                       </div>
                     </div>
@@ -487,8 +489,8 @@ const [form, setForm] = useState<UserForm>({
                       type="checkbox"
                       id="is-active"
                       className="accent-[#1e74bb] w-4 h-4"
-                      checked={form.isActive}
-                      onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
+                      checked={form.is_active}
+                      onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
                       />
                       <Label htmlFor="is-active">Is Active</Label>
                     </div>
@@ -500,8 +502,8 @@ const [form, setForm] = useState<UserForm>({
                       type="checkbox"
                       id="email-verified"
                       className="accent-[#1e74bb] w-4 h-4"
-                      checked={form.emailVerified}
-                      onChange={(e) => setForm({ ...form, emailVerified: e.target.checked })}
+                      checked={form.email_verified}
+                      onChange={(e) => setForm({ ...form, email_verified: e.target.checked })}
                       />
                       <Label htmlFor="email-verified">Email Verified</Label>
                     </div>
@@ -598,9 +600,9 @@ const [form, setForm] = useState<UserForm>({
               Organization
             </Label>
             <Select
-              value={form.organization_id}
+              value={selectedOrganization}
               // onValueChange={(value) => setForm({ ...form, organization_id: value })}
-              onValueChange={(value) => {bindUsersToOrganization(2)}}>
+              onValueChange={(value) => {bindUsersToOrganization(value)}}>
               <SelectTrigger id="organization-filter" className="w-[180px] bg-white">
               <SelectValue placeholder="Select organization" />
               </SelectTrigger>
@@ -699,19 +701,17 @@ const [form, setForm] = useState<UserForm>({
                     </TableRow>
                   ) : (
                     filteredUsers.map((user) => (
-                      <TableRow key={user.id} className="group hover:bg-gray-50">
+                      <TableRow key={user.organization_id} className="group hover:bg-gray-50">
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar>
                               <AvatarFallback className="bg-[#1e74bb] text-white">
-                                {user.name
-                                  .split(" ")
-                                  .map((n) => n[0])
+                                {user.first_name?.split(" ").map((n) => n[0])
                                   .join("")}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <div className="font-medium">{user.name}</div>
+                              <div className="font-medium">{user.first_name}</div>
                               <div className="text-sm text-gray-500">{user.email}</div>
                             </div>
                           </div>
@@ -739,10 +739,10 @@ const [form, setForm] = useState<UserForm>({
                             {user.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{user.lastActive}</TableCell>
+                        <TableCell>{user.is_active}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end">
-                            <Link href={`/admin/users/${user.id}`}>
+                            <Link href={`/admin/users/${user.organization_id}`}>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -763,7 +763,30 @@ const [form, setForm] = useState<UserForm>({
                                 <DropdownMenuItem>Edit user</DropdownMenuItem>
                                 <DropdownMenuItem>Reset password</DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem className="text-red-600">Delete user</DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-red-600"
+                                  onClick={async () => {
+                                  if (
+                                    window.confirm(
+                                    `Are you sure you want to delete user "${user.user_id}"?`
+                                    )
+                                  ) {
+                                    try {
+                                    const response = await api.delete(`/users/${user.user_id}`);
+                                    if (response.status === 200 || response.status === 204) {
+                                      toast.success("User deleted successfully");
+                                      // Refresh users list
+                                      bindUsersToOrganization(selectedOrganization);
+                                    } else {
+                                      toast.error("Failed to delete user");
+                                    }
+                                    } catch (error) {
+                                    toast.error("Error deleting user");
+                                    }
+                                  }
+                                  }}>
+                                  Delete user
+                                </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>
