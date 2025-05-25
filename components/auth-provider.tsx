@@ -170,6 +170,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoggedIn(false)
     setUserInfo(null)
     setIsAdmin(false)
+    localStorage.removeItem("userId")
+    localStorage.removeItem("organizationId")
     router.push("/login")
   }
 

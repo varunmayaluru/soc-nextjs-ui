@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   BarChart,
   Bar,
@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Download } from "lucide-react"
+import { api } from "@/lib/api-client"
 
 const userActivityData = {
   weekly: [
@@ -53,6 +54,15 @@ const subjectCompletionData = [
   { name: "History", completed: 65, target: 75, students: 220 },
   { name: "Geography", completed: 58, target: 70, students: 180 },
 ]
+type User = {
+  email: string
+  first_name: string
+  last_name: string
+  organization_id: number
+  role: string
+  is_active: boolean
+  user_id: number
+}
 
 export function CompactDashboardCharts() {
   const [activityPeriod, setActivityPeriod] = useState("weekly")
@@ -68,6 +78,34 @@ export function CompactDashboardCharts() {
       target: "#f59e0b",
     }
   }
+
+  useEffect(() => {
+    async function fetchUserInfo() {
+      try {
+
+
+        // Fetch user info
+        const userResponse = await api.get<User>("users/me")
+        if (!userResponse.ok) {
+          throw new Error(`API error: ${userResponse.status}`)
+        }
+
+        const user = userResponse.data
+        console.log(user)
+        const userId = user.user_id.toString()
+
+
+        localStorage.setItem("organizationId", user.organization_id.toString())
+        localStorage.setItem("userId", userId)
+      }
+      catch (error) {
+        console.error("Error fetching user info:", error)
+      }
+    }
+
+
+    fetchUserInfo()
+  }, [])
 
   const colors = getChartColors()
 

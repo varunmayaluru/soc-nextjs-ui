@@ -38,7 +38,7 @@ export default function OrganizationsPage() {
     description: "",
     timezone: "",
     is_active: true,
-    created_by: "101",
+    created_by: "",
   })
 
   const timezones = [
@@ -52,6 +52,8 @@ export default function OrganizationsPage() {
     "Asia/Tokyo",
     "Australia/Sydney",
   ]
+
+  const userId = localStorage.getItem("userId") || ""
 
   useEffect(() => {
     fetchOrganizations()
@@ -143,7 +145,7 @@ export default function OrganizationsPage() {
         description: org.description,
         timezone: org.timezone,
         is_active: org.is_active,
-        created_by: org.created_by,
+        created_by: userId,
       })
     } else {
       setEditingOrg(null)
@@ -153,7 +155,7 @@ export default function OrganizationsPage() {
         description: "",
         timezone: "",
         is_active: true,
-        created_by: "101",
+        created_by: userId,
       })
     }
     setShowModal(true)
@@ -340,15 +342,7 @@ export default function OrganizationsPage() {
                   {timezoneError.show && <p className="text-red-500 text-sm">{timezoneError.message}</p>}
                 </div>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="created_by">Created By</Label>
-                  <Input
-                    id="created_by"
-                    value={form.created_by}
-                    onChange={(e) => setForm({ ...form, created_by: e.target.value })}
-                    placeholder="User ID"
-                  />
-                </div>
+
 
                 <div className="flex items-center space-x-2">
                   <Switch
