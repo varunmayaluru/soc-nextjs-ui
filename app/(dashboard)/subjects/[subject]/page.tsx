@@ -79,7 +79,7 @@ export default function SubjectPage() {
         setError(null)
 
         // Get user ID from localStorage or use a default
-        const userId = localStorage.getItem("userId") || "1"
+        const userId = localStorage.getItem("userId")
 
         const response = await api.get<TopicProgress[]>(
           `user-topic-progress/topic-progress/${userId}?subject_id=${subjectId}`,

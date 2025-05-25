@@ -100,7 +100,9 @@ export default function TopicPage() {
   useEffect(() => {
     const fetchProgressData = async () => {
       try {
-        const response = await api.get<any>(`user-quiz-progress/quiz-progress/1?subject_id=${subjectId}&topic_id=${topicId}`)
+
+        const userId = localStorage.getItem("userId")
+        const response = await api.get<any>(`user-quiz-progress/quiz-progress/${userId}?subject_id=${subjectId}&topic_id=${topicId}`)
         const data = await response.data
         setQuizzes(data)
       } catch (error) {
