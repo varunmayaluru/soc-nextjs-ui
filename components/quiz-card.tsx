@@ -1,12 +1,12 @@
 import type React from "react"
 import Link from "next/link"
-import { FileText, Clock, ArrowRight } from "lucide-react"
+import { FileText, Clock, ArrowRight, RefreshCw } from "lucide-react"
 
 type QuizCardProps = {
   title: string
   description: string
   questions: number
-  minutes: number
+  time: number
   difficulty: "Beginner" | "Intermediate" | "Advanced"
   href: string
   icon?: React.ReactNode
@@ -15,13 +15,14 @@ type QuizCardProps = {
   progressColor?: string
   completedQuestions?: number
   totalQuestions?: number
+  isCompleted?: boolean
 }
 
 export default function QuizCard({
   title,
   description,
   questions,
-  minutes,
+  time,
   difficulty,
   href,
   icon = "📚",
@@ -30,6 +31,7 @@ export default function QuizCard({
   progressColor = "bg-blue-500",
   completedQuestions = 0,
   totalQuestions = 0,
+  isCompleted = false
 }: QuizCardProps) {
   // Determine the difficulty badge color
   const difficultyColor =
@@ -82,16 +84,32 @@ export default function QuizCard({
         </div>
         <div className="flex items-center text-gray-600">
           <Clock className="w-4 h-4 mr-2" />
-          <span>{minutes} minutes</span>
+          <span>{Math.floor(time / 60)}m {time % 60}s</span>
+
         </div>
       </div>
 
-      <Link
+      {/* <Link
         href={href}
         className="w-full bg-[#1e74bb] text-white py-2 px-3 rounded-md flex items-center justify-center hover:bg-[#1a67a7] transition-colors"
       >
-        Start Quiz{" "}
+        {isCompleted ? "Re-take Quiz" : "Start Quiz"}
+       {" "}
         <ArrowRight className="ml-2 w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" />
+      </Link> */}
+      <Link
+        href={href}
+        className={`w-full py-2 px-3 rounded-md flex items-center justify-center transition-colors ${isCompleted
+          ? "bg-violet-500 hover:bg-violet-600 text-white"
+          : "bg-[#1e74bb] hover:bg-[#1a67a7] text-white"
+          }`}
+      >
+        {isCompleted ? "Re-Take Quiz" : "Start Quiz"}
+        {isCompleted ? (
+          <RefreshCw className="ml-2 w-4 h-4 transform group-hover:rotate-90 transition-transform duration-300" />
+        ) : (
+          <ArrowRight className="ml-2 w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-300" />
+        )}
       </Link>
     </div>
   )

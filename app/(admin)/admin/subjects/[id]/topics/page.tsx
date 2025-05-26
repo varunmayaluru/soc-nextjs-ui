@@ -208,7 +208,7 @@ export default function TopicsPage() {
                 <TopicForm
                   subjectId={Number.parseInt(subjectId)}
                   subjectName={subject?.subject_name || ""}
-                  createdBy={0}
+                  // createdBy={0}
                   organizationName={organizationName || ""}
                   organizationId={Number.parseInt(organizationId || "")}
                   onSuccess={() => {
@@ -331,7 +331,7 @@ export default function TopicsPage() {
             </TabsTrigger>
           </TabsList>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-white">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
               <Input
@@ -411,8 +411,8 @@ export default function TopicsPage() {
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#e6f0f9] to-transparent opacity-50 rounded-bl-full pointer-events-none"></div>
                   <CardHeader
                     className={`pb-2 relative ${hoveredCard === topic.topic_id
-                        ? "bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white"
-                        : "bg-gradient-to-r from-[#e6f0f9] to-white"
+                      ? "bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white"
+                      : "bg-gradient-to-r from-[#e6f0f9] to-white"
                       }`}
                   >
                     <div className="flex justify-between items-start">
@@ -460,14 +460,14 @@ export default function TopicsPage() {
                         Created: {new Date(topic.create_date_time).toLocaleDateString()}
                       </p>
                     </div>
-                    <div className="h-1 w-full bg-gray-100 mb-3 overflow-hidden rounded-full">
+                    {/* <div className="h-1 w-full bg-gray-100 mb-3 overflow-hidden rounded-full">
                       <div
                         className="h-full bg-[#1e74bb] rounded-full"
                         style={{ width: topic.is_active ? "100%" : "30%" }}
                       ></div>
-                    </div>
+                    </div> */}
                   </CardContent>
-                  <CardFooter className="flex justify-between pt-0 bg-gray-50 border-t border-gray-100">
+                  <CardFooter className="flex justify-between bg-gray-50 border-t border-gray-100 p-4">
                     <Link
                       href={`/admin/subjects/${subjectId}/topics/${topic.topic_id}/quizzes?organization_id=${organizationId}&organization_name=${organizationName}`}
                     >
@@ -503,7 +503,7 @@ export default function TopicsPage() {
                             topic={topic}
                             subjectId={Number.parseInt(subjectId)}
                             subjectName={subject?.subject_name || ""}
-                            createdBy={Number.parseInt(topic.created_by)}
+                            // createdBy={Number.parseInt(topic.created_by)}
                             organizationId={Number.parseInt(organizationId || "")}
                             organizationName={organizationName || ""}
                             onSuccess={() => {
@@ -648,7 +648,7 @@ export default function TopicsPage() {
                                     topic={topic}
                                     subjectId={Number.parseInt(subjectId)}
                                     subjectName={subject?.subject_name || ""}
-                                    createdBy={Number.parseInt(topic.created_by)}
+                                    // createdBy={Number.parseInt(topic.created_by)}
                                     organizationId={Number.parseInt(organizationId || "")}
                                     organizationName={organizationName || ""}
                                     onSuccess={() => {
@@ -712,7 +712,7 @@ interface TopicFormProps {
   subjectName: string
   organizationName: string
   organizationId: number
-  createdBy: number
+  // createdBy: number
   onSuccess: () => void
 }
 
@@ -740,11 +740,16 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, organizati
         throw new Error("Topic title is required")
       }
 
+      const userId = localStorage.getItem("userId")
+      if (!userId) {
+        throw new Error("User ID not found")
+      }
+
       const payload = {
         ...formData,
         subject_id: subjectId,
         organization_id: organizationId,
-        created_by: topic?.created_by || 1,
+        created_by: userId
       }
 
       // This would be replaced with your actual API endpoint
@@ -794,7 +799,7 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, organizati
           </label>
           <Input id="Subject" name="Subject" value={subjectName} disabled className="bg-gray-50 border-gray-200" />
         </div>
-        <div className="space-y-2">
+        {/* <div className="space-y-2">
           <label htmlFor="title" className="text-sm font-medium">
             Created by <span className="text-red-500">*</span>
           </label>
@@ -807,7 +812,7 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, organizati
             required
             className="border-gray-200 focus-visible:ring-[#1e74bb]"
           />
-        </div>
+        </div> */}
         <div className="space-y-2">
           <label htmlFor="title" className="text-sm font-medium">
             Topic Title <span className="text-red-500">*</span>

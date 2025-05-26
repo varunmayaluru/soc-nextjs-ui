@@ -181,11 +181,12 @@ export default function TopicPage() {
           {quizzes.map(
             (
               quiz: {
+                is_completed: any
                 quiz_id: Key | null | undefined
                 title: string
                 description: any
                 total_questions: any
-                estimatedTime: any
+                time_limit: any
                 level: any
                 icon: any
                 iconBg: any
@@ -200,15 +201,16 @@ export default function TopicPage() {
                 title={quiz.title}
                 description={quiz.description || "Test your knowledge with this quiz on "}
                 questions={quiz.total_questions}
-                minutes={quiz.estimatedTime || 15}
+                time={quiz.time_limit}
                 difficulty={quiz.level || "Beginner"}
                 href={`/subjects/${subjectId}/${topicId}/${quiz.quiz_id}`}
                 icon={quiz.icon || quizIcons[index % quizIcons.length]}
                 iconBg={quiz.iconBg || iconBgs[index % iconBgs.length]}
                 progress={quiz.progress_percentage} // Use quiz progress or generate random for demo
                 progressColor={quiz.progressColor || progressColors[index % progressColors.length]}
-                completedQuestions={quiz.completed_questions || 0}
-                totalQuestions={quiz.total_questions || 10}
+                completedQuestions={quiz.completed_questions}
+                totalQuestions={quiz.total_questions}
+                isCompleted={quiz.is_completed}
               />
             ),
           )}

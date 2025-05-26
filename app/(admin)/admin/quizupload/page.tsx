@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle2, Download, Info, HelpCircle, X } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import * as XLSX from "xlsx"
 
 const QuizUpload = () => {
   const [file, setFile] = useState<File | null>(null)
@@ -57,6 +58,14 @@ const QuizUpload = () => {
     // The key must be 'file' to match the FastAPI endpoint parameter name
     formData.append("file", file)
 
+    const queryParams = new URLSearchParams({
+      // organization_id: organizationId,
+      // subject_id: subjectId.toString(),
+      // topic_id: topicId.toString(),
+      // quiz_id: quizId.toString(),
+      // created_by: userId,
+    })
+
     try {
       // Simulate progress
       const progressInterval = setInterval(() => {
@@ -70,7 +79,7 @@ const QuizUpload = () => {
       }, 300)
 
       // Use the new postFormData method specifically designed for FormData
-      const response = await api.postFormData("/quizzes/quizzes/upload-quiz", formData)
+      const response = await api.postFormData(`/quizzes/quizzes/upload-quiz/?${queryParams.toString()}`, formData)
 
       clearInterval(progressInterval)
 
@@ -104,17 +113,52 @@ const QuizUpload = () => {
   }
 
   const downloadTemplate = () => {
-    // Create a sample CSV template for download
-    const templateContent = `organization_id,subject_id,topic_id,quiz_id,created_by,quiz_question_text,difficulty_level,is_active,is_maths,options,correct_answer_index
-1,1,1,1,1,"What is photosynthesis?",easy,TRUE,FALSE,"[""Breathing process"",""Energy production"",""Light conversion"",""None of these""]",2
-1,1,1,1,1,"Which planet is known as the Red Planet?",medium,TRUE,FALSE,"[""Earth"",""Mars"",""Venus"",""Jupiter""]",1
-1,1,1,1,1,"What is 2+2?",easy,TRUE,TRUE,"[""3"",""4"",""5"",""6""]",1`
+    const worksheetData = [
+      [
+        "quiz_question_text",
+        "difficulty_level",
+        "is_active",
+        "is_maths",
+        "options",
+        "correct_answer_index"
+      ],
+      [
+        "What is photosynthesis?",
+        "easy",
+        true,
+        false,
+        '["Breathing process","Energy production","Light conversion","None of these"]',
+        2
+      ],
+      [
+        "Which planet is known as the Red Planet?",
+        "medium",
+        true,
+        false,
+        '["Earth","Mars","Venus","Jupiter"]',
+        1
+      ],
+      [
+        "What is 2+2?",
+        "easy",
+        true,
+        true,
+        '["3","4","5","6"]',
+        1
+      ]
+    ]
 
-    const blob = new Blob([templateContent], { type: "text/csv" })
-    const url = URL.createObjectURL(blob)
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Quiz Template")
+
+    const blob = XLSX.write(workbook, { bookType: "xlsx", type: "array" })
+    const blobData = new Blob([blob], { type: "application/octet-stream" })
+
+    const url = URL.createObjectURL(blobData)
     const a = document.createElement("a")
     a.href = url
-    a.download = "quiz_template.csv"
+    // a.download = `quiz_template_${quizTitle.replace(/[^a-zA-Z0-9]/g, "_")}_${quizId}.xlsx`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -302,26 +346,7 @@ const QuizUpload = () => {
                       Your Excel file must contain the following columns with the exact names:
                     </p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="bg-white p-3 rounded-md border border-gray-200">
-                        <p className="font-medium text-gray-800">organization_id</p>
-                        <p className="text-sm text-gray-500">Organization identifier (number)</p>
-                      </div>
-                      <div className="bg-white p-3 rounded-md border border-gray-200">
-                        <p className="font-medium text-gray-800">subject_id</p>
-                        <p className="text-sm text-gray-500">Subject identifier (number)</p>
-                      </div>
-                      <div className="bg-white p-3 rounded-md border border-gray-200">
-                        <p className="font-medium text-gray-800">topic_id</p>
-                        <p className="text-sm text-gray-500">Topic identifier (number)</p>
-                      </div>
-                      <div className="bg-white p-3 rounded-md border border-gray-200">
-                        <p className="font-medium text-gray-800">quiz_id</p>
-                        <p className="text-sm text-gray-500">Quiz identifier (number)</p>
-                      </div>
-                      <div className="bg-white p-3 rounded-md border border-gray-200">
-                        <p className="font-medium text-gray-800">created_by</p>
-                        <p className="text-sm text-gray-500">User ID of creator (number)</p>
-                      </div>
+
                       <div className="bg-white p-3 rounded-md border border-gray-200">
                         <p className="font-medium text-gray-800">quiz_question_text</p>
                         <p className="text-sm text-gray-500">The actual question text (required)</p>

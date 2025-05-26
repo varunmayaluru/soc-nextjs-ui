@@ -71,13 +71,13 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     {
       href: "/admin/subjects",
       icon: BookOpen,
-      label: "Subjects",
+      label: "Subjects Hub",
     },
-    {
-      href: "/admin/quizupload",
-      icon: Upload,
-      label: "Quiz Upload",
-    },
+    // {
+    //   href: "/admin/quizupload",
+    //   icon: Upload,
+    //   label: "Quiz Upload",
+    // },
     {
       href: "/admin/settings",
       icon: Settings,

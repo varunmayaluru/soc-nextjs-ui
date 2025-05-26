@@ -530,12 +530,31 @@ export default function QuizzesPage() {
                         <h3 className="text-lg font-bold text-gray-800 group-hover:text-[#1e74bb] transition-colors duration-300">
                           {quiz.title}
                         </h3>
+                        <div className="inline-block">
+                          <span
+                            className={`
+                              text-xs font-semibold px-2 py-0.5 rounded 
+                              ${quiz.level === 'Beginner' ? 'bg-green-100 text-green-700' : ''}
+                              ${quiz.level === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' : ''}
+                              ${quiz.level === 'Advanced' ? 'bg-red-100 text-red-700' : ''}
+                            `}
+                          >
+                            {quiz.level}
+                          </span>
+                        </div>
                         <p className="text-sm text-gray-500 mt-1 line-clamp-2">{quiz.description}</p>
                       </div>
                     </div>
 
                     {/* Quiz details */}
-                    <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      <div className="bg-[#f8fafc] rounded-lg p-3 border border-gray-100">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-[#1e74bb]" />
+                          <span className="text-sm font-medium text-gray-700">{quiz.total_questions}</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Total Question</p>
+                      </div>
                       <div className="bg-[#f8fafc] rounded-lg p-3 border border-gray-100">
                         <div className="flex items-center gap-2">
                           <Clock className="h-4 w-4 text-[#1e74bb]" />
@@ -550,23 +569,13 @@ export default function QuizzesPage() {
                         </div>
                         <p className="text-xs text-gray-500 mt-1">Passing Score</p>
                       </div>
+
                     </div>
 
                     {/* Progress indicator */}
-                    <div className="mb-4">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs font-medium text-gray-500">Questions</span>
-                        <span className="text-xs font-medium text-[#1e74bb]">{quiz.total_questions}</span>
-                      </div>
-                      <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[#1e74bb] rounded-full"
-                          style={{ width: `${(quiz.total_questions / 20) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
 
-                    <div className="flex items-center text-xs text-gray-500 mb-4">
+
+                    <div className="flex items-center text-xs text-gray-500 ">
                       <Clock className="h-3.5 w-3.5 mr-1.5" />
                       <span>Created: {new Date(quiz.create_date_time).toLocaleDateString()}</span>
                     </div>
@@ -575,22 +584,15 @@ export default function QuizzesPage() {
                   {/* Actions footer */}
                   <div className="flex justify-between items-center p-3 bg-gray-50 border-t border-gray-100">
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1 border-[#1e74bb] text-[#1e74bb] hover:bg-[#e6f0f9] group-hover:bg-[#1e74bb] group-hover:text-white transition-colors"
-                      >
-                        <FileText className="h-4 w-4" />
-                        Questions
-                      </Button>
+
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleUploadClick(quiz)}
-                        className="gap-1 border-green-600 text-green-600 hover:bg-green-50 transition-colors"
+                        className="gap-1 border-[#1e74bb] text-[#1e74bb] hover:bg-[#e6f0f9] group-hover:bg-[#1e74bb] group-hover:text-white transition-colors"
                       >
                         <Upload className="h-4 w-4" />
-                        Upload
+                        Upload Questions
                       </Button>
                     </div>
                     <div className="flex gap-2">
@@ -728,14 +730,14 @@ export default function QuizzesPage() {
                           <td className="px-4 py-3 text-sm">{new Date(quiz.create_date_time).toLocaleDateString()}</td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex justify-end gap-2">
-                              <Button
+                              {/* <Button
                                 variant="outline"
                                 size="sm"
                                 className="gap-1 border-[#1e74bb] text-[#1e74bb] hover:bg-[#e6f0f9]"
                               >
                                 <FileText className="h-4 w-4" />
                                 <span className="sr-only md:not-sr-only md:ml-2">Questions</span>
-                              </Button>
+                              </Button> */}
 
                               <Button
                                 variant="outline"
@@ -744,7 +746,7 @@ export default function QuizzesPage() {
                                 className="gap-1 border-green-600 text-green-600 hover:bg-green-50"
                               >
                                 <Upload className="h-4 w-4" />
-                                <span className="sr-only md:not-sr-only md:ml-2">Upload</span>
+                                <span className="sr-only md:not-sr-only md:ml-2">Upload Questions</span>
                               </Button>
 
                               <Dialog
