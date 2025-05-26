@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
 import { api } from "@/lib/api-client"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // Update the API response type to match the exact structure
 type SubjectApiResponse = {
@@ -244,11 +245,31 @@ export default function Dashboard() {
         </div>
 
         {/* Loading state */}
-        {isLoading && (
-          <div className="flex justify-center items-center py-10">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1e74bb]"></div>
-          </div>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {isLoading && (
+            Array(6)
+              .fill(0)
+              .map((_, index) => (
+                <div key={index} className="bg-white rounded-lg p-6 shadow-md border border-gray-100">
+                  <div className="flex items-center mb-4">
+                    <Skeleton className="bg-gray-200 w-10 h-10 rounded-md mr-4" />
+                    <Skeleton className="bg-gray-200 h-6 w-40" />
+                  </div>
+                  <div className="mb-3">
+                    <div className="flex justify-between text-sm mb-1">
+                      <Skeleton className="bg-gray-200 h-4 w-16" />
+                      <Skeleton className="bg-gray-200 h-4 w-12" />
+                    </div>
+                    <Skeleton className="bg-gray-200 h-2.5 w-full rounded-full" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="bg-gray-200 h-6 w-24 rounded-full" />
+                    <Skeleton className="bg-gray-200 h-10 w-32 rounded-md" />
+                  </div>
+                </div>
+              ))
+          )}
+        </div>
 
         {/* Error state */}
         {error && (

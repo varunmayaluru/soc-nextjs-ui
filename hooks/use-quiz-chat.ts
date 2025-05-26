@@ -107,16 +107,25 @@ export function useQuizChat({
           content: selectedOptionData.option_text,
           timestamp: "Just now",
         },
-        {
-          id: 3,
-          sender: "response",
-          content:
-            "I'll help you understand this question better. Let me analyze your answer...",
-          timestamp: "Just now",
-        },
       ];
 
       setMessages(initialMessages);
+
+      setTimeout(() => {
+        setIsTyping(true);
+      }, 300);
+
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: 3,
+            sender: "response",
+            content: "I'll help you understand this question better.",
+            timestamp: "Just now",
+          },
+        ]);
+      }, 500);
 
       const conversationObj = [
         { role: "assistant", content: question.quiz_question_text },

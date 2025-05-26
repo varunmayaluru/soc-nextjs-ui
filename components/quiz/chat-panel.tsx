@@ -2,13 +2,16 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { Bot, ImageIcon, PencilIcon, Mic, MicOff, Send, Loader2 } from "lucide-react"
+import { Bot, ImageIcon, PencilIcon, Send, Loader2 } from "lucide-react"
 import { MathInputHelper } from "@/components/math-input-helper"
 import { ChatMessage } from "./chat-message"
 import { TypingIndicator } from "./typing-indicator"
 import { useSpeechRecognition } from "@/hooks/use-speech-recognition"
 import { useMathInput } from "@/hooks/use-math-input"
 import { DrawingCanvas } from "./drawing-canvas"
+import { useToast } from "@/hooks/use-toast"
+import { cn } from "@/lib/utils"
+import { SpeechButton } from "./speech-button"
 
 interface Message {
   id: number
@@ -33,19 +36,36 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
   const [showDrawingCanvas, setShowDrawingCanvas] = useState(false)
   const [isUserNearBottom, setIsUserNearBottom] = useState(true)
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true)
+  const { toast } = useToast()
 
-  const {
-    isListening,
-    isSupported: speechSupported,
-    toggleListening,
-  } = useSpeechRecognition({
-    onResult: (transcript) => setNewMessage(transcript),
+  const speechRecognition = useSpeechRecognition({
+    onResult: (transcript) => {
+      setNewMessage(transcript)
+      // Show success toast when speech is recognized
+      toast({
+        title: "Speech recognized",
+        description: `"${transcript.substring(0, 50)}${transcript.length > 50 ? "..." : ""}"`,
+        duration: 2000,
+      })
+    },
     continuous: true,
   })
 
   const { isProcessing: isProcessingMath, processImage: processMathImage } = useMathInput({
     onResult: (latex) => setNewMessage((prev) => prev + " " + latex),
   })
+
+  // Show error toast when speech recognition fails
+  useEffect(() => {
+    if (speechRecognition.error) {
+      toast({
+        title: "Speech Recognition Error",
+        description: speechRecognition.error,
+        variant: "destructive",
+        duration: 4000,
+      })
+    }
+  }, [speechRecognition.error, toast])
 
   // Auto-scroll functionality
   const scrollToBottom = (smooth = true) => {
@@ -106,8 +126,9 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
   const handleSendMessage = () => {
     if (!newMessage.trim() || disabled) return
 
-    if (isListening) {
-      toggleListening()
+    // Stop listening if currently active
+    if (speechRecognition.isListening) {
+      speechRecognition.stopListening()
     }
 
     // Ensure we scroll when user sends message
@@ -130,7 +151,7 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
   return (
     <div
       className="bg-white border-l border-gray-200 flex flex-col overflow-hidden"
-      style={{ height: "calc(100vh - 250px)" }}
+      style={{ height: "calc(100vh - 342px)" }}
     >
       {/* Chat header */}
       <div className="p-4 border-b border-gray-200 bg-gray-50">
@@ -192,16 +213,42 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
         </div>
       )}
 
-      {/* Chat input */}
+      {/* Enhanced chat input with real-time transcription */}
       <div className="p-4 border-t border-gray-200 bg-gray-50">
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
 
+        {/* Real-time transcription display */}
+        {speechRecognition.isListening && speechRecognition.interimTranscript && (
+          <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center space-x-2 mb-2">
+              <div className="w-2 h-2 bg-violet-500 rounded-full animate-pulse" />
+              <span className="text-sm font-medium text-blue-700">Listening...</span>
+            </div>
+            <p className="text-sm text-blue-600 italic">"{speechRecognition.interimTranscript}"</p>
+            {speechRecognition.confidence > 0 && (
+              <div className="mt-2 flex items-center space-x-2">
+                <span className="text-xs text-blue-500">Confidence:</span>
+                <div className="flex-1 bg-blue-200 rounded-full h-1">
+                  <div
+                    className="bg-blue-500 h-1 rounded-full transition-all duration-300"
+                    style={{ width: `${speechRecognition.confidence * 100}%` }}
+                  />
+                </div>
+                <span className="text-xs text-blue-500">{Math.round(speechRecognition.confidence * 100)}%</span>
+              </div>
+            )}
+          </div>
+        )}
+
         <div
-          className={`flex items-center bg-white rounded-full border border-gray-300 transition-opacity ${disabled ? "opacity-50" : ""
-            }`}
+          className={cn(
+            "flex items-center bg-white rounded-full border border-gray-300 transition-all duration-200",
+            disabled && "opacity-50",
+            speechRecognition.isListening && "ring-2 ring-violet-200 border-violet-300 shadow-lg",
+          )}
         >
           <button
-            className="p-3 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+            className="p-3 text-gray-400 hover:text-gray-600 disabled:opacity-50 transition-colors"
             onClick={() => fileInputRef.current?.click()}
             disabled={isProcessingMath || disabled}
             title="Upload math image"
@@ -210,7 +257,7 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
           </button>
 
           <button
-            className="p-3 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+            className="p-3 text-gray-400 hover:text-gray-600 disabled:opacity-50 transition-colors"
             onClick={() => setShowDrawingCanvas(true)}
             disabled={disabled}
             title="Draw math expression"
@@ -218,24 +265,18 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
             <PencilIcon size={20} />
           </button>
 
-          {speechSupported && (
-            <button
-              className={`p-3 transition-colors disabled:opacity-50 ${isListening ? "text-red-500 hover:text-red-600" : "text-gray-400 hover:text-gray-600"
-                }`}
-              onClick={toggleListening}
+          <div className="p-1">
+            <SpeechButton
+              isListening={speechRecognition.isListening}
+              isProcessing={speechRecognition.isProcessing}
+              isSupported={speechRecognition.isSupported}
+              error={speechRecognition.error}
+              transcript={speechRecognition.transcript}
+              onToggle={speechRecognition.toggleListening}
+              onClearError={speechRecognition.clearError}
               disabled={disabled}
-              title={isListening ? "Stop recording" : "Start recording"}
-            >
-              {isListening ? (
-                <div className="relative">
-                  <MicOff size={20} />
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-                </div>
-              ) : (
-                <Mic size={20} />
-              )}
-            </button>
-          )}
+            />
+          </div>
 
           <MathInputHelper onInsert={insertMathSymbol} disabled={disabled} />
 
@@ -246,12 +287,16 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
             placeholder={
               disabled
                 ? "Answer the question to start chatting..."
-                : isListening
-                  ? "Listening..."
-                  : "Type your question or use math symbols..."
+                : speechRecognition.isListening
+                  ? "Listening... Speak clearly"
+                  : speechRecognition.transcript
+                    ? "Speech recognized! Press Enter to send..."
+                    : "Type your question or use voice input..."
             }
-            className={`flex-1 border-none focus:ring-0 py-3 px-3 text-sm bg-transparent ${isListening ? "bg-red-50" : ""
-              }`}
+            className={cn(
+              "flex-1 border-none focus:ring-0 py-3 px-3 text-sm bg-transparent transition-all duration-200",
+              speechRecognition.isListening && "bg-violet-50 text-violet-700 placeholder-violet-400",
+            )}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault()
@@ -262,8 +307,10 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
           />
 
           <button
-            className={`p-3 transition-colors disabled:opacity-50 ${newMessage.trim() && !disabled ? "text-[#3373b5] hover:text-[#2a5d92]" : "text-gray-400"
-              }`}
+            className={cn(
+              "p-3 transition-all duration-200 disabled:opacity-50",
+              newMessage.trim() && !disabled ? "text-[#3373b5] hover:text-[#2a5d92] hover:scale-105" : "text-gray-400",
+            )}
             onClick={handleSendMessage}
             disabled={!newMessage.trim() || disabled}
             title="Send message"
@@ -272,13 +319,22 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
           </button>
         </div>
 
-        <p className="text-xs text-gray-500 mt-2 text-center">
-          {disabled
-            ? "Complete the quiz question to unlock the chat"
-            : isListening
-              ? "Speak clearly... Click the microphone again to stop."
-              : "Upload, draw, or dictate math expressions"}
-        </p>
+        {/* Enhanced status text */}
+        <div className="mt-2 text-center">
+          {speechRecognition.error ? (
+            <p className="text-xs text-violet-500 animate-pulse">
+              ❌ {speechRecognition.error} - Click microphone to retry
+            </p>
+          ) : speechRecognition.isListening ? (
+            <p className="text-xs text-violet-500 animate-pulse">
+              🎤 Listening... Speak clearly or click microphone to stop
+            </p>
+          ) : disabled ? (
+            <p className="text-xs text-gray-500">Complete the quiz question to unlock the chat</p>
+          ) : (
+            <p className="text-xs text-gray-500">Upload, draw, dictate math expressions, or type your question</p>
+          )}
+        </div>
       </div>
 
       {showDrawingCanvas && (

@@ -53,11 +53,10 @@ export function QuestionPanel({
           <button
             key={num}
             onClick={() => onQuestionSelect(num)}
-            className={`min-w-[36px] h-9 flex items-center justify-center mx-1 transition-colors ${
-              num === currentQuestionId
-                ? "text-[#3373b5] font-bold border-b border-[#3373b5]"
-                : "text-gray-500 hover:text-[#3373b5]"
-            }`}
+            className={`min-w-[36px] h-9 flex items-center justify-center mx-1 transition-colors ${num === currentQuestionId
+              ? "text-[#3373b5] font-bold border-b border-[#3373b5]"
+              : "text-gray-500 hover:text-[#3373b5]"
+              }`}
           >
             {num}
           </button>
@@ -104,52 +103,48 @@ export function QuestionPanel({
           return (
             <div
               key={option.quiz_question_option_id}
-              className={`border min-w-[600px] max-w-[750px] rounded-full flex items-center transition-all duration-200 ${
-                isSelected
-                  ? isAnswerChecked
-                    ? isCorrectOption
-                      ? "border-green-500 bg-green-50 border-2"
-                      : "border-red-500 bg-red-50 border-2"
-                    : "border-[#3373b5] bg-white border-2"
-                  : "border-gray-200 bg-[#F1F1F1] hover:border-gray-300 hover:bg-white"
-              }`}
+              className={`border min-w-[600px] max-w-[750px] rounded-full flex items-center transition-all duration-200 ${isSelected
+                ? isAnswerChecked
+                  ? isCorrectOption
+                    ? "border-green-500 bg-green-50 border-2"
+                    : "border-red-500 bg-red-50 border-2"
+                  : "border-[#3373b5] bg-white border-2"
+                : "border-gray-200 bg-[#F1F1F1] hover:border-gray-300 hover:bg-white"
+                }`}
             >
               <div
-                className={`rounded-full flex items-center ml-4 mr-4 ${
-                  isSelected
-                    ? isAnswerChecked
-                      ? isCorrectOption
-                        ? "bg-[#C2E6B1]"
-                        : "bg-red-100"
-                      : "bg-[#3373b5]"
-                    : "bg-white"
-                }`}
+                className={`rounded-full flex items-center ml-4 mr-4 ${isSelected
+                  ? isAnswerChecked
+                    ? isCorrectOption
+                      ? "bg-[#C2E6B1]"
+                      : "bg-red-100"
+                    : "bg-[#3373b5]"
+                  : "bg-white"
+                  }`}
               >
                 <RadioGroupItem
                   value={option.quiz_question_option_id.toString()}
                   id={`option-${option.quiz_question_option_id}`}
-                  className={`h-5 w-5 ${
-                    isSelected
-                      ? isAnswerChecked
-                        ? isCorrectOption
-                          ? "border-green-500 ring-2 text-green-700 bg-green-500 ring-green-200"
-                          : "border-red-500 ring-2 text-red-700 ring-red-200"
-                        : "border-[#3373b5] text-[#3373b5]"
-                      : "border-gray-300"
-                  }`}
+                  className={`h-5 w-5 ${isSelected
+                    ? isAnswerChecked
+                      ? isCorrectOption
+                        ? "border-green-500 ring-2 text-green-700 bg-green-500 ring-green-200"
+                        : "border-red-500 ring-2 text-red-700 ring-red-200"
+                      : "border-[#3373b5] text-[#3373b5]"
+                    : "border-gray-300"
+                    }`}
                 />
               </div>
               <Label
                 htmlFor={`option-${option.quiz_question_option_id}`}
-                className={`flex-grow cursor-pointer h-16 text-md flex items-center transition-colors ${
-                  isSelected
-                    ? isAnswerChecked
-                      ? isCorrectOption
-                        ? "text-green-600 font-medium"
-                        : "text-red-600 font-medium"
-                      : "text-[#3373b5] font-medium"
-                    : "hover:text-[#3373b5]"
-                }`}
+                className={`flex-grow cursor-pointer h-16 text-md flex items-center transition-colors ${isSelected
+                  ? isAnswerChecked
+                    ? isCorrectOption
+                      ? "text-green-600 font-medium"
+                      : "text-red-600 font-medium"
+                    : "text-[#3373b5] font-medium"
+                  : "hover:text-[#3373b5]"
+                  }`}
               >
                 <MathRenderer content={option.option_text} />
               </Label>
@@ -162,9 +157,8 @@ export function QuestionPanel({
       {isAnswerChecked && (
         <div className="flex flex-col items-center mt-6">
           <div
-            className={`p-4 w-[300px] text-center inline-block rounded-md transition-all duration-300 ${
-              isCorrect ? "bg-[#C2E6B1] text-black" : "bg-[#E87E7B] text-white"
-            }`}
+            className={`p-4 w-[300px] text-center inline-block rounded-md transition-all duration-300 ${isCorrect ? "bg-[#C2E6B1] text-black" : "bg-[#E87E7B] text-white"
+              }`}
           >
             {isCorrect ? (
               <div className="flex items-center justify-center">
@@ -190,13 +184,17 @@ export function QuestionPanel({
         <Button variant="outline" className="border-gray-300 text-gray-600 bg-white hover:bg-gray-100 rounded-md">
           Skip
         </Button>
-        <Button
-          className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 disabled:opacity-50"
-          onClick={onSubmit}
-          disabled={selectedOption === null}
-        >
-          SUBMIT
-        </Button>
+
+        {!isAnswerChecked && !isCorrect && (
+          <Button
+            className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 disabled:opacity-50"
+            onClick={onSubmit}
+            disabled={selectedOption === null}
+          >
+            SUBMIT
+          </Button>
+        )}
+
       </div>
     </div>
   )
