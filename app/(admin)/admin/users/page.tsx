@@ -33,64 +33,6 @@ import { api } from "@/lib/api-client"
 import { Organization } from "@/app/types/types"
 import { useEffect } from "react"
 import { set } from "date-fns"
-// Mock data for users
-// const users = [
-//   {
-//     id: "1",
-//     name: "John Doe",
-//     email: "john.doe@example.com",
-//     role: "Student",
-//     status: "Active",
-//     lastActive: "2 hours ago",
-//     avatar: "/stylized-jd-initials.png",
-//   },
-//   {
-//     id: "2",
-//     name: "Jane Smith",
-//     email: "jane.smith@example.com",
-//     role: "Teacher",
-//     status: "Active",
-//     lastActive: "1 day ago",
-//     avatar: "/javascript-code.png",
-//   },
-//   {
-//     id: "3",
-//     name: "Robert Johnson",
-//     email: "robert.johnson@example.com",
-//     role: "Admin",
-//     status: "Active",
-//     lastActive: "Just now",
-//     avatar: "/abstract-rj.png",
-//   },
-//   {
-//     id: "4",
-//     name: "Emily Davis",
-//     email: "emily.davis@example.com",
-//     role: "Student",
-//     status: "Inactive",
-//     lastActive: "1 week ago",
-//     avatar: "/ed-initials-abstract.png",
-//   },
-//   {
-//     id: "5",
-//     name: "Michael Wilson",
-//     email: "michael.wilson@example.com",
-//     role: "Student",
-//     status: "Active",
-//     lastActive: "3 days ago",
-//     avatar: "/intertwined-letters.png",
-//   },
-//   {
-//     id: "6",
-//     name: "Sarah Brown",
-//     email: "sarah.brown@example.com",
-//     role: "Teacher",
-//     status: "Active",
-//     lastActive: "5 hours ago",
-//     avatar: "/stylized-letter-sb.png",
-//   },
-// ]
-
 export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
@@ -100,95 +42,98 @@ export default function UsersPage() {
     column: "name",
     direction: "asc",
   })
-const [nameError, setNameError] = useState({ show: false, message: "" })
-const [lastNameError, setLastNameError] = useState({ show: false, message: "" })
-const [emailError, setEmailError] = useState({ show: false, message: "" })
-const [passwordError, setPasswordError] = useState({ show: false, message: "" })
-const [organizationError, setOrganizationError] = useState({ show: false, message: "" })
-const [roleError, setRoleError] = useState({ show: false, message: "" })
-const [isActiveError, setIsActiveError] = useState({ show: false, message: "" })
-const [emailVerifiedError, setEmailVerifiedError] = useState({ show: false, message: "" })
-// State to hold organizations
-const [organizations, setOrganizations] = useState<Organization[]>([])
-const [selectedOrganization, setSelectedOrganization] = useState<string>("")
-const [users, setUsers] = useState<UserForm[]>([])
+  const [nameError, setNameError] = useState({ show: false, message: "" })
+  const [lastNameError, setLastNameError] = useState({ show: false, message: "" })
+  const [emailError, setEmailError] = useState({ show: false, message: "" })
+  const [passwordError, setPasswordError] = useState({ show: false, message: "" })
+  const [organizationError, setOrganizationError] = useState({ show: false, message: "" })
+  const [roleError, setRoleError] = useState({ show: false, message: "" })
+  const [isActiveError, setIsActiveError] = useState({ show: false, message: "" })
+  const [emailVerifiedError, setEmailVerifiedError] = useState({ show: false, message: "" })
+  // State to hold organizations
+  const [organizations, setOrganizations] = useState<Organization[]>([])
+  const [selectedOrganization, setSelectedOrganization] = useState<string>("")
+  const [users, setUsers] = useState<UserForm[]>([])
 
-// call ngonInit to fetch organizations
+  // call ngonInit to fetch organizations
 
-useEffect(() => {
-  fetchOrganizations()
-  setTimeout(() => {
-    if (organizations.length > 0) {
-             bindUsersToOrganization(organizations[0].organization_name)
-             }
-  }, 10);
-}, [])
-
-const fetchOrganizations = async () => {
-    try {
-      setOrganizations([]) // Reset organizations before fetching
-      const response = await api.get<Organization[]>("/organizations/organizations/organizations")
-      console.log("Organizations fetched:", response.data)
-      // Handle the fetched organizations as needed
-      if (response.status === 200) {
-        setOrganizations(response.data)
-      } else {
-        toast.error(`Failed to fetch organizations. Server responded with status ${response.status}`);
+  useEffect(() => {
+    const fetchOrganizations = async () => {
+      try {
+        setOrganizations([]) // Reset organizations before fetching
+        const response = await api.get<Organization[]>("/organizations/organizations/organizations")
+        console.log("Organizations fetched:", response.data)
+        // Handle the fetched organizations as needed
+        if (response.status === 200) {
+          setOrganizations(response.data)
+        } else {
+          toast.error(`Failed to fetch organizations. Server responded with status ${response.status}`);
+        }
+      } catch (error) {
+        toast.error("Failed to fetch organizations")
+        setOrganizations([]) // Reset organizations on error
       }
-    } catch (error) {
-      toast.error("Failed to fetch organizations")
-      setOrganizations([]) // Reset organizations on error
     }
+
+    fetchOrganizations()
+  }, [])
+
+  useEffect(() => {
+    if (organizations.length > 0) {
+      bindUsersToOrganization(organizations[0].organization_name)
+    }
+  }, [organizations])
+
+
+
+  const bindUsersToOrganization = async (organizationName: string) => {
+    setSelectedOrganization(organizationName);
+    setUsers([]);
+    console.log("Selected organization:", organizationName);
+    const orgId = organizations.find(org => org.organization_name === organizationName)?.organization_id;
+    const response = await api.get(`/users/organizations/${orgId}/users`)
+      .then((response) => {
+        if (response.status === 200 && Array.isArray(response.data)) {
+          // If you want to update the users grid, you need a users state
+          setUsers(response.data)
+        } else {
+          toast.error("Failed to fetch users for organization")
+        }
+      })
+      .catch((error) => {
+        setUsers([]);
+        toast.error("Error fetching users for organization")
+      })
   }
 
-const bindUsersToOrganization = async (organizationName: string) => {
-  setSelectedOrganization(organizationName);
-  setUsers([]);
-  console.log("Selected organization:", organizationName);
-  const orgId = organizations.find(org => org.organization_name === organizationName)?.organization_id;
-  const response = await api.get(`/users/organizations/${orgId}/users`)
-    .then((response) => {
-      if (response.status === 200 && Array.isArray(response.data)) {
-        // If you want to update the users grid, you need a users state
-       setUsers(response.data)
-      } else {
-        toast.error("Failed to fetch users for organization")
-      }
-    })
-    .catch((error) => {
-      setUsers([]);
-      toast.error("Error fetching users for organization")
-    })
-}
-
   type UserForm = {
-  first_name: string
-  last_name: string
-  email: string
-  password: string
-  organization_id: string
-  role: string
-  is_active: boolean
-  email_verified: boolean
-  create_date_time: string
-  update_date_time: string
-  status: string
-  user_id?:string
-}
+    first_name: string
+    last_name: string
+    email: string
+    password: string
+    organization_id: string
+    role: string
+    is_active: boolean
+    email_verified: boolean
+    create_date_time: string
+    update_date_time: string
+    status: string
+    user_id?: string
+  }
 
-const [form, setForm] = useState<UserForm>({
-  first_name: "",
-  last_name: "",
-  email: "",
-  password: "",
-  organization_id: "",
-  role: "",
-  is_active: true,
-  email_verified: false,
-  create_date_time: new Date().toISOString(),
-  update_date_time: new Date().toISOString(),
-  status: "Active",
-})
+  const [form, setForm] = useState<UserForm>({
+    first_name: "",
+    last_name: "",
+    email: "",
+    password: "",
+    organization_id: "",
+    role: "",
+    is_active: true,
+    email_verified: false,
+    create_date_time: new Date().toISOString(),
+    update_date_time: new Date().toISOString(),
+    status: "Active",
+  })
 
   // Sort function
   const sortData = (column: string) => {
@@ -228,7 +173,7 @@ const [form, setForm] = useState<UserForm>({
     setEmailVerifiedError({ show: false, message: "" })
   }
 
-   const validateForm = () => {
+  const validateForm = () => {
     clearErrors()
     if (form.first_name === "") {
       setNameError({ show: true, message: "First Name Required" })
@@ -282,24 +227,12 @@ const [form, setForm] = useState<UserForm>({
       setRoleError({ show: true, message: "Role is required" })
       return false
     }
-    // if (!form.emailVerified) {
-    //   setEmailError({ show: true, message: "Email must be verified" })
-    //   return false
-    // }
-    // if (!form.isActive) {
-    //   setNameError({ show: true, message: "User must be active" })
-    //   return false
-    // }
-    // if (!form.emailVerified) {
-    //   setNameError({ show: true, message: "Email must be verified" })
-    //   return false
-    // }
-    // If all validations pass, clear errors and return true
     clearErrors()
     return true
   }
 
   const handleSubmit = () => {
+    console.log("Form submitted:", form)
     if (!validateForm()) {
       return
     }
@@ -339,6 +272,8 @@ const [form, setForm] = useState<UserForm>({
       const response = await api.post<UserForm>("/users/register", newUser)
 
       console.log("User created response:", response);
+
+      bindUsersToOrganization(organizations.find(org => org.organization_name === selectedOrganization)?.organization_name || "")
       if (response.status !== 201 && response.status !== 200) {
         toast.error(`Failed to create user. Server responded with status ${response.status}`);
         return;
@@ -346,7 +281,7 @@ const [form, setForm] = useState<UserForm>({
       toast.success("User created successfully");
       setShowAddUserDialog(false)
     }
-     catch (error) {
+    catch (error) {
       console.error("Error creating user:", error)
       toast.error("Error creating user. Please try again.")
     }
@@ -394,11 +329,11 @@ const [form, setForm] = useState<UserForm>({
                           value={form.first_name}
                           onChange={(e) => setForm({ ...form, first_name: e.target.value })}
                           placeholder="Enter first name"
-                          className={nameError.show ? "border-red-500" : ""}/>
+                          className={nameError.show ? "border-red-500" : ""} />
                         {
-                        nameError.show && form.first_name === "" && (
-                         <p className="text-red-500 text-sm">{nameError.message || "First name is required"}</p>
-                        )}
+                          nameError.show && form.first_name === "" && (
+                            <p className="text-red-500 text-sm">{nameError.message || "First name is required"}</p>
+                          )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="last-name">Last name</Label>
@@ -410,36 +345,36 @@ const [form, setForm] = useState<UserForm>({
                           className={lastNameError.show ? "border-red-500" : ""}
                         />
                         {lastNameError.show && form.last_name === "" && (
-                        <p className="text-red-500 text-sm">{lastNameError.message || "Last name is required"}</p>)}
+                          <p className="text-red-500 text-sm">{lastNameError.message || "Last name is required"}</p>)}
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
                       <Input
-                      id="email"
-                      placeholder="john.doe@example.com"
-                      type="email"
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      className={emailError.show ? "border-red-500" : ""}
+                        id="email"
+                        placeholder="john.doe@example.com"
+                        type="email"
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        className={emailError.show ? "border-red-500" : ""}
                       />
                       {emailError.show && form.email === "" && (
-                      <p className="text-red-500 text-sm">{emailError.message || "Email is required"}</p>)}
+                        <p className="text-red-500 text-sm">{emailError.message || "Email is required"}</p>)}
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="password">Password</Label>
                       <Input
-                      id="password"
-                      type="password"
-                      value={form.password}
-                      onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      placeholder="Enter password"
-                      className={passwordError.show && form.password === "" ? "border-red-500" : ""}
+                        id="password"
+                        type="password"
+                        value={form.password}
+                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        placeholder="Enter password"
+                        className={passwordError.show && form.password === "" ? "border-red-500" : ""}
                       />
                       {passwordError.show && form.password === "" && (
-                      <p className="text-red-500 text-sm">{passwordError.message || "Password is required"}</p>
+                        <p className="text-red-500 text-sm">{passwordError.message || "Password is required"}</p>
                       )}
                     </div>
                   </div>
@@ -451,46 +386,48 @@ const [form, setForm] = useState<UserForm>({
                         onValueChange={(value) => setForm({ ...form, organization_id: value })}
                       >
                         <SelectTrigger className={organizationError.show && form.organization_id === "" ? "border-red-500" : ""}>
-                          <SelectValue placeholder="Select organization_id" />
+                          <SelectValue placeholder="Select organization" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="1">Organization 1</SelectItem>
-                          <SelectItem value="2">Organization 2</SelectItem>
-                          <SelectItem value="3">Organization 3</SelectItem>
+                          {organizations.map((organization) => (
+                            <SelectItem key={organization.organization_id} value={organization.organization_id.toString()}>
+                              {organization.organization_name}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
+
                       {organizationError.show && form.organization_id === "" && (
                         <p className="text-red-500 text-sm">{organizationError.message || "Organization is required"}</p>
                       )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="role-dropdown">Role</Label>
-                        <Select
+                      <Select
                         value={form.role}
                         onValueChange={(value) => setForm({ ...form, role: value })}
-                        >
+                      >
                         <SelectTrigger className={roleError.show && form.role === "" ? "border-red-500" : ""}>
                           <SelectValue placeholder="Select role" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="teacher">Teacher</SelectItem>
-                          <SelectItem value="student">Student</SelectItem>
+                          <SelectItem value="admin">admin</SelectItem>
+                          <SelectItem value="user">user</SelectItem>
                         </SelectContent>
-                        </Select>
-                        {roleError.show && form.role === "" && (
+                      </Select>
+                      {roleError.show && form.role === "" && (
                         <p className="text-red-500 text-sm">{roleError.message || "Role is required"}</p>
-                        )}
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-6 mt-4">
                     <div className="flex items-center space-x-2">
                       <input
-                      type="checkbox"
-                      id="is-active"
-                      className="accent-[#1e74bb] w-4 h-4"
-                      checked={form.is_active}
-                      onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+                        type="checkbox"
+                        id="is-active"
+                        className="accent-[#1e74bb] w-4 h-4"
+                        checked={form.is_active}
+                        onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
                       />
                       <Label htmlFor="is-active">Is Active</Label>
                     </div>
@@ -499,11 +436,11 @@ const [form, setForm] = useState<UserForm>({
                     )} */}
                     <div className="flex items-center space-x-2">
                       <input
-                      type="checkbox"
-                      id="email-verified"
-                      className="accent-[#1e74bb] w-4 h-4"
-                      checked={form.email_verified}
-                      onChange={(e) => setForm({ ...form, email_verified: e.target.checked })}
+                        type="checkbox"
+                        id="email-verified"
+                        className="accent-[#1e74bb] w-4 h-4"
+                        checked={form.email_verified}
+                        onChange={(e) => setForm({ ...form, email_verified: e.target.checked })}
                       />
                       <Label htmlFor="email-verified">Email Verified</Label>
                     </div>
@@ -595,38 +532,39 @@ const [form, setForm] = useState<UserForm>({
         </CardHeader>
         <CardContent>
           <div className="flex flex-col space-y-4">
-            <div className="flex items-center gap-4 px-6 pb-2">
-            <Label htmlFor="organization-filter" className="mr-2">
-              Organization
-            </Label>
-            <Select
-              value={selectedOrganization}
-              // onValueChange={(value) => setForm({ ...form, organization_id: value })}
-              onValueChange={(value) => {bindUsersToOrganization(value)}}>
-              <SelectTrigger id="organization-filter" className="w-[180px] bg-white">
-              <SelectValue placeholder="Select organization" />
-              </SelectTrigger>
-              <SelectContent>
-              {/* Render organizations dynamically, first value is default */}
-              {/* <SelectItem value="Select organization">Select organization</SelectItem> */}
-              {(Array.isArray(organizations) ? organizations : []).map((org) => (
-                <SelectItem key={org.organization_id} value={org.organization_name}>
-                {org.organization_name}
-                </SelectItem>
-              ))}
-              </SelectContent>
-            </Select>
-            </div>
+
+
             <div className="flex flex-col sm:flex-row justify-between gap-4">
-              <div className="relative w-full sm:w-72">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-                <Input
-                  type="search"
-                  placeholder="Search users..."
-                  className="pl-8 bg-white"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+              <div className="flex items-center gap-4 pb-2">
+                <Select
+                  value={selectedOrganization}
+                  // onValueChange={(value) => setForm({ ...form, organization_id: value })}
+                  onValueChange={(value) => { bindUsersToOrganization(value) }}>
+                  <SelectTrigger id="organization-filter" className="w-[180px] bg-white">
+                    <SelectValue placeholder="Select organization" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* Render organizations dynamically, first value is default */}
+                    {/* <SelectItem value="Select organization">Select organization</SelectItem> */}
+                    {(Array.isArray(organizations) ? organizations : []).map((org) => (
+                      <SelectItem key={org.organization_id} value={org.organization_name}>
+                        {org.organization_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="relative w-full sm:w-72">
+
+
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                  <Input
+                    type="search"
+                    placeholder="Search users..."
+                    className="pl-8 bg-white"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Select value={roleFilter} onValueChange={setRoleFilter}>
@@ -701,7 +639,7 @@ const [form, setForm] = useState<UserForm>({
                     </TableRow>
                   ) : (
                     filteredUsers.map((user) => (
-                      <TableRow key={user.organization_id} className="group hover:bg-gray-50">
+                      <TableRow key={user.user_id} className="group hover:bg-gray-50">
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar>
@@ -766,24 +704,24 @@ const [form, setForm] = useState<UserForm>({
                                 <DropdownMenuItem
                                   className="text-red-600"
                                   onClick={async () => {
-                                  if (
-                                    window.confirm(
-                                    `Are you sure you want to delete user "${user.user_id}"?`
-                                    )
-                                  ) {
-                                    try {
-                                    const response = await api.delete(`/users/${user.user_id}`);
-                                    if (response.status === 200 || response.status === 204) {
-                                      toast.success("User deleted successfully");
-                                      // Refresh users list
-                                      bindUsersToOrganization(selectedOrganization);
-                                    } else {
-                                      toast.error("Failed to delete user");
+                                    if (
+                                      window.confirm(
+                                        `Are you sure you want to delete user "${user.user_id}"?`
+                                      )
+                                    ) {
+                                      try {
+                                        const response = await api.delete(`/users/users/${user.user_id}?organization_id=${user.organization_id}`);
+                                        if (response.status === 200 || response.status === 204) {
+                                          toast.success("User deleted successfully");
+                                          // Refresh users list
+                                          bindUsersToOrganization(selectedOrganization);
+                                        } else {
+                                          toast.error("Failed to delete user");
+                                        }
+                                      } catch (error) {
+                                        toast.error("Error deleting user");
+                                      }
                                     }
-                                    } catch (error) {
-                                    toast.error("Error deleting user");
-                                    }
-                                  }
                                   }}>
                                   Delete user
                                 </DropdownMenuItem>
