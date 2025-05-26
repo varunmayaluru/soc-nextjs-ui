@@ -53,7 +53,7 @@ export function QuizInterface({
     currentQuestionId,
   })
 
-  const { messages, isTyping, sendMessage, initializeChat } = useQuizChat({
+  const { messages, isTyping, sendMessage, initializeChat, resetChat } = useQuizChat({
     question,
     selectedOption,
     contextAnswer: "",
@@ -87,6 +87,8 @@ export function QuizInterface({
 
     if (newQuestionId < 1 || newQuestionId > totalQuestions) return
 
+    // Reset chat when changing questions
+    resetChat()
     setCurrentQuestionId(newQuestionId)
     setSelectedOption(null)
     setIsAnswerChecked(false)
@@ -128,7 +130,12 @@ export function QuizInterface({
           onOptionSelect={handleOptionSelect}
           onNavigate={navigateToQuestion}
           onSubmit={checkAnswer}
-          onQuestionSelect={setCurrentQuestionId}
+          onQuestionSelect={(questionId) => {
+            resetChat()
+            setCurrentQuestionId(questionId)
+            setSelectedOption(null)
+            setIsAnswerChecked(false)
+          }}
         />
 
         <ChatPanel

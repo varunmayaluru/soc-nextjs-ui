@@ -17,6 +17,7 @@ import {
   BookOpenCheck,
   Layers,
   ChevronRight,
+  Upload,
 } from "lucide-react"
 import { api } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
@@ -50,6 +51,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import Link from "next/link"
+import QuizUploadForm from "@/components/admin/quiz-upload-form"
 
 type Subject = {
   subject_id: number
@@ -103,6 +105,8 @@ export default function QuizzesPage() {
 
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [editDialogId, setEditDialogId] = useState<number | null>(null)
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
+  const [selectedQuizForUpload, setSelectedQuizForUpload] = useState<Quiz | null>(null)
 
   const subjectId = params.id as string
   const topicId = params.topicId as string
@@ -216,6 +220,20 @@ export default function QuizzesPage() {
         description: "Failed to delete quiz. Please try again.",
         variant: "destructive",
       })
+    }
+  }
+
+  // Handle upload button click for specific quiz
+  const handleUploadClick = (quiz: Quiz) => {
+    setSelectedQuizForUpload(quiz)
+    setUploadDialogOpen(true)
+  }
+
+  // Handle upload dialog close
+  const handleUploadDialogClose = (open: boolean) => {
+    setUploadDialogOpen(open)
+    if (!open) {
+      setSelectedQuizForUpload(null)
     }
   }
 
@@ -556,14 +574,25 @@ export default function QuizzesPage() {
 
                   {/* Actions footer */}
                   <div className="flex justify-between items-center p-3 bg-gray-50 border-t border-gray-100">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1 border-[#1e74bb] text-[#1e74bb] hover:bg-[#e6f0f9] group-hover:bg-[#1e74bb] group-hover:text-white transition-colors"
-                    >
-                      <FileText className="h-4 w-4" />
-                      Questions
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 border-[#1e74bb] text-[#1e74bb] hover:bg-[#e6f0f9] group-hover:bg-[#1e74bb] group-hover:text-white transition-colors"
+                      >
+                        <FileText className="h-4 w-4" />
+                        Questions
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleUploadClick(quiz)}
+                        className="gap-1 border-green-600 text-green-600 hover:bg-green-50 transition-colors"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Upload
+                      </Button>
+                    </div>
                     <div className="flex gap-2">
                       <Dialog
                         open={editDialogId === quiz.quiz_id}
@@ -702,10 +731,20 @@ export default function QuizzesPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="gap-1 border-brand text-brand hover:bg-brand-light"
+                                className="gap-1 border-[#1e74bb] text-[#1e74bb] hover:bg-[#e6f0f9]"
                               >
                                 <FileText className="h-4 w-4" />
                                 <span className="sr-only md:not-sr-only md:ml-2">Questions</span>
+                              </Button>
+
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleUploadClick(quiz)}
+                                className="gap-1 border-green-600 text-green-600 hover:bg-green-50"
+                              >
+                                <Upload className="h-4 w-4" />
+                                <span className="sr-only md:not-sr-only md:ml-2">Upload</span>
                               </Button>
 
                               <Dialog
@@ -783,6 +822,34 @@ export default function QuizzesPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Upload Quiz Dialog */}
+      <Dialog open={uploadDialogOpen} onOpenChange={handleUploadDialogClose}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="h-5 w-5 text-[#1e74bb]" />
+              Upload Quiz Questions
+            </DialogTitle>
+            <DialogDescription>
+              Upload quiz questions for "{selectedQuizForUpload?.title}" via Excel spreadsheet
+            </DialogDescription>
+          </DialogHeader>
+          {selectedQuizForUpload && (
+            <QuizUploadForm
+              subjectId={Number(subjectId)}
+              topicId={Number(topicId)}
+              quizId={selectedQuizForUpload.quiz_id}
+              quizTitle={selectedQuizForUpload.title}
+              onSuccess={() => {
+                fetchQuizzes()
+                setUploadDialogOpen(false)
+                setSelectedQuizForUpload(null)
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -980,4 +1047,12 @@ function QuizForm({ quiz, subjectId, topicId, subjectName, topicName, onSuccess 
       </DialogFooter>
     </form>
   )
+}
+
+interface QuizUploadFormProps {
+  subjectId: number
+  topicId: number
+  quizId: number
+  quizTitle: string
+  onSuccess: () => void
 }
