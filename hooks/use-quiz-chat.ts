@@ -89,6 +89,10 @@ export function useQuizChat({
   const initializeChat = async (selectedOptionData: Option | undefined) => {
     if (!question || !selectedOptionData) return;
 
+    console.log(
+      "🚀 Initializing chat with encryption for question:",
+      question.quiz_question_text
+    );
     setIsTyping(true);
 
     try {
@@ -138,7 +142,7 @@ export function useQuizChat({
 
       setConversationMessages(conversationObj);
 
-      // Get contextual answer using secure API
+      // Get contextual answer using secure API with encryption
       const payload = {
         user_content: question.quiz_question_text,
         model: "gpt-4o",
@@ -146,15 +150,21 @@ export function useQuizChat({
         top_k: 5,
       };
 
+      console.log(
+        "🔐 Sending encrypted contextual answer request with payload:",
+        payload
+      );
+      // Use the regular post method which will auto-encrypt for /genai/ endpoints
       const response = await secureApi.post<any>(
         "/genai/socratic/contextual-answer",
         payload
       );
 
       if (response.ok && response.data) {
+        console.log("✅ Contextual answer received:", response.data);
         setContextAnswer(response.data.assistant_response);
 
-        // Get initial Socratic question using secure API
+        // Get initial Socratic question using secure API with encryption
         const socraticPayload = {
           model: "gpt-4o",
           complex_question: question.quiz_question_text,
@@ -164,12 +174,17 @@ export function useQuizChat({
           student_answer: selectedOption?.toString(),
         };
 
+        console.log(
+          "🔐 Sending encrypted Socratic question request with payload:",
+          socraticPayload
+        );
         const socraticResponse = await secureApi.post<any>(
           "/genai/socratic/initial",
           socraticPayload
         );
 
         if (socraticResponse.ok && socraticResponse.data) {
+          console.log("✅ Socratic response received:", socraticResponse.data);
           setActualAnswer(socraticResponse.data.sub_question);
 
           addMessage({
@@ -185,7 +200,7 @@ export function useQuizChat({
         }
       }
     } catch (error) {
-      console.error("Error initializing chat:", error);
+      console.error("❌ Error initializing chat:", error);
       addMessage({
         sender: "response",
         content: "Sorry, I encountered an error. Please try again.",
@@ -197,6 +212,8 @@ export function useQuizChat({
 
   const sendMessage = async (content: string) => {
     if (!content.trim() || !question) return;
+
+    console.log("💬 Sending message with encryption:", content);
 
     // Add user message
     addMessage({
@@ -212,7 +229,7 @@ export function useQuizChat({
     setIsTyping(true);
 
     try {
-      // Check if conversation should continue using secure API
+      // Check if conversation should continue using secure API with encryption
       const isCompletePayload = {
         complex_question: question.quiz_question_text,
         messages: conversationMessages,
@@ -220,14 +237,18 @@ export function useQuizChat({
         actual_answer: contextAnswer,
       };
 
+      console.log(
+        "🔐 Sending encrypted evaluation request with payload:",
+        isCompletePayload
+      );
       const isContinueResponse = await secureApi.post<any>(
-        "genai/missing-context/evaluate",
+        "/genai/missing-context/evaluate",
         isCompletePayload
       );
       const shouldContinue = !isContinueResponse.data.is_complete;
 
       if (shouldContinue && feedbackCounter < 5) {
-        // Generate feedback using secure API
+        // Generate feedback using secure API with encryption
         const feedbackPayload = {
           messages: [
             { role: "assistant", content: actualAnswer },
@@ -237,6 +258,10 @@ export function useQuizChat({
           actual_answer: contextAnswer,
         };
 
+        console.log(
+          "🔐 Sending encrypted feedback request with payload:",
+          feedbackPayload
+        );
         const feedbackResponse = await secureApi.post<any>(
           "/genai/feedback/generate",
           feedbackPayload
@@ -248,7 +273,7 @@ export function useQuizChat({
           content: feedback,
         });
 
-        // Get follow-up question using secure API
+        // Get follow-up question using secure API with encryption
         const followUpPayload = {
           complex_question: question.quiz_question_text,
           student_answer: selectedOption?.toString(),
@@ -259,6 +284,10 @@ export function useQuizChat({
           actual_answer: contextAnswer,
         };
 
+        console.log(
+          "🔐 Sending encrypted follow-up request with payload:",
+          followUpPayload
+        );
         const followUpResponse = await secureApi.post<any>(
           "/genai/follow-up-socratic/ask",
           followUpPayload
@@ -276,7 +305,7 @@ export function useQuizChat({
 
         setFeedbackCounter((prev) => prev + 1);
       } else {
-        // Generate final summary using secure API
+        // Generate final summary using secure API with encryption
         const summaryPayload = {
           complex_question: question.quiz_question_text,
           messages: conversationMessages,
@@ -290,6 +319,7 @@ export function useQuizChat({
           actual_answer: contextAnswer,
         };
 
+        console.log("🔐 Sending encrypted summary and knowledge gap requests");
         const [summaryResponse, knowledgeGapResponse] = await Promise.all([
           secureApi.post<any>("/genai/user-summary/generate", summaryPayload),
           secureApi.post<any>(
@@ -308,7 +338,7 @@ export function useQuizChat({
         });
       }
     } catch (error) {
-      console.error("Error sending message:", error);
+      console.error("❌ Error sending message:", error);
       addMessage({
         sender: "response",
         content:
