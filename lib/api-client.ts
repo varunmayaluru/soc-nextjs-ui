@@ -41,10 +41,10 @@ export async function apiRequest<T>(
         ? token
         : `Bearer ${token}`;
       headers.set("Authorization", authValue);
-      headers.set(
-        "X-OpenAI-API-Key",
-        process.env.NEXT_PUBLIC_OPENAI_API_KEY || ""
-      );
+      // headers.set(
+      //   "X-OpenAI-API-Key",
+      //   process.env.NEXT_PUBLIC_OPENAI_API_KEY || ""
+      // );
     }
 
     // Set default headers if not provided and not FormData
