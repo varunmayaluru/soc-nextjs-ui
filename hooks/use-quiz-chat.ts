@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { api } from "@/lib/api-client";
+import { secureApi } from "@/lib/secure-api-client";
 
 interface Message {
   id: number;
@@ -138,7 +138,7 @@ export function useQuizChat({
 
       setConversationMessages(conversationObj);
 
-      // Get contextual answer
+      // Get contextual answer using secure API
       const payload = {
         user_content: question.quiz_question_text,
         model: "gpt-4o",
@@ -146,7 +146,7 @@ export function useQuizChat({
         top_k: 5,
       };
 
-      const response = await api.post<any>(
+      const response = await secureApi.post<any>(
         "/genai/socratic/contextual-answer",
         payload
       );
@@ -154,7 +154,7 @@ export function useQuizChat({
       if (response.ok && response.data) {
         setContextAnswer(response.data.assistant_response);
 
-        // Get initial Socratic question
+        // Get initial Socratic question using secure API
         const socraticPayload = {
           model: "gpt-4o",
           complex_question: question.quiz_question_text,
@@ -164,7 +164,7 @@ export function useQuizChat({
           student_answer: selectedOption?.toString(),
         };
 
-        const socraticResponse = await api.post<any>(
+        const socraticResponse = await secureApi.post<any>(
           "/genai/socratic/initial",
           socraticPayload
         );
@@ -212,7 +212,7 @@ export function useQuizChat({
     setIsTyping(true);
 
     try {
-      // Check if conversation should continue
+      // Check if conversation should continue using secure API
       const isCompletePayload = {
         complex_question: question.quiz_question_text,
         messages: conversationMessages,
@@ -220,14 +220,14 @@ export function useQuizChat({
         actual_answer: contextAnswer,
       };
 
-      const isContinueResponse = await api.post<any>(
+      const isContinueResponse = await secureApi.post<any>(
         "genai/missing-context/evaluate",
         isCompletePayload
       );
       const shouldContinue = !isContinueResponse.data.is_complete;
 
       if (shouldContinue && feedbackCounter < 5) {
-        // Generate feedback
+        // Generate feedback using secure API
         const feedbackPayload = {
           messages: [
             { role: "assistant", content: actualAnswer },
@@ -237,7 +237,7 @@ export function useQuizChat({
           actual_answer: contextAnswer,
         };
 
-        const feedbackResponse = await api.post<any>(
+        const feedbackResponse = await secureApi.post<any>(
           "/genai/feedback/generate",
           feedbackPayload
         );
@@ -248,7 +248,7 @@ export function useQuizChat({
           content: feedback,
         });
 
-        // Get follow-up question
+        // Get follow-up question using secure API
         const followUpPayload = {
           complex_question: question.quiz_question_text,
           student_answer: selectedOption?.toString(),
@@ -259,7 +259,7 @@ export function useQuizChat({
           actual_answer: contextAnswer,
         };
 
-        const followUpResponse = await api.post<any>(
+        const followUpResponse = await secureApi.post<any>(
           "/genai/follow-up-socratic/ask",
           followUpPayload
         );
@@ -276,7 +276,7 @@ export function useQuizChat({
 
         setFeedbackCounter((prev) => prev + 1);
       } else {
-        // Generate final summary
+        // Generate final summary using secure API
         const summaryPayload = {
           complex_question: question.quiz_question_text,
           messages: conversationMessages,
@@ -291,8 +291,11 @@ export function useQuizChat({
         };
 
         const [summaryResponse, knowledgeGapResponse] = await Promise.all([
-          api.post<any>("/genai/user-summary/generate", summaryPayload),
-          api.post<any>("/genai/knowledge-gap/analyze", knowledgeGapPayload),
+          secureApi.post<any>("/genai/user-summary/generate", summaryPayload),
+          secureApi.post<any>(
+            "/genai/knowledge-gap/analyze",
+            knowledgeGapPayload
+          ),
         ]);
 
         let finalContent = `**Summary**\n\n${summaryResponse.data.summary}`;

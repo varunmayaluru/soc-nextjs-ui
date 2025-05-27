@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { AlertCircle, LinkIcon } from "lucide-react"
 import Link from "next/link"
 import { QuestionPanel } from "@/components/quiz/question-panel"
-import { ChatPanel } from "@/components/quiz/chat-panel"
+import ChatPanel from "@/components/quiz/chat-panel"
 import { useQuizChat } from "@/hooks/use-quiz-chat"
 import { useQuizQuestion } from "@/hooks/use-quiz-question"
 
