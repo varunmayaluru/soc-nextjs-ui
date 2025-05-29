@@ -15,7 +15,6 @@ type SubjectApiResponse = {
   subject_name: string
   completed_quizzes: number
   progress_percentage: number
-
 }
 
 type User = {
@@ -52,6 +51,11 @@ export default function Dashboard() {
       try {
         setIsLoading(true)
 
+        // Check if api is available
+        if (!api) {
+          throw new Error("API client not available")
+        }
+
         // Fetch user info
         const userResponse = await api.get<User>("users/me")
         if (!userResponse.ok) {
@@ -59,15 +63,16 @@ export default function Dashboard() {
         }
 
         const user = userResponse.data
-        console.log(user)
+        console.log("User data:", user)
         const userId = user.user_id.toString()
-
 
         localStorage.setItem("organizationId", user.organization_id.toString())
         localStorage.setItem("userId", userId)
 
         // Fetch subjects using userId
-        const subjectsResponse = await api.get<SubjectApiResponse[]>(`user-subject-progress/subjects/progress/${userId}`)
+        const subjectsResponse = await api.get<SubjectApiResponse[]>(
+          `user-subject-progress/subjects/progress/${userId}`,
+        )
         if (!subjectsResponse.ok) {
           throw new Error(`API error: ${subjectsResponse.status}`)
         }
@@ -169,8 +174,6 @@ export default function Dashboard() {
 
       {/* Learning Overview Title */}
       <div className="px-6 pt-6">
-        {/* <h2 className="text-xl font-medium mb-6">Learning Overview</h2> */}
-
         {/* Overview Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           {/* Courses Card */}
@@ -245,9 +248,9 @@ export default function Dashboard() {
         </div>
 
         {/* Loading state */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {isLoading && (
-            Array(6)
+        {isLoading && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {Array(6)
               .fill(0)
               .map((_, index) => (
                 <div key={index} className="bg-white rounded-lg p-6 shadow-md border border-gray-100">
@@ -267,9 +270,9 @@ export default function Dashboard() {
                     <Skeleton className="bg-gray-200 h-10 w-32 rounded-md" />
                   </div>
                 </div>
-              ))
-          )}
-        </div>
+              ))}
+          </div>
+        )}
 
         {/* Error state */}
         {error && (
