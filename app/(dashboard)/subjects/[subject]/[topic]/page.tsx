@@ -97,12 +97,30 @@ export default function TopicPage() {
     fetchTopicName()
   }, [topicId])
 
+  // useEffect(() => {
+  //   const fetchProgressData = async () => {
+  //     try {
+
+  //       const userId = localStorage.getItem("userId")
+  //       const response = await api.get<any>(`user-quiz-progress/quiz-progress/${userId}?subject_id=${subjectId}&topic_id=${topicId}`)
+  //       const data = await response.data
+  //       setQuizzes(data)
+  //     } catch (error) {
+  //       console.error("Error fetching progress data:", error)
+  //     } finally {
+  //       setIsLoading(false)
+  //     }
+  //   }
+
+  //   fetchProgressData()
+  // }, [])
+
   useEffect(() => {
     const fetchProgressData = async () => {
       try {
 
         const userId = localStorage.getItem("userId")
-        const response = await api.get<any>(`user-quiz-progress/quiz-progress/${userId}?subject_id=${subjectId}&topic_id=${topicId}`)
+        const response = await api.get<any>(`/quizzes/quizzes/`)
         const data = await response.data
         setQuizzes(data)
       } catch (error) {

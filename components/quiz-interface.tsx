@@ -8,6 +8,7 @@ import { QuestionPanel } from "@/components/quiz/question-panel"
 import { ChatPanel } from "@/components/quiz/chat-panel"
 import { useQuizChat } from "@/hooks/use-quiz-chat"
 import { useQuizQuestion } from "@/hooks/use-quiz-question"
+import { api } from "@/lib/api-client"
 
 interface Option {
   quiz_question_option_id: number
@@ -62,6 +63,8 @@ export function QuizInterface({
     topicId,
   })
 
+  const userId = localStorage.getItem("userId")
+
   const handleOptionSelect = (optionId: number) => {
     setSelectedOption(optionId)
     setIsAnswerChecked(false)
@@ -73,7 +76,34 @@ export function QuizInterface({
     const selectedOptionData = question.options.find((option) => option.quiz_question_option_id === selectedOption)
 
     setIsCorrect(selectedOptionData?.is_correct || false)
+
+
+    try {
+      const payload = {
+        organization_id: questionId,
+        user_id: userId,
+        subject_id: subjectId,
+        topic_id: topicId,
+        quiz_id: quizId,
+        question_id: questionId,
+        attempt_id: 1,
+        is_complete: selectedOptionData?.is_correct || false,
+        is_correct: true,
+        is_ai_assisted: true,
+        completion_time_seconds: 0
+      }
+      const response = await api.patch(`/user-quiz-attempts/quiz-attempts/`, payload);
+
+      if (response.ok) {
+        console.log("User quiz attempt updated successfully")
+      }
+    } catch (error) {
+      console.error("Error sending message:", error)
+    }
+
+
     setIsAnswerChecked(true)
+
 
     if (!selectedOptionData?.is_correct) {
       await initializeChat(selectedOptionData)

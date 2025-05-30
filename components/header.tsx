@@ -2,15 +2,47 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { Bell, MessageSquare } from "lucide-react"
+import { Bell, MessageSquare, LogOut, Search } from "lucide-react"
 import { useAuth } from "./auth-provider"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useToast } from "@/hooks/use-toast"
 
 export default function Header() {
-  const { userInfo } = useAuth()
+  const { userInfo, logout } = useAuth()
+  const { toast } = useToast()
 
   // Get the user's name, fallback to "User" if not available
   const userName = userInfo?.first_name + " " + userInfo?.last_name || "User"
+  const userInitials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      toast({
+        title: "Logged out successfully",
+        description: "You have been logged out of your account.",
+      })
+    } catch (error) {
+      toast({
+        title: "Logout failed",
+        description: "There was an error logging you out. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-white px-4 md:px-6">
@@ -27,25 +59,14 @@ export default function Header() {
             <input
               type="search"
               placeholder="Search here"
-              className="w-[400px] rounded-md border border-gray-200 py-2 pl-10 pr-4 focus:outline-none"
+              className="w-[400px] rounded-md border border-gray-200 py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-[#1e74bb] focus:border-transparent"
             />
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
+            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
         </div>
+
         <div className="flex items-center gap-4">
+          {/* School Logo */}
           <div className="h-10 w-15">
             <Image
               src="/delhi-public-school.png"
@@ -55,31 +76,64 @@ export default function Header() {
               className="object-contain"
             />
           </div>
-          <div>
-            <button className="rounded-full p-2 hover:bg-gray-100">
-              <Bell className="h-6 w-6 text-gray-600" />
-            </button>
-            <button className="rounded-full p-2 hover:bg-gray-100">
-              <MessageSquare className="h-6 w-6 text-gray-600" />
-            </button>
+
+          {/* Notification and Message Icons */}
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Bell className="h-5 w-5 text-gray-600" />
+            </Button>
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <MessageSquare className="h-5 w-5 text-gray-600" />
+            </Button>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-[#1e74bb] text-white">
-                  {userName
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden flex-col md:flex">
-                <span className="text-sm font-medium">{userName}</span>
-                <span className="text-xs text-gray-500">Welcome to ProbEd</span>
-              </div>
-            </div>
-          </div>
+
+          {/* User Profile Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="flex items-center gap-3 px-3 py-2 h-auto">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="bg-[#1e74bb] text-white font-medium">{userInitials}</AvatarFallback>
+                </Avatar>
+                <div className="hidden flex-col text-left md:flex">
+                  <span className="text-sm font-medium text-gray-900">{userName}</span>
+                  <span className="text-xs text-gray-500">Welcome to ProbEd</span>
+                </div>
+              </Button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{userName}</p>
+                  <p className="text-xs leading-none text-muted-foreground">{userInfo?.email || "user@example.com"}</p>
+                </div>
+              </DropdownMenuLabel>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem className="cursor-pointer">
+                <span>Profile Settings</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem className="cursor-pointer">
+                <span>Account Settings</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem className="cursor-pointer">
+                <span>Help & Support</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                onClick={handleLogout}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
