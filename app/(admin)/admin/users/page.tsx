@@ -1,6 +1,16 @@
 "use client"
-import { useState } from "react"
-import { Search, Filter, MoreHorizontal, ArrowUpDown, UserPlus, Layers, ChevronRight, Users } from "lucide-react"
+import { useState, useCallback } from "react"
+import {
+  Search,
+  Filter,
+  MoreHorizontal,
+  ArrowUpDown,
+  UserPlus,
+  Layers,
+  ChevronRight,
+  Users,
+  AlertCircle,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -30,9 +40,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link"
 import { toast } from "sonner"
 import { api } from "@/lib/api-client"
-import { Organization } from "@/app/types/types"
+import type { Organization } from "@/app/types/types"
 import { useEffect } from "react"
-import { set } from "date-fns"
 export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
@@ -54,6 +63,8 @@ export default function UsersPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [selectedOrganization, setSelectedOrganization] = useState<string>("")
   const [users, setUsers] = useState<UserForm[]>([])
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // call ngonInit to fetch organizations
 
@@ -67,7 +78,7 @@ export default function UsersPage() {
         if (response.status === 200) {
           setOrganizations(response.data)
         } else {
-          toast.error(`Failed to fetch organizations. Server responded with status ${response.status}`);
+          toast.error(`Failed to fetch organizations. Server responded with status ${response.status}`)
         }
       } catch (error) {
         toast.error("Failed to fetch organizations")
@@ -84,14 +95,13 @@ export default function UsersPage() {
     }
   }, [organizations])
 
-
-
   const bindUsersToOrganization = async (organizationName: string) => {
-    setSelectedOrganization(organizationName);
-    setUsers([]);
-    console.log("Selected organization:", organizationName);
-    const orgId = organizations.find(org => org.organization_name === organizationName)?.organization_id;
-    const response = await api.get(`/users/organizations/${orgId}/users`)
+    setSelectedOrganization(organizationName)
+    setUsers([])
+    console.log("Selected organization:", organizationName)
+    const orgId = organizations.find((org) => org.organization_name === organizationName)?.organization_id
+    const response = await api
+      .get(`/users/organizations/${orgId}/users`)
       .then((response) => {
         if (response.status === 200 && Array.isArray(response.data)) {
           // If you want to update the users grid, you need a users state
@@ -101,7 +111,7 @@ export default function UsersPage() {
         }
       })
       .catch((error) => {
-        setUsers([]);
+        setUsers([])
         toast.error("Error fetching users for organization")
       })
   }
@@ -119,6 +129,15 @@ export default function UsersPage() {
     update_date_time: string
     status: string
     user_id?: string
+  }
+
+  interface FormErrors {
+    first_name?: string
+    last_name?: string
+    email?: string
+    password?: string
+    organization_id?: string
+    role?: string
   }
 
   const [form, setForm] = useState<UserForm>({
@@ -173,75 +192,120 @@ export default function UsersPage() {
     setEmailVerifiedError({ show: false, message: "" })
   }
 
-  const validateForm = () => {
-    clearErrors()
-    if (form.first_name === "") {
-      setNameError({ show: true, message: "First Name Required" })
-      return false
-    }
-    if (form.last_name === "") {
-      setLastNameError({ show: true, message: "Last Name are Required" })
-      return false
-    }
-    if (form.email === "") {
-      setEmailError({ show: true, message: "Email is Required" })
-      return false
-    }
-    if (form.password === "") {
-      setPasswordError({ show: true, message: "Password is Required" })
-      return false
-    }
-    if (form.organization_id === "") {
-      setOrganizationError({ show: true, message: "Organization is Required" })
-      return false
-    }
-    if (form.role === "") {
-      setRoleError({ show: true, message: "Role is Required" })
-      return false
-    }
-    if (!form.is_active) {
-      setIsActiveError({ show: true, message: "User must be active" })
-      return false
-    }
-    if (form.first_name.length < 2) {
-      setNameError({ show: true, message: "First and Last Name must be at least 2 characters" })
-      return false
-    }
-    if (form.last_name.length < 2) {
-      setLastNameError({ show: true, message: "First and Last Name must be at least 2 characters" })
-      return false
-    }
-    if (!/\S+@\S+\.\S+/.test(form.email)) {
-      setEmailError({ show: true, message: "Email is not valid" })
-      return false
-    }
-    if (form.password.length < 6) {
-      setPasswordError({ show: true, message: "Password must be at least 6 characters" })
-      return false
-    }
-    if (form.organization_id === "") {
-      setOrganizationError({ show: true, message: "Organization is required" })
-      return false
-    }
-    if (form.role === "") {
-      setRoleError({ show: true, message: "Role is required" })
-      return false
-    }
-    clearErrors()
-    return true
-  }
+  const validateForm = useCallback((): boolean => {
+    const newErrors: FormErrors = {}
+    let isValid = true
 
-  const handleSubmit = () => {
-    console.log("Form submitted:", form)
-    if (!validateForm()) {
+    // First name validation
+    if (!form.first_name || !form.first_name.trim()) {
+      newErrors.first_name = "First name is required"
+      isValid = false
+    } else if (form.first_name.trim().length < 2) {
+      newErrors.first_name = "First name must be at least 2 characters"
+      isValid = false
+    }
+
+    // Last name validation
+    if (!form.last_name || !form.last_name.trim()) {
+      newErrors.last_name = "Last name is required"
+      isValid = false
+    } else if (form.last_name.trim().length < 2) {
+      newErrors.last_name = "Last name must be at least 2 characters"
+      isValid = false
+    }
+
+    // Email validation
+    if (!form.email || !form.email.trim()) {
+      newErrors.email = "Email is required"
+      isValid = false
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      newErrors.email = "Please enter a valid email address"
+      isValid = false
+    }
+
+    // Password validation
+    if (!form.password || !form.password.trim()) {
+      newErrors.password = "Password is required"
+      isValid = false
+    } else if (form.password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters"
+      isValid = false
+    }
+
+    // Organization validation
+    if (!form.organization_id || form.organization_id.trim() === "") {
+      newErrors.organization_id = "Organization is required"
+      isValid = false
+    }
+
+    // Role validation
+    if (!form.role || form.role.trim() === "") {
+      newErrors.role = "Role is required"
+      isValid = false
+    }
+
+    console.log("Validation errors:", newErrors)
+    console.log("Form data:", form)
+    console.log("Is valid:", isValid)
+
+    setErrors(newErrors)
+    return isValid
+  }, [form])
+
+  const handleSubmit = async () => {
+    console.log("Form submission started")
+    console.log("Current form state:", form)
+
+    // Clear previous errors
+    setErrors({})
+
+    // Validate form
+    const isValid = validateForm()
+    console.log("Validation result:", isValid)
+
+    if (!isValid) {
+      console.log("Form validation failed, showing errors")
+      toast.error("Please fix the errors in the form")
       return
     }
-    // Here you would typically send the form data to your backend API
-    createUser(form);
-    // Reset form after successful submission
-    ResetForm();
+
+    try {
+      setIsSubmitting(true)
+      const newUser = {
+        ...form,
+        create_date_time: new Date().toISOString(),
+        update_date_time: new Date().toISOString(),
+      }
+
+      console.log("Submitting user data:", newUser)
+      const response = await api.post<UserForm>("/users/register", newUser)
+
+      if (response.status === 201 || response.status === 200) {
+        toast.success("User created successfully")
+        setShowAddUserDialog(false)
+        resetForm()
+        bindUsersToOrganization(selectedOrganization)
+      } else {
+        toast.error(`Failed to create user. Server responded with status ${response.status}`)
+      }
+    } catch (error) {
+      console.error("Error creating user:", error)
+      toast.error("Error creating user. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
-  function ResetForm() {
+
+  const handleInputChange = (field: keyof UserForm, value: string | boolean) => {
+    setForm((prev) => ({ ...prev, [field]: value }))
+
+    // Clear error for this field when user starts typing
+    if (errors[field as keyof FormErrors]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }))
+    }
+  }
+
+  function resetForm() {
     setForm({
       first_name: "",
       last_name: "",
@@ -257,9 +321,7 @@ export default function UsersPage() {
     })
   }
   // Create a new user (mock implementation)
-  const createUser = async (
-    newUser: Omit<UserForm, "status"> & { status?: string }
-  ) => {
+  const createUser = async (newUser: Omit<UserForm, "status"> & { status?: string }) => {
     try {
       // Here you would typically send the newUser data to your backend API
       newUser = {
@@ -271,17 +333,18 @@ export default function UsersPage() {
       // Simulate API call with a delay
       const response = await api.post<UserForm>("/users/register", newUser)
 
-      console.log("User created response:", response);
+      console.log("User created response:", response)
 
-      bindUsersToOrganization(organizations.find(org => org.organization_name === selectedOrganization)?.organization_name || "")
+      bindUsersToOrganization(
+        organizations.find((org) => org.organization_name === selectedOrganization)?.organization_name || "",
+      )
       if (response.status !== 201 && response.status !== 200) {
-        toast.error(`Failed to create user. Server responded with status ${response.status}`);
-        return;
+        toast.error(`Failed to create user. Server responded with status ${response.status}`)
+        return
       }
-      toast.success("User created successfully");
+      toast.success("User created successfully")
       setShowAddUserDialog(false)
-    }
-    catch (error) {
+    } catch (error) {
       console.error("Error creating user:", error)
       toast.error("Error creating user. Please try again.")
     }
@@ -327,25 +390,32 @@ export default function UsersPage() {
                         <Input
                           id="first-name"
                           value={form.first_name}
-                          onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                          onChange={(e) => handleInputChange("first_name", e.target.value)}
                           placeholder="Enter first name"
-                          className={nameError.show ? "border-red-500" : ""} />
-                        {
-                          nameError.show && form.first_name === "" && (
-                            <p className="text-red-500 text-sm">{nameError.message || "First name is required"}</p>
-                          )}
+                          className={errors.first_name ? "border-red-500" : ""}
+                        />
+                        {errors.first_name && (
+                          <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
+                            <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                            {errors.first_name}
+                          </p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="last-name">Last name</Label>
                         <Input
                           id="last-name"
                           value={form.last_name}
-                          onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                          onChange={(e) => handleInputChange("last_name", e.target.value)}
                           placeholder="Last name"
-                          className={lastNameError.show ? "border-red-500" : ""}
+                          className={errors.last_name ? "border-red-500" : ""}
                         />
-                        {lastNameError.show && form.last_name === "" && (
-                          <p className="text-red-500 text-sm">{lastNameError.message || "Last name is required"}</p>)}
+                        {errors.last_name && (
+                          <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
+                            <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                            {errors.last_name}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -356,11 +426,15 @@ export default function UsersPage() {
                         placeholder="john.doe@example.com"
                         type="email"
                         value={form.email}
-                        onChange={(e) => setForm({ ...form, email: e.target.value })}
-                        className={emailError.show ? "border-red-500" : ""}
+                        onChange={(e) => handleInputChange("email", e.target.value)}
+                        className={errors.email ? "border-red-500" : ""}
                       />
-                      {emailError.show && form.email === "" && (
-                        <p className="text-red-500 text-sm">{emailError.message || "Email is required"}</p>)}
+                      {errors.email && (
+                        <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
+                          <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                          {errors.email}
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">
@@ -369,12 +443,15 @@ export default function UsersPage() {
                         id="password"
                         type="password"
                         value={form.password}
-                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        onChange={(e) => handleInputChange("password", e.target.value)}
                         placeholder="Enter password"
-                        className={passwordError.show && form.password === "" ? "border-red-500" : ""}
+                        className={errors.password ? "border-red-500" : ""}
                       />
-                      {passwordError.show && form.password === "" && (
-                        <p className="text-red-500 text-sm">{passwordError.message || "Password is required"}</p>
+                      {errors.password && (
+                        <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
+                          <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                          {errors.password}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -383,31 +460,34 @@ export default function UsersPage() {
                       <Label htmlFor="organization_id">Organization</Label>
                       <Select
                         value={form.organization_id}
-                        onValueChange={(value) => setForm({ ...form, organization_id: value })}
+                        onValueChange={(value) => handleInputChange("organization_id", value)}
                       >
-                        <SelectTrigger className={organizationError.show && form.organization_id === "" ? "border-red-500" : ""}>
+                        <SelectTrigger className={errors.organization_id ? "border-red-500" : ""}>
                           <SelectValue placeholder="Select organization" />
                         </SelectTrigger>
                         <SelectContent>
                           {organizations.map((organization) => (
-                            <SelectItem key={organization.organization_id} value={organization.organization_id.toString()}>
+                            <SelectItem
+                              key={organization.organization_id}
+                              value={organization.organization_id.toString()}
+                            >
                               {organization.organization_name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
 
-                      {organizationError.show && form.organization_id === "" && (
-                        <p className="text-red-500 text-sm">{organizationError.message || "Organization is required"}</p>
+                      {errors.organization_id && (
+                        <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
+                          <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                          {errors.organization_id}
+                        </p>
                       )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="role-dropdown">Role</Label>
-                      <Select
-                        value={form.role}
-                        onValueChange={(value) => setForm({ ...form, role: value })}
-                      >
-                        <SelectTrigger className={roleError.show && form.role === "" ? "border-red-500" : ""}>
+                      <Select value={form.role} onValueChange={(value) => handleInputChange("role", value)}>
+                        <SelectTrigger className={errors.role ? "border-red-500" : ""}>
                           <SelectValue placeholder="Select role" />
                         </SelectTrigger>
                         <SelectContent>
@@ -415,8 +495,11 @@ export default function UsersPage() {
                           <SelectItem value="user">user</SelectItem>
                         </SelectContent>
                       </Select>
-                      {roleError.show && form.role === "" && (
-                        <p className="text-red-500 text-sm">{roleError.message || "Role is required"}</p>
+                      {errors.role && (
+                        <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
+                          <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                          {errors.role}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -427,7 +510,7 @@ export default function UsersPage() {
                         id="is-active"
                         className="accent-[#1e74bb] w-4 h-4"
                         checked={form.is_active}
-                        onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+                        onChange={(e) => handleInputChange("is_active", e.target.checked)}
                       />
                       <Label htmlFor="is-active">Is Active</Label>
                     </div>
@@ -440,7 +523,7 @@ export default function UsersPage() {
                         id="email-verified"
                         className="accent-[#1e74bb] w-4 h-4"
                         checked={form.email_verified}
-                        onChange={(e) => setForm({ ...form, email_verified: e.target.checked })}
+                        onChange={(e) => handleInputChange("email_verified", e.target.checked)}
                       />
                       <Label htmlFor="email-verified">Email Verified</Label>
                     </div>
@@ -486,10 +569,8 @@ export default function UsersPage() {
                 <Button variant="outline" onClick={() => setShowAddUserDialog(false)}>
                   Cancel
                 </Button>
-                <Button
-                  className="bg-[#1e74bb] hover:bg-[#1a65a3]"
-                  onClick={handleSubmit}>
-                  Create User
+                <Button className="bg-[#1e74bb] hover:bg-[#1a65a3]" onClick={handleSubmit} disabled={isSubmitting}>
+                  {isSubmitting ? "Creating..." : "Create User"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -532,14 +613,15 @@ export default function UsersPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col space-y-4">
-
-
             <div className="flex flex-col sm:flex-row justify-between gap-4">
               <div className="flex items-center gap-4 pb-2">
                 <Select
                   value={selectedOrganization}
                   // onValueChange={(value) => setForm({ ...form, organization_id: value })}
-                  onValueChange={(value) => { bindUsersToOrganization(value) }}>
+                  onValueChange={(value) => {
+                    bindUsersToOrganization(value)
+                  }}
+                >
                   <SelectTrigger id="organization-filter" className="w-[180px] bg-white">
                     <SelectValue placeholder="Select organization" />
                   </SelectTrigger>
@@ -554,8 +636,6 @@ export default function UsersPage() {
                   </SelectContent>
                 </Select>
                 <div className="relative w-full sm:w-72">
-
-
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                   <Input
                     type="search"
@@ -644,7 +724,9 @@ export default function UsersPage() {
                           <div className="flex items-center gap-3">
                             <Avatar>
                               <AvatarFallback className="bg-[#1e74bb] text-white">
-                                {user.first_name?.split(" ").map((n) => n[0])
+                                {user.first_name
+                                  ?.split(" ")
+                                  .map((n) => n[0])
                                   .join("")}
                               </AvatarFallback>
                             </Avatar>
@@ -704,25 +786,24 @@ export default function UsersPage() {
                                 <DropdownMenuItem
                                   className="text-red-600"
                                   onClick={async () => {
-                                    if (
-                                      window.confirm(
-                                        `Are you sure you want to delete user "${user.user_id}"?`
-                                      )
-                                    ) {
+                                    if (window.confirm(`Are you sure you want to delete user "${user.user_id}"?`)) {
                                       try {
-                                        const response = await api.delete(`/users/users/${user.user_id}?organization_id=${user.organization_id}`);
+                                        const response = await api.delete(
+                                          `/users/users/${user.user_id}?organization_id=${user.organization_id}`,
+                                        )
                                         if (response.status === 200 || response.status === 204) {
-                                          toast.success("User deleted successfully");
+                                          toast.success("User deleted successfully")
                                           // Refresh users list
-                                          bindUsersToOrganization(selectedOrganization);
+                                          bindUsersToOrganization(selectedOrganization)
                                         } else {
-                                          toast.error("Failed to delete user");
+                                          toast.error("Failed to delete user")
                                         }
                                       } catch (error) {
-                                        toast.error("Error deleting user");
+                                        toast.error("Error deleting user")
                                       }
                                     }
-                                  }}>
+                                  }}
+                                >
                                   Delete user
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -756,3 +837,4 @@ export default function UsersPage() {
     </div>
   )
 }
+ 
