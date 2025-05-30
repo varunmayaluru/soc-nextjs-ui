@@ -53,6 +53,13 @@ interface Topic {
   update_date_time: number
 }
 
+interface quizSummary {
+    attempt_id: number,
+    question_id: number,
+    question_is_complete: boolean,
+    quiz_status: string
+  }
+
 export default function QuizPage() {
   const [quiz, setQuiz] = useState<Quiz | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -142,71 +149,161 @@ export default function QuizPage() {
     fetchQuiz()
   }, [params.quiz])
 
+  // useEffect(() => {
+  //   const fetchQuizProgressExists = async () => {
+  //     try {
+  //       setIsLoading(true)
+  //       setError(null)
+
+
+
+  //       // Get user ID from localStorage or use a default
+  //       const userId = localStorage.getItem("userId")
+
+  //       const response = await api.get<any>(`user-quiz-progress/quiz-progress/${userId}/exists?subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`)
+
+  //       if (!response.ok) {
+  //         throw new Error(`API error: ${response.status}`)
+  //       }
+
+  //       if (response.data) {
+  //         console.log(response.data)
+  //         setIsQuizExists(response.data.exists);
+  //         if (!response.data.exists) {
+  //           try {
+  //             const quizAttemptPayload = {
+  //               organization_id: organizationId,
+  //               user_id: userId,
+  //               subject_id: subjectId,
+  //               topic_id: topicId,
+  //               quiz_id: quizId,
+  //               question_id: 1,
+  //               attempt_id: 1,
+  //               is_complete: false,
+  //               is_correct: false,
+  //               is_ai_assisted: true,
+  //               completion_time_seconds: 0
+  //             }
+
+  //             const quizProgressPayload = {
+  //               organization_id: organizationId,
+  //               user_id: userId,
+  //               subject_id: subjectId,
+  //               topic_id: topicId,
+  //               quiz_id: quizId,
+  //               is_complete: false,
+  //               latest_score: 0,
+  //               best_score: 0,
+  //               attempts_count: 1,
+  //               completion_time_seconds: 0
+  //             }
+  //             const response = await api.post<any>(`user-quiz-attempts/quiz-attempts/`, quizAttemptPayload)
+
+  //             const response2 = await api.post<any>(`user-quiz-progress/quiz-progress/`, quizProgressPayload)
+
+  //             if (response.ok) {
+  //               console.log(response.data)
+  //               console.log(response2.data)
+  //             }
+
+  //           } catch (error) {
+  //             console.error("Error fetching quiz:", error)
+  //             setError(error instanceof Error ? error.message : "Failed to load quiz")
+
+  //           }
+  //         }
+
+
+  //       } else {
+  //         throw new Error("No quiz data received")
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching quiz:", error)
+  //       setError(error instanceof Error ? error.message : "Failed to load quiz")
+  //     } finally {
+  //       setIsLoading(false)
+  //     }
+
+  //   }
+
+  //   fetchQuizProgressExists()
+
+  // }, [])
+
+
   useEffect(() => {
+    let isMounted = true;
     const fetchQuizProgressExists = async () => {
       try {
+        if (!isMounted) return;
+  
         setIsLoading(true)
         setError(null)
-
-
-
-        // Get user ID from localStorage or use a default
+  
         const userId = localStorage.getItem("userId")
-
         const response = await api.get<any>(`user-quiz-progress/quiz-progress/${userId}/exists?subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`)
-
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`)
-        }
-
+  
+        if (!response.ok) throw new Error(`API error: ${response.status}`)
+  
         if (response.data) {
-          console.log(response.data)
-          setIsQuizExists(response.data.exists);
+          setIsQuizExists(response.data.exists)
+  
           if (!response.data.exists) {
-            try {
-              const quizAttemptPayload = {
-                organization_id: organizationId,
-                user_id: userId,
-                subject_id: subjectId,
-                topic_id: topicId,
-                quiz_id: quizId,
-                question_id: 1,
-                attempt_id: 1,
-                is_complete: false,
-                is_correct: false,
-                is_ai_assisted: true,
-                completion_time_seconds: 0
-              }
-
-              const quizProgressPayload = {
-                organization_id: organizationId,
-                user_id: userId,
-                subject_id: subjectId,
-                topic_id: topicId,
-                quiz_id: quizId,
-                is_complete: false,
-                latest_score: 0,
-                best_score: 0,
-                attempts_count: 1,
-                completion_time_seconds: 0
-              }
-              const response = await api.post<any>(`user-quiz-attempts/quiz-attempts/`, quizAttemptPayload)
-
-              const response2 = await api.post<any>(`user-quiz-progress/quiz-progress/`, quizProgressPayload)
-
-              if (response.ok) {
-                console.log(response.data)
-                console.log(response2.data)
-              }
-
-            } catch (error) {
-              console.error("Error fetching quiz:", error)
-              setError(error instanceof Error ? error.message : "Failed to load quiz")
-
+            const quizAttemptPayload = {
+              organization_id: organizationId,
+              user_id: userId,
+              subject_id: subjectId,
+              topic_id: topicId,
+              quiz_id: quizId,
+              question_id: 1,
+              attempt_id: 1,
+              is_complete: false,
+              is_correct: false,
+              is_ai_assisted: false,
+              completion_time_seconds: 0
+            }
+  
+            const quizProgressPayload = {
+              organization_id: organizationId,
+              user_id: userId,
+              subject_id: subjectId,
+              topic_id: topicId,
+              quiz_id: quizId,
+              is_complete: false,
+              latest_score: 0,
+              best_score: 0,
+              attempts_count: 1,
+              completion_time_seconds: 0
+            }
+  
+            const response1 = await api.post<any>(`user-quiz-attempts/quiz-attempts/`, quizAttemptPayload)
+            const response2 = await api.post<any>(`user-quiz-progress/quiz-progress/`, quizProgressPayload)
+  
+            if (response1.ok && response2.ok) {
+              console.log(response1.data, response2.data)
             }
           }
+          else{
+            try {
+              const quizResponse = await api.get<quizSummary>(`user-quiz-progress/quiz-progress/${userId}/latest-summary?subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`)
+  
+              if (quizResponse.ok) {
+                console.log(quizResponse.data)
+                 //here we get question_id and attempt_id
+                const currentQuestionId = quizResponse.data.question_id;
+                const attemptId = quizResponse.data.attempt_id;
+                const quizStatus = quizResponse.data.quiz_status;
+                // navigate user to currentquestion if quiz status is completed
 
-
+              } else {
+                throw new Error("Failed to fetch quiz data")
+              }
+            }
+            catch (error) {
+              console.error("Error fetching quiz:", error)
+              setError(error instanceof Error ? error.message : "Failed to load quiz")
+            }
+          }
         } else {
           throw new Error("No quiz data received")
         }
@@ -214,14 +311,17 @@ export default function QuizPage() {
         console.error("Error fetching quiz:", error)
         setError(error instanceof Error ? error.message : "Failed to load quiz")
       } finally {
-        setIsLoading(false)
+        if (isMounted) setIsLoading(false)
       }
-
     }
-
+  
     fetchQuizProgressExists()
-
-  }, [])
+  
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+  
 
   if (isLoading) {
     return (

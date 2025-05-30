@@ -63,7 +63,8 @@ export function QuizInterface({
     topicId,
   })
 
-  const userId = localStorage.getItem("userId")
+  const userId = localStorage.getItem("userId");
+  const organizationId = localStorage.getItem("organizationId");
 
   const handleOptionSelect = (optionId: number) => {
     setSelectedOption(optionId)
@@ -80,16 +81,16 @@ export function QuizInterface({
 
     try {
       const payload = {
-        organization_id: questionId,
+        organization_id: organizationId,
         user_id: userId,
         subject_id: subjectId,
         topic_id: topicId,
         quiz_id: quizId,
-        question_id: questionId,
+        question_id: currentQuestionId,
         attempt_id: 1,
-        is_complete: selectedOptionData?.is_correct || false,
-        is_correct: true,
-        is_ai_assisted: true,
+        is_complete: false,
+        is_correct: selectedOptionData?.is_correct || false,
+        is_ai_assisted: false,
         completion_time_seconds: 0
       }
       const response = await api.patch(`/user-quiz-attempts/quiz-attempts/`, payload);
