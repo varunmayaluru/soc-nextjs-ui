@@ -8,6 +8,7 @@ import { QuestionPanel } from "@/components/quiz/question-panel"
 import { ChatPanel } from "@/components/quiz/chat-panel"
 import { useQuizChat } from "@/hooks/use-quiz-chat"
 import { useQuizQuestion } from "@/hooks/use-quiz-question"
+import { set } from "date-fns"
 
 interface Option {
   quiz_question_option_id: number
@@ -65,6 +66,7 @@ export function QuizInterface({
   const handleOptionSelect = (optionId: number) => {
     setSelectedOption(optionId)
     setIsAnswerChecked(false)
+    setIsCorrect(false)
   }
 
   const checkAnswer = async () => {
@@ -74,6 +76,7 @@ export function QuizInterface({
 
     setIsCorrect(selectedOptionData?.is_correct || false)
     setIsAnswerChecked(true)
+  
 
     if (!selectedOptionData?.is_correct) {
       await initializeChat(selectedOptionData)
@@ -92,6 +95,7 @@ export function QuizInterface({
     setCurrentQuestionId(newQuestionId)
     setSelectedOption(null)
     setIsAnswerChecked(false)
+    setIsCorrect(false)
   }
 
   // Generate pagination numbers
