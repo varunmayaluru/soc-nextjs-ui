@@ -1,5 +1,5 @@
 "use client"
-import { use, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AlertCircle, LinkIcon } from "lucide-react"
@@ -29,6 +29,13 @@ interface Question {
   options: Option[]
 }
 
+interface ExistingAnswer {
+  answer_choice_id: number
+  is_correct: boolean
+  answer_text?: string
+  is_ai_assisted?: boolean
+}
+
 export function QuizInterface({
   quizId,
   questionId,
@@ -47,6 +54,7 @@ export function QuizInterface({
   const [isCorrect, setIsCorrect] = useState(false)
   const [currentQuestionId, setCurrentQuestionId] = useState<number | null>(1)
   const [totalQuestions] = useState(10)
+  const [isLoadingAnswer, setIsLoadingAnswer] = useState(false)
 
   const { question, loading, error, fetchQuestion } = useQuizQuestion({
     quizId,
@@ -65,49 +73,86 @@ export function QuizInterface({
     topicId,
   })
 
-  const userId = localStorage.getItem("userId");
-  const organizationId = localStorage.getItem("organizationId");
+  const userId = localStorage.getItem("userId")
+  const organizationId = localStorage.getItem("organizationId")
 
+  const loadExistingAnswer = async (questionIdToLoad?: number) => {
+    const targetQuestionId = questionIdToLoad || currentQuestionId
+    if (!targetQuestionId || !userId || !organizationId) return
 
+    setIsLoadingAnswer(true)
+    try {
+      const endpoint = `/quizzes/quizzes/answers/${userId}?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}&question_id=${targetQuestionId}&attempt_id=${attemptId || 1}`
+
+      const response = await api.get<ExistingAnswer>(endpoint)
+
+      if (response.ok && response.data && response.data.answer_choice_id) {
+        // If an answer exists, set the question as submitted
+        setSelectedOption(response.data.answer_choice_id)
+        setIsAnswerChecked(true)
+        setIsCorrect(response.data.is_correct)
+
+        console.log("Loaded existing answer:", response.data)
+      } else {
+        // No existing answer found, reset state
+        setSelectedOption(null)
+        setIsAnswerChecked(false)
+        setIsCorrect(false)
+      }
+    } catch (error) {
+      console.error("Error loading existing answer:", error)
+      // Reset state on error
+      setSelectedOption(null)
+      setIsAnswerChecked(false)
+      setIsCorrect(false)
+    } finally {
+      setIsLoadingAnswer(false)
+    }
+  }
+
+  useEffect(() => {
+    const loadQuestionAndAnswer = async () => {
+      await fetchQuestion()
+      // Load existing answer after question is fetched
+      await loadExistingAnswer()
+    }
+
+    loadQuestionAndAnswer()
+  }, [quizId, questionId, currentQuestionId, subjectId, topicId])
 
   const handleOptionSelect = (optionId: number) => {
+    if (isAnswerChecked) return // Prevent changing answer if already submitted
     setSelectedOption(optionId)
     setIsAnswerChecked(false)
   }
 
   const checkAnswer = async () => {
-    if (selectedOption === null || !question) return
+    if (selectedOption === null || !question || isAnswerChecked) return
 
     const selectedOptionData = question.options.find((option) => option.quiz_question_option_id === selectedOption)
 
     setIsCorrect(selectedOptionData?.is_correct || false)
 
     try {
+      // First, save the answer
       const checkAnswerPayload = {
         organization_id: organizationId,
         user_id: userId,
         subject_id: subjectId,
         topic_id: topicId,
-        quiz_id: topicId,
+        quiz_id: quizId,
         question_id: currentQuestionId,
-        attempt_id: attemptId,
+        attempt_id: attemptId || 1,
         answer_text: "",
         answer_choice_id: selectedOptionData?.quiz_question_option_id,
-        is_correct: selectedOptionData?.is_correct || false
+        is_correct: selectedOptionData?.is_correct || false,
       }
 
       const response = await api.post(`/quizzes/quizzes/answers`, checkAnswerPayload)
       if (response.ok) {
-        console.log("User quiz attempt updated successfully")
-      }
+        console.log("Answer saved successfully")
 
-    }
-    catch (error) {
-      console.error("Error updating user quiz attempt:", error)
-    }
-
-    if (selectedOptionData?.quiz_question_option_id) {
-      try {
+        // Then update the quiz attempt status
         const payload = {
           organization_id: organizationId,
           user_id: userId,
@@ -115,13 +160,19 @@ export function QuizInterface({
           topic_id: topicId,
           quiz_id: quizId,
           question_id: currentQuestionId,
-          attempt_id: 1,
+          attempt_id: attemptId || 1,
           is_complete: false,
           is_correct: selectedOptionData?.is_correct || false,
-          is_ai_assisted: false,
-          completion_time_seconds: 0
+          is_ai_assisted: messages.length > 0,
+          completion_time_seconds: 0,
         }
 
+        const attemptResponse = await api.patch(`/user-quiz-attempts/quiz-attempts/`, payload)
+        if (attemptResponse.ok) {
+          console.log("Quiz attempt updated successfully")
+        }
+
+        // Update overall quiz progress
         const quizProgressPayload = {
           organization_id: organizationId,
           user_id: userId,
@@ -132,48 +183,72 @@ export function QuizInterface({
           latest_score: 0,
           best_score: 0,
           attempts_count: 1,
-          completion_time_seconds: 0
-        }
-        const response = await api.patch(`/user-quiz-attempts/quiz-attempts/`, payload);
-
-        const response2 = await api.patch<any>(`user-quiz-progress/quiz-progress/`, quizProgressPayload)
-
-        if (response.ok) {
-          console.log("User quiz attempt updated successfully")
+          completion_time_seconds: 0,
         }
 
-        if (response2.ok) {
-          console.log("User quiz progress created successfully")
+        const progressResponse = await api.patch(`user-quiz-progress/quiz-progress/`, quizProgressPayload)
+        if (progressResponse.ok) {
+          console.log("Quiz progress updated successfully")
         }
-
-
-      } catch (error) {
-        console.error("Error sending message:", error)
       }
+    } catch (error) {
+      console.error("Error updating quiz progress:", error)
     }
 
-
-
     setIsAnswerChecked(true)
-
 
     if (!selectedOptionData?.is_correct) {
       await initializeChat(selectedOptionData)
     }
   }
 
-  const navigateToQuestion = (direction: "prev" | "next") => {
+  const navigateToQuestion = async (direction: "prev" | "next") => {
     if (!currentQuestionId) return
 
     const newQuestionId = direction === "next" ? currentQuestionId + 1 : currentQuestionId - 1
 
     if (newQuestionId < 1 || newQuestionId > totalQuestions) return
 
-    // Reset chat when changing questions
+    try {
+      // Reset chat when changing questions
+      resetChat()
+      setCurrentQuestionId(newQuestionId)
+
+      const quizAttemptPayload = {
+        organization_id: organizationId,
+        user_id: userId,
+        subject_id: subjectId,
+        topic_id: topicId,
+        quiz_id: quizId,
+        question_id: newQuestionId,
+        attempt_id: attemptId,
+        is_complete: false,
+        is_correct: false,
+        is_ai_assisted: false,
+        completion_time_seconds: 0,
+      }
+
+      const response = await api.post<any>(`user-quiz-attempts/quiz-attempts/`, quizAttemptPayload)
+
+      if (response.ok) {
+        console.log("Quiz attempt created successfully")
+      }
+
+
+
+      // Load existing answer for the new question
+      await loadExistingAnswer(newQuestionId)
+    } catch (error) {
+      console.error("Error navigating to question:", error)
+    }
+  }
+
+  const handleQuestionSelect = async (questionId: number) => {
     resetChat()
-    setCurrentQuestionId(newQuestionId)
-    setSelectedOption(null)
-    setIsAnswerChecked(false)
+    setCurrentQuestionId(questionId)
+
+    // Load existing answer for the selected question
+    await loadExistingAnswer(questionId)
   }
 
   // Generate pagination numbers
@@ -186,7 +261,7 @@ export function QuizInterface({
     { title: "Mathematical Formulas Reference", href: "#" },
   ]
 
-  if (loading) {
+  if (loading || isLoadingAnswer) {
     return <QuizSkeleton />
   }
 
@@ -212,13 +287,7 @@ export function QuizInterface({
           onOptionSelect={handleOptionSelect}
           onNavigate={navigateToQuestion}
           onSubmit={checkAnswer}
-          onQuestionSelect={async (questionId) => {
-
-            resetChat()
-            setCurrentQuestionId(questionId)
-            setSelectedOption(null)
-            setIsAnswerChecked(false)
-          }}
+          onQuestionSelect={handleQuestionSelect}
         />
 
         <ChatPanel

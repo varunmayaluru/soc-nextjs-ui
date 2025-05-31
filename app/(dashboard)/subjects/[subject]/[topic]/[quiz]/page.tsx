@@ -7,7 +7,13 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle, ChevronRight } from "lucide-react"
 import { QuizInterface } from "@/components/quiz-interface"
 import { useParams } from "next/navigation"
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
 import Link from "next/link"
 
 // Define the Question interface
@@ -31,7 +37,6 @@ interface Quiz {
 }
 
 interface Subject {
-
   organization_id: number
   subject_id: number
   subject_name: string
@@ -39,7 +44,6 @@ interface Subject {
   created_by: number
   create_date_time: number
   update_date_time: number
-
 }
 
 interface Topic {
@@ -54,23 +58,23 @@ interface Topic {
 }
 
 interface quizSummary {
-  attempt_id: number,
-  question_id: number,
-  question_is_complete: boolean,
+  attempt_id: number
+  question_id: number
+  question_is_complete: boolean
   quiz_status: string
 }
 
 interface answers {
-  organization_id: number,
-  user_id: number,
-  subject_id: number,
-  topic_id: number,
-  quiz_id: number,
-  question_id: number,
-  attempt_id: number,
-  answer_text: string,
-  answer_choice_id: number,
-  submitted_at: "",
+  organization_id: number
+  user_id: number
+  subject_id: number
+  topic_id: number
+  quiz_id: number
+  question_id: number
+  attempt_id: number
+  answer_text: string
+  answer_choice_id: number
+  submitted_at: ""
   is_correct: boolean
 }
 
@@ -88,8 +92,8 @@ export default function QuizPage() {
   const subjectId = params?.subject as string
   const topicId = params?.topic as string
   const quizId = params?.quiz as string
-  let subject = null as unknown as Subject;
-  let topic = null as unknown as Topic;
+  let subject = null as unknown as Subject
+  let topic = null as unknown as Topic
   const userId = localStorage.getItem("userId")
   const organizationId = localStorage.getItem("organizationId")
 
@@ -137,12 +141,11 @@ export default function QuizPage() {
         setIsLoading(true)
         setError(null)
 
-
-
         // Get user ID from localStorage or use a default
 
-
-        const response = await api.get<Quiz>(`questions/questions/quiz-question/${userId}?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}`)
+        const response = await api.get<Quiz>(
+          `questions/questions/quiz-question/${userId}?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}`,
+        )
 
         if (!response.ok) {
           throw new Error(`API error: ${response.status}`)
@@ -151,7 +154,6 @@ export default function QuizPage() {
         if (response.data) {
           console.log(response.data)
           setQuiz(response.data)
-
         } else {
           throw new Error("No quiz data received")
         }
@@ -171,8 +173,6 @@ export default function QuizPage() {
   //     try {
   //       setIsLoading(true)
   //       setError(null)
-
-
 
   //       // Get user ID from localStorage or use a default
   //       const userId = localStorage.getItem("userId")
@@ -230,7 +230,6 @@ export default function QuizPage() {
   //           }
   //         }
 
-
   //       } else {
   //         throw new Error("No quiz data received")
   //       }
@@ -247,18 +246,19 @@ export default function QuizPage() {
 
   // }, [])
 
-
   useEffect(() => {
-    let isMounted = true;
+    let isMounted = true
     const fetchQuizProgressExists = async () => {
       try {
-        if (!isMounted) return;
+        if (!isMounted) return
 
         setIsLoading(true)
         setError(null)
 
         const userId = localStorage.getItem("userId")
-        const response = await api.get<any>(`user-quiz-progress/quiz-progress/${userId}/exists?subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`)
+        const response = await api.get<any>(
+          `user-quiz-progress/quiz-progress/${userId}/exists?subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
+        )
 
         if (!response.ok) throw new Error(`API error: ${response.status}`)
 
@@ -266,6 +266,7 @@ export default function QuizPage() {
           setIsQuizExists(response.data.exists)
 
           if (!response.data.exists) {
+            // Create new quiz attempt and progress if it doesn't exist
             const quizAttemptPayload = {
               organization_id: organizationId,
               user_id: userId,
@@ -277,7 +278,7 @@ export default function QuizPage() {
               is_complete: false,
               is_correct: false,
               is_ai_assisted: false,
-              completion_time_seconds: 0
+              completion_time_seconds: 0,
             }
 
             const quizProgressPayload = {
@@ -290,49 +291,48 @@ export default function QuizPage() {
               latest_score: 0,
               best_score: 0,
               attempts_count: 1,
-              completion_time_seconds: 0
+              completion_time_seconds: 0,
             }
 
             const response1 = await api.post<any>(`user-quiz-attempts/quiz-attempts/`, quizAttemptPayload)
             const response2 = await api.post<any>(`user-quiz-progress/quiz-progress/`, quizProgressPayload)
 
             if (response1.ok && response2.ok) {
-              console.log(response1.data, response2.data)
+              console.log("New quiz attempt created")
+              setCurrentquestionId(1)
+              setAttemptId(1)
             }
-          }
-          else {
+          } else {
+            // If quiz exists, fetch the latest question and attempt
             try {
-              const quizResponse = await api.get<quizSummary>(`user-quiz-progress/quiz-progress/${userId}/latest-summary?subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`)
+              const quizResponse = await api.get<quizSummary>(
+                `user-quiz-progress/quiz-progress/${userId}/latest-summary?subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
+              )
 
-              if (quizResponse.ok) {
-                console.log(quizResponse.data)
-                //here we get question_id and attempt_id
+              if (quizResponse.ok && quizResponse.data) {
+                console.log("Retrieved quiz progress:", quizResponse.data)
                 setCurrentquestionId(quizResponse.data.question_id)
                 setAttemptId(quizResponse.data.attempt_id)
-                const quizStatus = quizResponse.data.quiz_status;
 
+                // Check if we need to fetch previous answers
+                if (quizResponse.data.question_id > 1) {
+                  try {
+                    const answersResponse = await api.get<answers>(
+                      `/quizzes/quizzes/answers/${userId}?subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}&question_id=${quizResponse.data.question_id}&attempt_id=${quizResponse.data.attempt_id}`,
+                    )
 
-                try {
-                  const response = await api.get<answers>(`/quizzes/quizzes/answers/${userId}?subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${topicId}&question_id=${currentquestionId}&attempt_id=${quizResponse.data.attempt_id}`);
-                  if ((response).ok) {
-                    console.log("User quiz attempt updated successfully")
-
-
+                    if (answersResponse.ok) {
+                      console.log("Retrieved previous answers")
+                    }
+                  } catch (error) {
+                    console.error("Error fetching previous answers:", error)
                   }
                 }
-                catch (error) {
-                  console.error("Error sending message:", error)
-                }
-
-
-                // navigate user to currentquestion if quiz status is completed
-
               } else {
                 throw new Error("Failed to fetch quiz data")
               }
-            }
-            catch (error) {
-              console.error("Error fetching quiz:", error)
+            } catch (error) {
+              console.error("Error fetching quiz summary:", error)
               setError(error instanceof Error ? error.message : "Failed to load quiz")
             }
           }
@@ -340,7 +340,7 @@ export default function QuizPage() {
           throw new Error("No quiz data received")
         }
       } catch (error) {
-        console.error("Error fetching quiz:", error)
+        console.error("Error fetching quiz progress:", error)
         setError(error instanceof Error ? error.message : "Failed to load quiz")
       } finally {
         if (isMounted) setIsLoading(false)
@@ -350,10 +350,9 @@ export default function QuizPage() {
     fetchQuizProgressExists()
 
     return () => {
-      isMounted = false;
-    };
-  }, []);
-
+      isMounted = false
+    }
+  }, [])
 
   if (isLoading) {
     return (
@@ -441,7 +440,9 @@ export default function QuizPage() {
               <ChevronRight className="h-4 w-4" />
             </BreadcrumbSeparator>
             <BreadcrumbItem>
-              <BreadcrumbLink className="text-white" href={`/subjects/${subjectId}/${topicId}`}>{topicName}</BreadcrumbLink>
+              <BreadcrumbLink className="text-white" href={`/subjects/${subjectId}/${topicId}`}>
+                {topicName}
+              </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator>
               <ChevronRight className="h-4 w-4" />
@@ -452,7 +453,13 @@ export default function QuizPage() {
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-      <QuizInterface questionId={currentquestionId?.toString()} attemptId={attemptId} quizId={quizId} subjectId={subjectId} topicId={topicId} />
+      <QuizInterface
+        questionId={currentquestionId?.toString()}
+        attemptId={attemptId}
+        quizId={quizId}
+        subjectId={subjectId}
+        topicId={topicId}
+      />
     </div>
   )
 }
