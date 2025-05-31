@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import { use, useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AlertCircle, LinkIcon } from "lucide-react"
@@ -34,11 +34,13 @@ export function QuizInterface({
   questionId,
   subjectId,
   topicId,
+  attemptId,
 }: {
   quizId: string
   questionId?: string
   subjectId?: string
   topicId?: string
+  attemptId?: number | null
 }) {
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [isAnswerChecked, setIsAnswerChecked] = useState(false)
@@ -66,6 +68,8 @@ export function QuizInterface({
   const userId = localStorage.getItem("userId");
   const organizationId = localStorage.getItem("organizationId");
 
+
+
   const handleOptionSelect = (optionId: number) => {
     setSelectedOption(optionId)
     setIsAnswerChecked(false)
@@ -78,29 +82,76 @@ export function QuizInterface({
 
     setIsCorrect(selectedOptionData?.is_correct || false)
 
-
     try {
-      const payload = {
+      const checkAnswerPayload = {
         organization_id: organizationId,
         user_id: userId,
         subject_id: subjectId,
         topic_id: topicId,
-        quiz_id: quizId,
+        quiz_id: topicId,
         question_id: currentQuestionId,
-        attempt_id: 1,
-        is_complete: false,
-        is_correct: selectedOptionData?.is_correct || false,
-        is_ai_assisted: false,
-        completion_time_seconds: 0
+        attempt_id: attemptId,
+        answer_text: "",
+        answer_choice_id: selectedOptionData?.quiz_question_option_id,
+        is_correct: selectedOptionData?.is_correct || false
       }
-      const response = await api.patch(`/user-quiz-attempts/quiz-attempts/`, payload);
 
+      const response = await api.post(`/quizzes/quizzes/answers`, checkAnswerPayload)
       if (response.ok) {
         console.log("User quiz attempt updated successfully")
       }
-    } catch (error) {
-      console.error("Error sending message:", error)
+
     }
+    catch (error) {
+      console.error("Error updating user quiz attempt:", error)
+    }
+
+    if (selectedOptionData?.quiz_question_option_id) {
+      try {
+        const payload = {
+          organization_id: organizationId,
+          user_id: userId,
+          subject_id: subjectId,
+          topic_id: topicId,
+          quiz_id: quizId,
+          question_id: currentQuestionId,
+          attempt_id: 1,
+          is_complete: false,
+          is_correct: selectedOptionData?.is_correct || false,
+          is_ai_assisted: false,
+          completion_time_seconds: 0
+        }
+
+        const quizProgressPayload = {
+          organization_id: organizationId,
+          user_id: userId,
+          subject_id: subjectId,
+          topic_id: topicId,
+          quiz_id: quizId,
+          is_complete: false,
+          latest_score: 0,
+          best_score: 0,
+          attempts_count: 1,
+          completion_time_seconds: 0
+        }
+        const response = await api.patch(`/user-quiz-attempts/quiz-attempts/`, payload);
+
+        const response2 = await api.patch<any>(`user-quiz-progress/quiz-progress/`, quizProgressPayload)
+
+        if (response.ok) {
+          console.log("User quiz attempt updated successfully")
+        }
+
+        if (response2.ok) {
+          console.log("User quiz progress created successfully")
+        }
+
+
+      } catch (error) {
+        console.error("Error sending message:", error)
+      }
+    }
+
 
 
     setIsAnswerChecked(true)
@@ -161,7 +212,8 @@ export function QuizInterface({
           onOptionSelect={handleOptionSelect}
           onNavigate={navigateToQuestion}
           onSubmit={checkAnswer}
-          onQuestionSelect={(questionId) => {
+          onQuestionSelect={async (questionId) => {
+
             resetChat()
             setCurrentQuestionId(questionId)
             setSelectedOption(null)

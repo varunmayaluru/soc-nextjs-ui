@@ -54,11 +54,25 @@ interface Topic {
 }
 
 interface quizSummary {
-    attempt_id: number,
-    question_id: number,
-    question_is_complete: boolean,
-    quiz_status: string
-  }
+  attempt_id: number,
+  question_id: number,
+  question_is_complete: boolean,
+  quiz_status: string
+}
+
+interface answers {
+  organization_id: number,
+  user_id: number,
+  subject_id: number,
+  topic_id: number,
+  quiz_id: number,
+  question_id: number,
+  attempt_id: number,
+  answer_text: string,
+  answer_choice_id: number,
+  submitted_at: "",
+  is_correct: boolean
+}
 
 export default function QuizPage() {
   const [quiz, setQuiz] = useState<Quiz | null>(null)
@@ -67,6 +81,8 @@ export default function QuizPage() {
   const [subjectName, setSubjectName] = useState<string>("")
   const [topicName, setTopicName] = useState<string>("")
   const [isQuizExists, setIsQuizExists] = useState(false)
+  const [attemptId, setAttemptId] = useState<number | null>(null)
+  const [currentquestionId, setCurrentquestionId] = useState<number | null>(1)
 
   const params = useParams()
   const subjectId = params?.subject as string
@@ -135,6 +151,7 @@ export default function QuizPage() {
         if (response.data) {
           console.log(response.data)
           setQuiz(response.data)
+
         } else {
           throw new Error("No quiz data received")
         }
@@ -236,18 +253,18 @@ export default function QuizPage() {
     const fetchQuizProgressExists = async () => {
       try {
         if (!isMounted) return;
-  
+
         setIsLoading(true)
         setError(null)
-  
+
         const userId = localStorage.getItem("userId")
         const response = await api.get<any>(`user-quiz-progress/quiz-progress/${userId}/exists?subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`)
-  
+
         if (!response.ok) throw new Error(`API error: ${response.status}`)
-  
+
         if (response.data) {
           setIsQuizExists(response.data.exists)
-  
+
           if (!response.data.exists) {
             const quizAttemptPayload = {
               organization_id: organizationId,
@@ -262,7 +279,7 @@ export default function QuizPage() {
               is_ai_assisted: false,
               completion_time_seconds: 0
             }
-  
+
             const quizProgressPayload = {
               organization_id: organizationId,
               user_id: userId,
@@ -275,24 +292,39 @@ export default function QuizPage() {
               attempts_count: 1,
               completion_time_seconds: 0
             }
-  
+
             const response1 = await api.post<any>(`user-quiz-attempts/quiz-attempts/`, quizAttemptPayload)
             const response2 = await api.post<any>(`user-quiz-progress/quiz-progress/`, quizProgressPayload)
-  
+
             if (response1.ok && response2.ok) {
               console.log(response1.data, response2.data)
             }
           }
-          else{
+          else {
             try {
               const quizResponse = await api.get<quizSummary>(`user-quiz-progress/quiz-progress/${userId}/latest-summary?subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`)
-  
+
               if (quizResponse.ok) {
                 console.log(quizResponse.data)
-                 //here we get question_id and attempt_id
-                const currentQuestionId = quizResponse.data.question_id;
-                const attemptId = quizResponse.data.attempt_id;
+                //here we get question_id and attempt_id
+                setCurrentquestionId(quizResponse.data.question_id)
+                setAttemptId(quizResponse.data.attempt_id)
                 const quizStatus = quizResponse.data.quiz_status;
+
+
+                try {
+                  const response = await api.get<answers>(`/quizzes/quizzes/answers/${userId}?subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${topicId}&question_id=${currentquestionId}&attempt_id=${quizResponse.data.attempt_id}`);
+                  if ((response).ok) {
+                    console.log("User quiz attempt updated successfully")
+
+
+                  }
+                }
+                catch (error) {
+                  console.error("Error sending message:", error)
+                }
+
+
                 // navigate user to currentquestion if quiz status is completed
 
               } else {
@@ -314,14 +346,14 @@ export default function QuizPage() {
         if (isMounted) setIsLoading(false)
       }
     }
-  
+
     fetchQuizProgressExists()
-  
+
     return () => {
       isMounted = false;
     };
   }, []);
-  
+
 
   if (isLoading) {
     return (
@@ -420,7 +452,7 @@ export default function QuizPage() {
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-      <QuizInterface quizId={quizId} subjectId={subjectId} topicId={topicId} />
+      <QuizInterface questionId={currentquestionId?.toString()} attemptId={attemptId} quizId={quizId} subjectId={subjectId} topicId={topicId} />
     </div>
   )
 }
