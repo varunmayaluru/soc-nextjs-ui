@@ -19,6 +19,7 @@ interface Question {
 }
 
 interface QuestionPanelProps {
+  quizStatus: boolean
   question: Question
   currentQuestionId: number | null
   totalQuestions: number
@@ -33,6 +34,7 @@ interface QuestionPanelProps {
 }
 
 export function QuestionPanel({
+  quizStatus,
   question,
   currentQuestionId,
   totalQuestions,
@@ -185,13 +187,22 @@ export function QuestionPanel({
           Skip
         </Button>
 
-        {!isAnswerChecked && !isCorrect && (
+        {!isAnswerChecked && !isCorrect && !quizStatus && (
           <Button
             className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 disabled:opacity-50"
             onClick={onSubmit}
             disabled={selectedOption === null}
           >
             SUBMIT
+          </Button>
+        )}
+
+        {quizStatus && (
+          <Button
+            className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6"
+          //  onClick={() => onRetake()}
+          >
+            Re Take
           </Button>
         )}
 

@@ -37,12 +37,14 @@ interface ExistingAnswer {
 }
 
 export function QuizInterface({
+  quizStatus,
   quizId,
   questionId,
   subjectId,
   topicId,
   attemptId,
 }: {
+  quizStatus: boolean
   quizId: string
   questionId?: string
   subjectId?: string
@@ -53,8 +55,8 @@ export function QuizInterface({
   const [isAnswerChecked, setIsAnswerChecked] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
   const [currentQuestionId, setCurrentQuestionId] = useState<number | null>(1)
-  const [totalQuestions] = useState(10)
   const [isLoadingAnswer, setIsLoadingAnswer] = useState(false)
+  const [totalQuestions, setTotalQuestions] = useState(0)
 
   const { question, loading, error, fetchQuestion } = useQuizQuestion({
     quizId,
@@ -110,7 +112,23 @@ export function QuizInterface({
     }
   }
 
+
+  const quizData = async () => {
+    try {
+      const response = await api.get<any>(`/quizzes/quizzes/${quizId}`)
+      if (response.ok) {
+        const data = response.data
+        setTotalQuestions(data?.total_questions)
+      } else {
+        throw new Error("Failed to fetch quiz data")
+      }
+    } catch (error) {
+      console.error("Error fetching quiz data:", error)
+    }
+  }
+
   useEffect(() => {
+    quizData()
     const loadQuestionAndAnswer = async () => {
       await fetchQuestion()
       // Load existing answer after question is fetched
@@ -277,6 +295,7 @@ export function QuizInterface({
     <div className="mx-auto bg-white">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
         <QuestionPanel
+          quizStatus={quizStatus}
           question={question}
           currentQuestionId={currentQuestionId}
           totalQuestions={totalQuestions}

@@ -87,6 +87,7 @@ export default function QuizPage() {
   const [isQuizExists, setIsQuizExists] = useState(false)
   const [attemptId, setAttemptId] = useState<number | null>(null)
   const [currentquestionId, setCurrentquestionId] = useState<number | null>(1)
+  const [quizStatus, setQuizStatus] = useState<boolean>(false)
 
   const params = useParams()
   const subjectId = params?.subject as string
@@ -311,6 +312,11 @@ export default function QuizPage() {
 
               if (quizResponse.ok && quizResponse.data) {
                 console.log("Retrieved quiz progress:", quizResponse.data)
+                if (quizResponse.data.quiz_status === "completed") {
+                  setQuizStatus(true)
+                } else {
+                  setQuizStatus(false)
+                }
                 setCurrentquestionId(quizResponse.data.question_id)
                 setAttemptId(quizResponse.data.attempt_id)
 
@@ -454,6 +460,7 @@ export default function QuizPage() {
         </Breadcrumb>
       </div>
       <QuizInterface
+        quizStatus={quizStatus}
         questionId={currentquestionId?.toString()}
         attemptId={attemptId}
         quizId={quizId}
