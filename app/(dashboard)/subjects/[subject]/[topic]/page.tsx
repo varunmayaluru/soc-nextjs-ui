@@ -167,26 +167,26 @@ export default function TopicPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link className="text-white" href="/">
+                <Link className="text-white text-md font-semibold" href="/">
                   Home
                 </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator>
-              <ChevronRight className="h-4 w-4" />
+              {/* <ChevronRight className="h-4 w-4" /> */}
             </BreadcrumbSeparator>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link className="text-white" href={`/subjects/${subjectId}`}>
+                <Link className="text-white text-md font-semibold" href={`/subjects/${subjectId}`}>
                   {subjectName}
                 </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator>
-              <ChevronRight className="h-4 w-4" />
+              {/* <ChevronRight className="h-4 w-4" /> */}
             </BreadcrumbSeparator>
             <BreadcrumbItem>
-              <BreadcrumbLink className="text-white" href={`/subjects/${subjectId}`}>{topicName}</BreadcrumbLink>
+              <BreadcrumbLink className="text-white text-md font-semibold" href={`/subjects/${topicId}`}>{topicName}</BreadcrumbLink>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>

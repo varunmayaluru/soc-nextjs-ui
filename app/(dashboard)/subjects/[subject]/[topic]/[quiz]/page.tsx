@@ -15,6 +15,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
+import { set } from "date-fns"
 
 // Define the Question interface
 interface Question {
@@ -84,6 +85,7 @@ export default function QuizPage() {
   const [error, setError] = useState<string | null>(null)
   const [subjectName, setSubjectName] = useState<string>("")
   const [topicName, setTopicName] = useState<string>("")
+  const [quizName, setQuizName] = useState<string>("")
   const [isQuizExists, setIsQuizExists] = useState(false)
   const [attemptId, setAttemptId] = useState<number | null>(null)
   const [currentquestionId, setCurrentquestionId] = useState<number | null>(1)
@@ -137,6 +139,27 @@ export default function QuizPage() {
   }, [topicId])
 
   useEffect(() => {
+    const fetchQuizName = async () => {
+      try {
+        const response = await api.get<Quiz>(`/quizzes/quizzes/${quizId}`)
+
+        if (response.ok) {
+          const data = response.data
+          setQuizName(data.title)
+        } else {
+          throw new Error("Failed to fetch quiz name")
+        }
+      }
+
+      catch (error) {
+        console.error("Error fetching quiz name:", error)
+      }
+    }
+
+    fetchQuizName()
+  }, [quizId])
+
+  useEffect(() => {
     const fetchQuiz = async () => {
       try {
         setIsLoading(true)
@@ -145,7 +168,7 @@ export default function QuizPage() {
         // Get user ID from localStorage or use a default
 
         const response = await api.get<Quiz>(
-          `questions/questions/quiz-question/${userId}?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}`,
+          `questions/questions/quiz-question/1?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}`,
         )
 
         if (!response.ok) {
@@ -312,12 +335,18 @@ export default function QuizPage() {
 
               if (quizResponse.ok && quizResponse.data) {
                 console.log("Retrieved quiz progress:", quizResponse.data)
-                if (quizResponse.data.quiz_status === "completed") {
+                if (quizResponse.data.quiz_status === "complete") {
                   setQuizStatus(true)
+                  setCurrentquestionId(quizResponse.data.question_id)
+                  // setAttemptId(quizResponse.data.attempt_id + 1)
+
                 } else {
                   setQuizStatus(false)
+                  setCurrentquestionId(quizResponse.data.question_id + 1)
+                  // setAttemptId(quizResponse.data.attempt_id + 1)
+
                 }
-                setCurrentquestionId(quizResponse.data.question_id)
+
                 setAttemptId(quizResponse.data.attempt_id)
 
                 // Check if we need to fetch previous answers
@@ -422,43 +451,7 @@ export default function QuizPage() {
 
   return (
     <div>
-      <div className="bg-[#1e74bb] text-white px-8 py-6 relative">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link className="text-white" href="/">
-                  Home
-                </Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator>
-              <ChevronRight className="h-4 w-4" />
-            </BreadcrumbSeparator>
-            <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link className="text-white" href={`/subjects/${subjectId}`}>
-                  {subjectName}
-                </Link>
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator>
-              <ChevronRight className="h-4 w-4" />
-            </BreadcrumbSeparator>
-            <BreadcrumbItem>
-              <BreadcrumbLink className="text-white" href={`/subjects/${subjectId}/${topicId}`}>
-                {topicName}
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator>
-              <ChevronRight className="h-4 w-4" />
-            </BreadcrumbSeparator>
-            <BreadcrumbItem>
-              <BreadcrumbLink className="text-white">questions</BreadcrumbLink>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </div>
+
       <QuizInterface
         quizStatus={quizStatus}
         questionId={currentquestionId?.toString()}
@@ -466,6 +459,9 @@ export default function QuizPage() {
         quizId={quizId}
         subjectId={subjectId}
         topicId={topicId}
+        subjectName={subjectName}
+        topicName={topicName}
+        quizName={quizName}
       />
     </div>
   )

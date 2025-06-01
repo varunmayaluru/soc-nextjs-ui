@@ -37,6 +37,9 @@ interface ExistingAnswer {
 }
 
 export function QuizInterface({
+  subjectName,
+  topicName,
+  quizName,
   quizStatus,
   quizId,
   questionId,
@@ -44,6 +47,9 @@ export function QuizInterface({
   topicId,
   attemptId,
 }: {
+  subjectName: string
+  topicName: string
+  quizName: string
   quizStatus: boolean
   quizId: string
   questionId?: string
@@ -54,7 +60,7 @@ export function QuizInterface({
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [isAnswerChecked, setIsAnswerChecked] = useState(false)
   const [isCorrect, setIsCorrect] = useState(false)
-  const [currentQuestionId, setCurrentQuestionId] = useState<number | null>(1)
+  const [currentQuestionId, setCurrentQuestionId] = useState<number | null>(Number(questionId))
   const [isLoadingAnswer, setIsLoadingAnswer] = useState(false)
   const [totalQuestions, setTotalQuestions] = useState(0)
 
@@ -77,6 +83,14 @@ export function QuizInterface({
 
   const userId = localStorage.getItem("userId")
   const organizationId = localStorage.getItem("organizationId")
+
+
+  useEffect(() => {
+    setCurrentQuestionId(Number(questionId))
+    setSelectedOption(null)
+    setIsAnswerChecked(false)
+    setIsCorrect(false)
+  }, [questionId])
 
   const loadExistingAnswer = async (questionIdToLoad?: number) => {
     const targetQuestionId = questionIdToLoad || currentQuestionId
@@ -138,6 +152,17 @@ export function QuizInterface({
     loadQuestionAndAnswer()
   }, [quizId, questionId, currentQuestionId, subjectId, topicId])
 
+  useEffect(() => {
+    quizData()
+    const loadQuestionAndAnswer = async () => {
+      await fetchQuestion()
+      // Load existing answer after question is fetched
+      await loadExistingAnswer()
+    }
+
+    loadQuestionAndAnswer()
+  }, [questionId])
+
   const handleOptionSelect = (optionId: number) => {
     if (isAnswerChecked) return // Prevent changing answer if already submitted
     setSelectedOption(optionId)
@@ -179,7 +204,7 @@ export function QuizInterface({
           quiz_id: quizId,
           question_id: currentQuestionId,
           attempt_id: attemptId || 1,
-          is_complete: false,
+          is_complete: true,
           is_correct: selectedOptionData?.is_correct || false,
           is_ai_assisted: messages.length > 0,
           completion_time_seconds: 0,
@@ -190,6 +215,12 @@ export function QuizInterface({
           console.log("Quiz attempt updated successfully")
         }
 
+        let isComplete = false;
+
+        if (currentQuestionId === totalQuestions) {
+          isComplete = true
+        }
+
         // Update overall quiz progress
         const quizProgressPayload = {
           organization_id: organizationId,
@@ -197,7 +228,7 @@ export function QuizInterface({
           subject_id: subjectId,
           topic_id: topicId,
           quiz_id: quizId,
-          is_complete: false,
+          is_complete: isComplete,
           latest_score: 0,
           best_score: 0,
           attempts_count: 1,
@@ -226,6 +257,10 @@ export function QuizInterface({
     const newQuestionId = direction === "next" ? currentQuestionId + 1 : currentQuestionId - 1
 
     if (newQuestionId < 1 || newQuestionId > totalQuestions) return
+
+    setCurrentQuestionId(newQuestionId)
+
+
 
     try {
       // Reset chat when changing questions
@@ -295,6 +330,12 @@ export function QuizInterface({
     <div className="mx-auto bg-white">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
         <QuestionPanel
+          subjectName={subjectName}
+          topicName={topicName}
+          quizName={quizName}
+          subjectId={subjectId || ""}
+          topicId={topicId || ""}
+          quizId={quizId}
           quizStatus={quizStatus}
           question={question}
           currentQuestionId={currentQuestionId}

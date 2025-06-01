@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { Bot, ImageIcon, PencilIcon, Send, Loader2 } from "lucide-react"
+import { Bot, ImageIcon, PencilIcon, Send, Loader2, Brain } from "lucide-react"
 import { MathInputHelper } from "@/components/math-input-helper"
 import { ChatMessage } from "./chat-message"
 import { TypingIndicator } from "./typing-indicator"
@@ -151,10 +151,10 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
   return (
     <div
       className="bg-white border-l border-gray-200 flex flex-col overflow-hidden"
-      style={{ height: "calc(100vh - 342px)" }}
+      style={{ height: "calc(100vh - 224px)" }}
     >
       {/* Chat header */}
-      <div className="p-4 border-b border-gray-200 bg-gray-50">
+      <div className="p-3 border-b border-gray-200 bg-gray-100">
         <h3 className="font-semibold text-gray-800">Learning Assistant</h3>
         <p className="text-sm text-gray-600">
           {disabled ? "Answer the question to start learning" : "Ask questions to understand the concept better"}
@@ -170,6 +170,9 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
         {messages.length === 0 && !disabled && (
           <div className="text-center text-gray-500 py-8">
             <Bot className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            {/* <Brain className="h-12 w-12 mx-auto mb-4 text-gray-300" /> */}
+
+
             <p>I'm here to help you understand the concepts better.</p>
             <p className="text-sm mt-2">Answer the question incorrectly to start our conversation!</p>
           </div>

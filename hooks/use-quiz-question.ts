@@ -46,7 +46,8 @@ export function useQuizQuestion({
     setError(null);
 
     try {
-      const id = questionId || currentQuestionId?.toString() || "1";
+      console.log("Fetching question with ID:", questionId);
+      const id = currentQuestionId?.toString();
       const endpoint = `/questions/questions/quiz-question/${id}?quiz_id=${quizId}&subject_id=${
         subjectId || 1
       }&topic_id=${topicId || 1}`;
