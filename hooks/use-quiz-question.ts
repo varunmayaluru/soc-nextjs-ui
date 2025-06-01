@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api-client";
 
 interface Option {
@@ -41,39 +41,57 @@ export function useQuizQuestion({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchQuestion = async () => {
-    setLoading(true);
-    setError(null);
+  const fetchQuestion = useCallback(
+    async (questionIdToFetch?: number) => {
+      const targetQuestionId = questionIdToFetch || currentQuestionId;
 
-    try {
-      console.log("Fetching question with ID:", questionId);
-      const id = currentQuestionId?.toString();
-      const endpoint = `/questions/questions/quiz-question/${id}?quiz_id=${quizId}&subject_id=${
-        subjectId || 1
-      }&topic_id=${topicId || 1}`;
-
-      const response = await api.get<Question>(endpoint);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch question: ${response.status}`);
+      if (!targetQuestionId) {
+        setError("No question ID provided");
+        setLoading(false);
+        return;
       }
 
-      if (!response.data) {
-        throw new Error("No question data received");
-      }
+      setLoading(true);
+      setError(null);
 
-      setQuestion(response.data);
-    } catch (err) {
-      console.error("Error fetching question:", err);
-      setError("Failed to load question. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      try {
+        console.log("Fetching question with ID:", targetQuestionId);
+        const endpoint = `/questions/questions/quiz-question/${targetQuestionId}?quiz_id=${quizId}&subject_id=${
+          subjectId || 1
+        }&topic_id=${topicId || 1}`;
+
+        const response = await api.get<Question>(endpoint);
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch question: ${response.status}`);
+        }
+
+        if (!response.data) {
+          throw new Error("No question data received");
+        }
+
+        setQuestion(response.data);
+        console.log("Question fetched successfully:", response.data);
+      } catch (err) {
+        console.error("Error fetching question:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load question. Please try again."
+        );
+        setQuestion(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [quizId, subjectId, topicId, currentQuestionId]
+  );
 
   useEffect(() => {
-    fetchQuestion();
-  }, [quizId, questionId, currentQuestionId, subjectId, topicId]);
+    if (currentQuestionId) {
+      fetchQuestion(currentQuestionId);
+    }
+  }, [currentQuestionId, fetchQuestion]);
 
   return {
     question,

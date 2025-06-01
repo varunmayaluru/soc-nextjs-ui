@@ -46,6 +46,7 @@ export function QuizInterface({
   subjectId,
   topicId,
   attemptId,
+  setQuizStatus,
 }: {
   subjectName: string
   topicName: string
@@ -56,6 +57,7 @@ export function QuizInterface({
   subjectId?: string
   topicId?: string
   attemptId?: number | null
+  setQuizStatus: (status: boolean) => void
 }) {
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [isAnswerChecked, setIsAnswerChecked] = useState(false)
@@ -83,7 +85,6 @@ export function QuizInterface({
 
   const userId = localStorage.getItem("userId")
   const organizationId = localStorage.getItem("organizationId")
-
 
   useEffect(() => {
     setCurrentQuestionId(Number(questionId))
@@ -126,7 +127,6 @@ export function QuizInterface({
     }
   }
 
-
   const quizData = async () => {
     try {
       const response = await api.get<any>(`/quizzes/quizzes/${quizId}`)
@@ -142,26 +142,15 @@ export function QuizInterface({
   }
 
   useEffect(() => {
-    quizData()
-    const loadQuestionAndAnswer = async () => {
-      await fetchQuestion()
-      // Load existing answer after question is fetched
-      await loadExistingAnswer()
+    const initializeQuizData = async () => {
+      await quizData()
+      if (currentQuestionId) {
+        await loadExistingAnswer(currentQuestionId)
+      }
     }
 
-    loadQuestionAndAnswer()
-  }, [quizId, questionId, currentQuestionId, subjectId, topicId])
-
-  useEffect(() => {
-    quizData()
-    const loadQuestionAndAnswer = async () => {
-      await fetchQuestion()
-      // Load existing answer after question is fetched
-      await loadExistingAnswer()
-    }
-
-    loadQuestionAndAnswer()
-  }, [questionId])
+    initializeQuizData()
+  }, [currentQuestionId])
 
   const handleOptionSelect = (optionId: number) => {
     if (isAnswerChecked) return // Prevent changing answer if already submitted
@@ -213,13 +202,12 @@ export function QuizInterface({
         const attemptResponse = await api.patch(`/user-quiz-attempts/quiz-attempts/`, payload)
         if (attemptResponse.ok) {
           console.log("Quiz attempt updated successfully")
+        } else {
+          console.error("Failed to update quiz attempt:", attemptResponse.status)
         }
 
-        let isComplete = false;
-
-        if (currentQuestionId === totalQuestions) {
-          isComplete = true
-        }
+        // Check if this is the last question to determine if the quiz is complete
+        const isComplete = currentQuestionId === totalQuestions
 
         // Update overall quiz progress
         const quizProgressPayload = {
@@ -229,8 +217,8 @@ export function QuizInterface({
           topic_id: topicId,
           quiz_id: quizId,
           is_complete: isComplete,
-          latest_score: 0,
-          best_score: 0,
+          latest_score: 0, // This should be calculated based on correct answers
+          best_score: 0, // This should be updated if this is a better score
           attempts_count: 1,
           completion_time_seconds: 0,
         }
@@ -238,7 +226,16 @@ export function QuizInterface({
         const progressResponse = await api.patch(`user-quiz-progress/quiz-progress/`, quizProgressPayload)
         if (progressResponse.ok) {
           console.log("Quiz progress updated successfully")
+
+          // If this is the last question and the quiz is now complete, update the UI
+          if (isComplete) {
+            setQuizStatus(true)
+          }
+        } else {
+          console.error("Failed to update quiz progress:", progressResponse.status)
         }
+      } else {
+        console.error("Failed to save answer:", response.status)
       }
     } catch (error) {
       console.error("Error updating quiz progress:", error)
@@ -258,15 +255,17 @@ export function QuizInterface({
 
     if (newQuestionId < 1 || newQuestionId > totalQuestions) return
 
-    setCurrentQuestionId(newQuestionId)
-
-
-
     try {
-      // Reset chat when changing questions
+      // Reset chat and UI state immediately
       resetChat()
+      setSelectedOption(null)
+      setIsAnswerChecked(false)
+      setIsCorrect(false)
+
+      // Update the current question ID first
       setCurrentQuestionId(newQuestionId)
 
+      // Create a new quiz attempt for this question if it doesn't exist
       const quizAttemptPayload = {
         organization_id: organizationId,
         user_id: userId,
@@ -284,13 +283,15 @@ export function QuizInterface({
       const response = await api.post<any>(`user-quiz-attempts/quiz-attempts/`, quizAttemptPayload)
 
       if (response.ok) {
-        console.log("Quiz attempt created successfully")
+        console.log("Quiz attempt created successfully for question:", newQuestionId)
+      } else {
+        console.error("Failed to create quiz attempt:", response.status)
       }
 
-
-
-      // Load existing answer for the new question
-      await loadExistingAnswer(newQuestionId)
+      // Load existing answer for the new question after a short delay to ensure question is loaded
+      setTimeout(() => {
+        loadExistingAnswer(newQuestionId)
+      }, 100)
     } catch (error) {
       console.error("Error navigating to question:", error)
     }
@@ -298,10 +299,17 @@ export function QuizInterface({
 
   const handleQuestionSelect = async (questionId: number) => {
     resetChat()
+    setSelectedOption(null)
+    setIsAnswerChecked(false)
+    setIsCorrect(false)
+
+    // Update the current question ID
     setCurrentQuestionId(questionId)
 
-    // Load existing answer for the selected question
-    await loadExistingAnswer(questionId)
+    // Load existing answer for the selected question after a short delay
+    setTimeout(() => {
+      loadExistingAnswer(questionId)
+    }, 100)
   }
 
   // Generate pagination numbers
