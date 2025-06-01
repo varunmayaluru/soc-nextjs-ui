@@ -2,13 +2,21 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AlertCircle, LinkIcon } from "lucide-react"
+import { AlertCircle, LinkIcon, RotateCcw } from "lucide-react"
 import Link from "next/link"
 import { QuestionPanel } from "@/components/quiz/question-panel"
 import { ChatPanel } from "@/components/quiz/chat-panel"
 import { useQuizChat } from "@/hooks/use-quiz-chat"
 import { useQuizQuestion } from "@/hooks/use-quiz-question"
 import { api } from "@/lib/api-client"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface Option {
   quiz_question_option_id: number
@@ -36,6 +44,13 @@ interface ExistingAnswer {
   is_ai_assisted?: boolean
 }
 
+interface QuizProgress {
+  attempts_count: number
+  latest_score: number
+  best_score: number
+  is_complete: boolean
+}
+
 export function QuizInterface({
   subjectName,
   topicName,
@@ -46,6 +61,8 @@ export function QuizInterface({
   subjectId,
   topicId,
   attemptId,
+  setQuizStatus,
+  onRetakeQuiz,
 }: {
   subjectName: string
   topicName: string
@@ -56,6 +73,8 @@ export function QuizInterface({
   subjectId?: string
   topicId?: string
   attemptId?: number | null
+  setQuizStatus: (status: boolean) => void
+  onRetakeQuiz: () => void
 }) {
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [isAnswerChecked, setIsAnswerChecked] = useState(false)
@@ -63,6 +82,14 @@ export function QuizInterface({
   const [currentQuestionId, setCurrentQuestionId] = useState<number | null>(Number(questionId))
   const [isLoadingAnswer, setIsLoadingAnswer] = useState(false)
   const [totalQuestions, setTotalQuestions] = useState(0)
+  const [showRetakeDialog, setShowRetakeDialog] = useState(false)
+  const [isRetaking, setIsRetaking] = useState(false)
+  const [quizProgress, setQuizProgress] = useState<QuizProgress | null>(null)
+
+  // Timer states - hidden from UI but tracked internally
+  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now())
+  const [totalQuizTime, setTotalQuizTime] = useState<number>(0)
+  const [questionTimes, setQuestionTimes] = useState<Record<number, number>>({})
 
   const { question, loading, error, fetchQuestion } = useQuizQuestion({
     quizId,
@@ -84,13 +111,33 @@ export function QuizInterface({
   const userId = localStorage.getItem("userId")
   const organizationId = localStorage.getItem("organizationId")
 
-
   useEffect(() => {
-    setCurrentQuestionId(Number(questionId))
-    setSelectedOption(null)
-    setIsAnswerChecked(false)
-    setIsCorrect(false)
+    const newQuestionId = Number(questionId)
+    console.log("QuizInterface: questionId prop changed to:", newQuestionId)
+
+    if (newQuestionId !== currentQuestionId) {
+      setCurrentQuestionId(newQuestionId)
+      setSelectedOption(null)
+      setIsAnswerChecked(false)
+      setIsCorrect(false)
+      // Reset timer for new question
+      setQuestionStartTime(Date.now())
+    }
   }, [questionId])
+
+  const loadQuizProgress = async () => {
+    try {
+      const response = await api.get<QuizProgress>(
+        `user-quiz-progress/quiz-progress/${userId}?subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
+      )
+
+      if (response.ok && response.data) {
+        setQuizProgress(response.data)
+      }
+    } catch (error) {
+      console.error("Error loading quiz progress:", error)
+    }
+  }
 
   const loadExistingAnswer = async (questionIdToLoad?: number) => {
     const targetQuestionId = questionIdToLoad || currentQuestionId
@@ -108,12 +155,13 @@ export function QuizInterface({
         setIsAnswerChecked(true)
         setIsCorrect(response.data.is_correct)
 
-        console.log("Loaded existing answer:", response.data)
+        console.log("Loaded existing answer for question", targetQuestionId, ":", response.data)
       } else {
         // No existing answer found, reset state
         setSelectedOption(null)
         setIsAnswerChecked(false)
         setIsCorrect(false)
+        console.log("No existing answer found for question", targetQuestionId)
       }
     } catch (error) {
       console.error("Error loading existing answer:", error)
@@ -125,7 +173,6 @@ export function QuizInterface({
       setIsLoadingAnswer(false)
     }
   }
-
 
   const quizData = async () => {
     try {
@@ -142,26 +189,17 @@ export function QuizInterface({
   }
 
   useEffect(() => {
-    quizData()
-    const loadQuestionAndAnswer = async () => {
-      await fetchQuestion()
-      // Load existing answer after question is fetched
-      await loadExistingAnswer()
+    const initializeQuizData = async () => {
+      await quizData()
+      await loadQuizProgress()
+      if (currentQuestionId) {
+        console.log("Loading existing answer for question:", currentQuestionId)
+        await loadExistingAnswer(currentQuestionId)
+      }
     }
 
-    loadQuestionAndAnswer()
-  }, [quizId, questionId, currentQuestionId, subjectId, topicId])
-
-  useEffect(() => {
-    quizData()
-    const loadQuestionAndAnswer = async () => {
-      await fetchQuestion()
-      // Load existing answer after question is fetched
-      await loadExistingAnswer()
-    }
-
-    loadQuestionAndAnswer()
-  }, [questionId])
+    initializeQuizData()
+  }, [currentQuestionId])
 
   const handleOptionSelect = (optionId: number) => {
     if (isAnswerChecked) return // Prevent changing answer if already submitted
@@ -173,6 +211,18 @@ export function QuizInterface({
     if (selectedOption === null || !question || isAnswerChecked) return
 
     const selectedOptionData = question.options.find((option) => option.quiz_question_option_id === selectedOption)
+
+    // Calculate time spent on this question
+    const questionCompletionTime = Math.floor((Date.now() - questionStartTime) / 1000)
+
+    // Store question time
+    setQuestionTimes((prev) => ({
+      ...prev,
+      [currentQuestionId!]: questionCompletionTime,
+    }))
+
+    // Update total quiz time
+    setTotalQuizTime((prev) => prev + questionCompletionTime)
 
     setIsCorrect(selectedOptionData?.is_correct || false)
 
@@ -195,7 +245,7 @@ export function QuizInterface({
       if (response.ok) {
         console.log("Answer saved successfully")
 
-        // Then update the quiz attempt status
+        // Then update the quiz attempt status with completion time
         const payload = {
           organization_id: organizationId,
           user_id: userId,
@@ -207,19 +257,21 @@ export function QuizInterface({
           is_complete: true,
           is_correct: selectedOptionData?.is_correct || false,
           is_ai_assisted: messages.length > 0,
-          completion_time_seconds: 0,
+          completion_time_seconds: questionCompletionTime,
         }
 
         const attemptResponse = await api.patch(`/user-quiz-attempts/quiz-attempts/`, payload)
         if (attemptResponse.ok) {
-          console.log("Quiz attempt updated successfully")
+          console.log("Quiz attempt updated successfully with completion time:", questionCompletionTime)
+        } else {
+          console.error("Failed to update quiz attempt:", attemptResponse.status)
         }
 
-        let isComplete = false;
+        // Check if this is the last question to determine if the quiz is complete
+        const isComplete = currentQuestionId === totalQuestions
 
-        if (currentQuestionId === totalQuestions) {
-          isComplete = true
-        }
+        // Calculate total completion time for the entire quiz
+        const totalCompletionTime = isComplete ? totalQuizTime + questionCompletionTime : 0
 
         // Update overall quiz progress
         const quizProgressPayload = {
@@ -229,16 +281,26 @@ export function QuizInterface({
           topic_id: topicId,
           quiz_id: quizId,
           is_complete: isComplete,
-          latest_score: 0,
-          best_score: 0,
-          attempts_count: 1,
-          completion_time_seconds: 0,
+          latest_score: 0, // This should be calculated based on correct answers
+          best_score: 0, // This should be updated if this is a better score
+          attempts_count: quizProgress?.attempts_count || 1,
+          completion_time_seconds: totalCompletionTime,
         }
 
         const progressResponse = await api.patch(`user-quiz-progress/quiz-progress/`, quizProgressPayload)
         if (progressResponse.ok) {
           console.log("Quiz progress updated successfully")
+
+          // If this is the last question and the quiz is now complete, update the UI
+          if (isComplete) {
+            setQuizStatus(true)
+            await loadQuizProgress() // Reload progress to get updated data
+          }
+        } else {
+          console.error("Failed to update quiz progress:", progressResponse.status)
         }
+      } else {
+        console.error("Failed to save answer:", response.status)
       }
     } catch (error) {
       console.error("Error updating quiz progress:", error)
@@ -251,6 +313,79 @@ export function QuizInterface({
     }
   }
 
+  const handleRetakeQuiz = async () => {
+    setIsRetaking(true)
+    try {
+      // Calculate new attempt ID
+      const newAttemptId = (quizProgress?.attempts_count || 1) + 1
+
+      // Create new quiz attempt for question 1
+      const quizAttemptPayload = {
+        organization_id: organizationId,
+        user_id: userId,
+        subject_id: subjectId,
+        topic_id: topicId,
+        quiz_id: quizId,
+        question_id: 1,
+        attempt_id: newAttemptId,
+        is_complete: false,
+        is_correct: false,
+        is_ai_assisted: false,
+        completion_time_seconds: 0,
+      }
+
+      // Update quiz progress with incremented attempt count
+      const quizProgressPayload = {
+        organization_id: organizationId,
+        user_id: userId,
+        subject_id: subjectId,
+        topic_id: topicId,
+        quiz_id: quizId,
+        is_complete: false,
+        latest_score: 0,
+        best_score: quizProgress?.best_score || 0, // Keep the best score
+        attempts_count: newAttemptId,
+        completion_time_seconds: 0,
+      }
+
+      const [attemptResponse, progressResponse] = await Promise.all([
+        api.post(`user-quiz-attempts/quiz-attempts/`, quizAttemptPayload),
+        api.patch(`user-quiz-progress/quiz-progress/`, quizProgressPayload),
+      ])
+
+      if (attemptResponse.ok && progressResponse.ok) {
+        console.log("Quiz retake initialized successfully")
+
+        // Reset all states including timers
+        setQuizStatus(false)
+        setCurrentQuestionId(1)
+        setSelectedOption(null)
+        setIsAnswerChecked(false)
+        setIsCorrect(false)
+        setQuestionStartTime(Date.now())
+        setTotalQuizTime(0)
+        setQuestionTimes({})
+        resetChat()
+
+        // Reload quiz progress
+        await loadQuizProgress()
+
+        // Call the parent callback to update attempt ID
+        onRetakeQuiz()
+
+        setShowRetakeDialog(false)
+      } else {
+        console.error("Failed to initialize quiz retake")
+        throw new Error("Failed to initialize quiz retake")
+      }
+    } catch (error) {
+      console.error("Error retaking quiz:", error)
+      // You might want to show an error message to the user here
+    } finally {
+      setIsRetaking(false)
+    }
+  }
+
   const navigateToQuestion = async (direction: "prev" | "next") => {
     if (!currentQuestionId) return
 
@@ -258,15 +393,20 @@ export function QuizInterface({
 
     if (newQuestionId < 1 || newQuestionId > totalQuestions) return
 
-    setCurrentQuestionId(newQuestionId)
-
-
-
     try {
-      // Reset chat when changing questions
+      // Reset chat and UI state immediately
       resetChat()
+      setSelectedOption(null)
+      setIsAnswerChecked(false)
+      setIsCorrect(false)
+
+      // Reset timer for new question
+      setQuestionStartTime(Date.now())
+
+      // Update the current question ID first
       setCurrentQuestionId(newQuestionId)
 
+      // Create a new quiz attempt for this question if it doesn't exist
       const quizAttemptPayload = {
         organization_id: organizationId,
         user_id: userId,
@@ -284,13 +424,15 @@ export function QuizInterface({
       const response = await api.post<any>(`user-quiz-attempts/quiz-attempts/`, quizAttemptPayload)
 
       if (response.ok) {
-        console.log("Quiz attempt created successfully")
+        console.log("Quiz attempt created successfully for question:", newQuestionId)
+      } else {
+        console.error("Failed to create quiz attempt:", response.status)
       }
 
-
-
-      // Load existing answer for the new question
-      await loadExistingAnswer(newQuestionId)
+      // Load existing answer for the new question after a short delay to ensure question is loaded
+      setTimeout(() => {
+        loadExistingAnswer(newQuestionId)
+      }, 100)
     } catch (error) {
       console.error("Error navigating to question:", error)
     }
@@ -298,10 +440,20 @@ export function QuizInterface({
 
   const handleQuestionSelect = async (questionId: number) => {
     resetChat()
+    setSelectedOption(null)
+    setIsAnswerChecked(false)
+    setIsCorrect(false)
+
+    // Reset timer for selected question
+    setQuestionStartTime(Date.now())
+
+    // Update the current question ID
     setCurrentQuestionId(questionId)
 
-    // Load existing answer for the selected question
-    await loadExistingAnswer(questionId)
+    // Load existing answer for the selected question after a short delay
+    setTimeout(() => {
+      loadExistingAnswer(questionId)
+    }, 100)
   }
 
   // Generate pagination numbers
@@ -326,6 +478,12 @@ export function QuizInterface({
     return <QuizNotFound />
   }
 
+  // Verify we have the correct question
+  if (question.question_id !== currentQuestionId) {
+    console.warn(`Question mismatch: displaying question ${question.question_id} but should be ${currentQuestionId}`)
+    return <QuizSkeleton />
+  }
+
   return (
     <div className="mx-auto bg-white">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
@@ -348,6 +506,11 @@ export function QuizInterface({
           onNavigate={navigateToQuestion}
           onSubmit={checkAnswer}
           onQuestionSelect={handleQuestionSelect}
+          onRetakeQuiz={handleRetakeQuiz}
+          showRetakeDialog={showRetakeDialog}
+          setShowRetakeDialog={setShowRetakeDialog}
+          isRetaking={isRetaking}
+          quizProgress={quizProgress}
         />
 
         <ChatPanel
@@ -359,6 +522,37 @@ export function QuizInterface({
       </div>
 
       <RelevantLinks links={relevantLinks} />
+
+      {/* Retake Confirmation Dialog */}
+      <Dialog open={showRetakeDialog} onOpenChange={setShowRetakeDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Retake Quiz</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to retake this quiz? This will start a new attempt and your current progress will be
+              saved as attempt {quizProgress?.attempts_count || 1}.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRetakeDialog(false)} disabled={isRetaking}>
+              Cancel
+            </Button>
+            <Button onClick={handleRetakeQuiz} disabled={isRetaking} className="flex items-center gap-2">
+              {isRetaking ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Starting...
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="h-4 w-4" />
+                  Start New Attempt
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

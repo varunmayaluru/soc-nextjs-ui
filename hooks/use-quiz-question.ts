@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api-client";
 
 interface Option {
@@ -40,40 +40,103 @@ export function useQuizQuestion({
   const [question, setQuestion] = useState<Question | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastFetchedQuestionId, setLastFetchedQuestionId] = useState<
+    number | null
+  >(null);
 
-  const fetchQuestion = async () => {
-    setLoading(true);
-    setError(null);
+  const fetchQuestion = useCallback(
+    async (questionIdToFetch?: number) => {
+      const targetQuestionId = questionIdToFetch || currentQuestionId;
 
-    try {
-      console.log("Fetching question with ID:", questionId);
-      const id = currentQuestionId?.toString();
-      const endpoint = `/questions/questions/quiz-question/${id}?quiz_id=${quizId}&subject_id=${
-        subjectId || 1
-      }&topic_id=${topicId || 1}`;
-
-      const response = await api.get<Question>(endpoint);
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch question: ${response.status}`);
+      if (!targetQuestionId) {
+        setError("No question ID provided");
+        setLoading(false);
+        return;
       }
 
-      if (!response.data) {
-        throw new Error("No question data received");
+      // Don't fetch if we already have the correct question
+      if (
+        question &&
+        question.question_id === targetQuestionId &&
+        lastFetchedQuestionId === targetQuestionId
+      ) {
+        setLoading(false);
+        return;
       }
 
-      setQuestion(response.data);
-    } catch (err) {
-      console.error("Error fetching question:", err);
-      setError("Failed to load question. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      setLoading(true);
+      setError(null);
+
+      try {
+        console.log("Fetching question with ID:", targetQuestionId);
+        const endpoint = `/questions/questions/quiz-question/${targetQuestionId}?quiz_id=${quizId}&subject_id=${
+          subjectId || 1
+        }&topic_id=${topicId || 1}`;
+
+        const response = await api.get<Question>(endpoint);
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch question: ${response.status}`);
+        }
+
+        if (!response.data) {
+          throw new Error("No question data received");
+        }
+
+        // Verify we got the correct question
+        if (response.data.question_id !== targetQuestionId) {
+          console.warn(
+            `Question ID mismatch: requested ${targetQuestionId}, got ${response.data.question_id}. Retrying...`
+          );
+          // Retry with explicit question ID
+          const retryEndpoint = `/questions/questions/quiz-question/${targetQuestionId}?quiz_id=${quizId}&subject_id=${
+            subjectId || 1
+          }&topic_id=${topicId || 1}&force_question_id=${targetQuestionId}`;
+
+          const retryResponse = await api.get<Question>(retryEndpoint);
+          if (retryResponse.ok && retryResponse.data) {
+            setQuestion(retryResponse.data);
+            setLastFetchedQuestionId(targetQuestionId);
+            console.log(
+              "Question fetched successfully on retry:",
+              retryResponse.data
+            );
+          } else {
+            throw new Error(`Failed to fetch correct question after retry`);
+          }
+        } else {
+          setQuestion(response.data);
+          setLastFetchedQuestionId(targetQuestionId);
+          console.log("Question fetched successfully:", response.data);
+        }
+      } catch (err) {
+        console.error("Error fetching question:", err);
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load question. Please try again."
+        );
+        setQuestion(null);
+        setLastFetchedQuestionId(null);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      quizId,
+      subjectId,
+      topicId,
+      currentQuestionId,
+      question,
+      lastFetchedQuestionId,
+    ]
+  );
 
   useEffect(() => {
-    fetchQuestion();
-  }, [quizId, questionId, currentQuestionId, subjectId, topicId]);
+    if (currentQuestionId && currentQuestionId !== lastFetchedQuestionId) {
+      fetchQuestion(currentQuestionId);
+    }
+  }, [currentQuestionId, fetchQuestion, lastFetchedQuestionId]);
 
   return {
     question,
