@@ -186,7 +186,7 @@ export default function TopicPage() {
               {/* <ChevronRight className="h-4 w-4" /> */}
             </BreadcrumbSeparator>
             <BreadcrumbItem>
-              <BreadcrumbLink className="text-white text-md font-semibold" href={`/subjects/${topicId}`}>{topicName}</BreadcrumbLink>
+              <BreadcrumbLink className="text-white text-md font-semibold" href={`/subjects/topics/${topicId}`}>{topicName}</BreadcrumbLink>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>

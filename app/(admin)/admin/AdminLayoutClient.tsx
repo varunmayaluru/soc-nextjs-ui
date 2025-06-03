@@ -18,6 +18,7 @@ import {
   User,
   ChevronDown,
   Bell,
+  HelpCircle,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -219,21 +220,31 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
                   <ChevronDown className="h-4 w-4 text-gray-500" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuContent align="end" className="w-44">
+
+
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  <span>Profile</span>
+
+                <DropdownMenuItem className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile Settings</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  <span>Settings</span>
+
+
+
+                <DropdownMenuItem className="cursor-pointer">
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  <span>Help & Support</span>
                 </DropdownMenuItem>
+
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="flex items-center gap-2 text-red-600 focus:text-red-600" onClick={logout}>
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
+
+                <DropdownMenuItem
+                  className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                  onClick={logout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

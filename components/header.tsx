@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { Bell, MessageSquare, LogOut, Search } from "lucide-react"
+import { Bell, MessageSquare, LogOut, Search, HelpCircle, User } from "lucide-react"
 import { useAuth } from "./auth-provider"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -112,14 +112,14 @@ export default function Header() {
               <DropdownMenuSeparator />
 
               <DropdownMenuItem className="cursor-pointer">
+                <User className="mr-2 h-4 w-4" />
                 <span>Profile Settings</span>
               </DropdownMenuItem>
 
-              <DropdownMenuItem className="cursor-pointer">
-                <span>Account Settings</span>
-              </DropdownMenuItem>
+
 
               <DropdownMenuItem className="cursor-pointer">
+                <HelpCircle className="mr-2 h-4 w-4" />
                 <span>Help & Support</span>
               </DropdownMenuItem>
 
