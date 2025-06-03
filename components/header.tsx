@@ -34,6 +34,7 @@ export default function Header() {
       toast({
         title: "Logged out successfully",
         description: "You have been logged out of your account.",
+        variant: "success",
       })
     } catch (error) {
       toast({
@@ -102,12 +103,7 @@ export default function Header() {
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">{userName}</p>
-                  <p className="text-xs leading-none text-muted-foreground">{userInfo?.email || "user@example.com"}</p>
-                </div>
-              </DropdownMenuLabel>
+
 
               <DropdownMenuSeparator />
 

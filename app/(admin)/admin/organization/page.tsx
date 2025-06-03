@@ -1,7 +1,6 @@
 "use client"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { toast } from "@/components/ui/use-toast"
 import { api } from "@/lib/api-client"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -17,8 +16,10 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
 import { Layers, ChevronRight, Building } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
 export default function OrganizationsPage() {
+  const { toast } = useToast()
   const [orgs, setOrgs] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null)
@@ -91,6 +92,7 @@ export default function OrganizationsPage() {
         toast({
           title: "Success",
           description: "Organization created successfully.",
+          variant: "success",
         })
         fetchOrganizations() // Refresh the list
         setShowModal(false) // Ensure dialog closes
@@ -119,6 +121,7 @@ export default function OrganizationsPage() {
         toast({
           title: "Success",
           description: "Organization updated successfully.",
+          variant: "success",
         })
         fetchOrganizations() // Refresh the list
         setShowModal(false) // Ensure dialog closes
