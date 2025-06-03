@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import { QuizInterface } from "@/components/quiz-interface"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 
 // Define the Question interface
 interface Question {
@@ -83,10 +83,10 @@ export default function QuizPage() {
   const [quizStatus, setQuizStatus] = useState<boolean>(false)
   const [isInitialized, setIsInitialized] = useState(false)
 
-  const params = useParams()
-  const subjectId = params?.subject as string
-  const topicId = params?.topic as string
-  const quizId = params?.quiz as string
+  const searchParams = useSearchParams() // query params
+  const subjectId = searchParams.get("subjectId")
+  const topicId = searchParams.get("topicId")
+  const quizId = searchParams.get("quizId")
   let subject = null as unknown as Subject
   let topic = null as unknown as Topic
   const userId = localStorage.getItem("userId")
@@ -180,7 +180,7 @@ export default function QuizPage() {
     }
 
     fetchQuiz()
-  }, [params.quiz])
+  }, [quizId])
 
   useEffect(() => {
     let isMounted = true
@@ -267,6 +267,9 @@ export default function QuizPage() {
                   } else {
                     setCurrentquestionId(quizResponse.data.question_id)
                     console.log("Continuing with current question:", quizResponse.data.question_id)
+                  }
+                  if (!quizResponse.data.question_id) {
+                    setCurrentquestionId(1)
                   }
                 }
 
@@ -384,9 +387,9 @@ export default function QuizPage() {
         quizStatus={quizStatus}
         questionId={currentquestionId?.toString()}
         attemptId={attemptId}
-        quizId={quizId}
-        subjectId={subjectId}
-        topicId={topicId}
+        quizId={quizId?.toString() || ""}
+        subjectId={subjectId?.toString() || ""}
+        topicId={topicId?.toString() || ""}
         subjectName={subjectName}
         topicName={topicName}
         quizName={quizName}

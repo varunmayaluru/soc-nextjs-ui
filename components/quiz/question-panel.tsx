@@ -93,14 +93,14 @@ export function QuestionPanel({
             <BreadcrumbSeparator></BreadcrumbSeparator>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link className="text-white text-md font-semibold" href={`/subjects/${subjectId}`}>
+                <Link className="text-white text-md font-semibold" href={`/topics?subjectId=${subjectId}`}>
                   {subjectName}
                 </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator></BreadcrumbSeparator>
             <BreadcrumbItem>
-              <BreadcrumbLink className="text-white text-md font-semibold" href={`/subjects/${subjectId}/topics/${topicId}`}>
+              <BreadcrumbLink className="text-white text-md font-semibold" href={`/quizzes?topicId=${topicId}&subjectId=${subjectId}`}>
                 {topicName}
               </BreadcrumbLink>
             </BreadcrumbItem>

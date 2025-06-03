@@ -6,7 +6,7 @@ import { useEffect, useState } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -47,9 +47,8 @@ export default function SubjectPage() {
   const [error, setError] = useState<string | null>(null)
   const [subjectName, setSubjectName] = useState<string>("")
 
-  const params = useParams()
-  console.log(params)
-  const subjectId = params?.subject as string
+  const searchParams = useSearchParams() // query params
+  const subjectId = searchParams.get("subjectId")
   let subject = null as unknown as Subject;
 
   // Get subject name from the API based on subject ID
@@ -133,7 +132,7 @@ export default function SubjectPage() {
     }
 
     // Create a path using the topic_id
-    const path = `/subjects/${subjectId}/topics/${topic_id}`
+    const path = `/quizzes?topicId=${topic_id}&subjectId=${subjectId}`
 
     return { icon, color, path }
   }

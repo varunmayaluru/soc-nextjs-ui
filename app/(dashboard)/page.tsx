@@ -317,7 +317,7 @@ export default function Dashboard() {
                 </div>
 
                 <Link
-                  href={`/subjects/${subject.id}`}
+                  href={`/topics?subjectId=${subject.id}`}
                   className="inline w-40 bg-[#1e74bb] text-white py-2 px-4 rounded-md text-sm hover:bg-[#1a67a7] transition-colors flex items-center"
                 >
                   Select a topic

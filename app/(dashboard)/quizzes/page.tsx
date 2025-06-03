@@ -12,7 +12,7 @@ import {
 import { ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { type Key, useEffect, useState } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 
 interface Subject {
 
@@ -43,11 +43,9 @@ export default function TopicPage() {
   const [subjectName, setSubjectName] = useState<string>("")
   const [topicName, setTopicName] = useState<string>("")
 
-  // console.log(params.subject, params.topic)
-  // const subject = getSubject(params.subject)
-  const params = useParams()
-  const subjectId = params?.subject as string
-  const topicId = params?.topic as string
+  const searchParams = useSearchParams() // query params
+  const subjectId = searchParams.get("subjectId")
+  const topicId = searchParams.get("topicId")
   let subject = null as unknown as Subject;
   let topic = null as unknown as Topic;
 
@@ -120,7 +118,7 @@ export default function TopicPage() {
       try {
 
         const userId = localStorage.getItem("userId")
-        const response = await api.get<any>(`/quizzes/quizzes/`)
+        const response = await api.get<any>(`quizzes/quizzes/by-subject-topic/${subjectId}/${topicId}`)
         const data = await response.data
         setQuizzes(data)
       } catch (error) {
@@ -177,7 +175,7 @@ export default function TopicPage() {
             </BreadcrumbSeparator>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link className="text-white text-md font-semibold" href={`/subjects/${subjectId}`}>
+                <Link className="text-white text-md font-semibold" href={`/topics?subjectId=${subjectId}`}>
                   {subjectName}
                 </Link>
               </BreadcrumbLink>
@@ -186,7 +184,7 @@ export default function TopicPage() {
               {/* <ChevronRight className="h-4 w-4" /> */}
             </BreadcrumbSeparator>
             <BreadcrumbItem>
-              <BreadcrumbLink className="text-white text-md font-semibold" href={`/subjects/topics/${topicId}`}>{topicName}</BreadcrumbLink>
+              <BreadcrumbLink className="text-white text-md font-semibold" >{topicName}</BreadcrumbLink>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -221,7 +219,7 @@ export default function TopicPage() {
                 questions={quiz.total_questions}
                 time={quiz.time_limit}
                 difficulty={quiz.level || "Beginner"}
-                href={`/subjects/${subjectId}/topics/${topicId}/quizzes/${quiz.quiz_id}`}
+                href={`/quiz?quizId=${quiz.quiz_id}&subjectId=${subjectId}&topicId=${topicId}`}
                 icon={quiz.icon || quizIcons[index % quizIcons.length]}
                 iconBg={quiz.iconBg || iconBgs[index % iconBgs.length]}
                 progress={quiz.progress_percentage} // Use quiz progress or generate random for demo
