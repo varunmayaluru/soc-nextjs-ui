@@ -221,7 +221,7 @@ export default function TopicPage() {
                 questions={quiz.total_questions}
                 time={quiz.time_limit}
                 difficulty={quiz.level || "Beginner"}
-                href={`/subjects/${subjectId}/${topicId}/${quiz.quiz_id}`}
+                href={`/subjects/${subjectId}/topics/${topicId}/quizzes/${quiz.quiz_id}`}
                 icon={quiz.icon || quizIcons[index % quizIcons.length]}
                 iconBg={quiz.iconBg || iconBgs[index % iconBgs.length]}
                 progress={quiz.progress_percentage} // Use quiz progress or generate random for demo

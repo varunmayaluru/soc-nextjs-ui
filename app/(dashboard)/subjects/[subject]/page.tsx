@@ -48,6 +48,7 @@ export default function SubjectPage() {
   const [subjectName, setSubjectName] = useState<string>("")
 
   const params = useParams()
+  console.log(params)
   const subjectId = params?.subject as string
   let subject = null as unknown as Subject;
 
@@ -132,7 +133,7 @@ export default function SubjectPage() {
     }
 
     // Create a path using the topic_id
-    const path = `/subjects/${subjectId}/${topic_id}`
+    const path = `/subjects/${subjectId}/topics/${topic_id}`
 
     return { icon, color, path }
   }
