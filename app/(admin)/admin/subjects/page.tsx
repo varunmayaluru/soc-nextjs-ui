@@ -37,6 +37,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { Organization, Subject } from "../../../types/types"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 
 type SubjectsPageViewModel = Subject & {
   organization_name: string
@@ -56,6 +58,7 @@ export default function SubjectsPage() {
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [editDialogOpen, setEditDialogOpen] = useState<number | null>(null)
   const [hoveredCard, setHoveredCard] = useState<number | null>(null)
+  const [selectedOrganization, setSelectedOrganization] = useState<string>("")
 
   const organizationId = localStorage.getItem("organizationId")
 
@@ -92,6 +95,16 @@ export default function SubjectsPage() {
       setIsLoading(false)
     }
   }
+
+  const bindSubjectsToOrganization = (orgId: number) => {
+    localStorage.setItem("organizationId", orgId.toString())
+    fetchSubjects(organizations)
+  }
+
+
+
+
+
 
   // Fetch subjects from API
   const fetchSubjects = async (orgs: Organization[]) => {
@@ -269,6 +282,24 @@ export default function SubjectsPage() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <Select
+        value={selectedOrganization}
+        // onValueChange={(value) => setForm({ ...form, id: value })}
+        onValueChange={(value: any) => { bindSubjectsToOrganization(value) }}>
+        <SelectTrigger id="organization-filter" className="w-[180px] bg-white">
+          <SelectValue placeholder="Select organization" />
+        </SelectTrigger>
+        <SelectContent>
+          {/* Render organizations dynamically, first value is default */}
+          {/* <SelectItem value="Select organization">Select organization</SelectItem> */}
+          {(Array.isArray(organizations) ? organizations : []).map((org) => (
+            <SelectItem key={org.id} value={org.organization_name}>
+              {org.organization_name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       <Tabs defaultValue="grid" className="w-full">
         <div className="flex justify-between items-center mb-4">

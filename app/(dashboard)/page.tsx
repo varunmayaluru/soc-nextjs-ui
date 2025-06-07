@@ -11,6 +11,7 @@ type SubjectApiResponse = {
   subject_id: number
   organization_id: number
   user_id: number
+  slug: string
   total_quizzes: number
   subject_name: string
   completed_quizzes: number
@@ -32,6 +33,7 @@ type Subject = {
   id: number
   name: string
   category: string
+  slug: string
   icon: string
   iconBg: string
   iconColor: string
@@ -45,6 +47,16 @@ export default function Dashboard() {
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  let user: User = {
+    email: "",
+    first_name: "",
+    last_name: "",
+    organization_id: 0,
+    role: "",
+    is_active: false,
+    user_id: 0,
+  }
 
   useEffect(() => {
     async function fetchDashboardData() {
@@ -62,7 +74,7 @@ export default function Dashboard() {
           throw new Error(`API error: ${userResponse.status}`)
         }
 
-        const user = userResponse.data
+        user = userResponse.data
         console.log("User data:", user)
         const userId = user.user_id.toString()
 
@@ -71,7 +83,7 @@ export default function Dashboard() {
 
         // Fetch subjects using userId
         const subjectsResponse = await api.get<SubjectApiResponse[]>(
-          `user-subject-progress/subjects/progress/${userId}`,
+          `user-subject-progress/subjects/progress?user_id=${userId}&organization_id=${user.organization_id}`,
         )
         if (!subjectsResponse.ok) {
           throw new Error(`API error: ${subjectsResponse.status}`)
@@ -81,6 +93,7 @@ export default function Dashboard() {
           id: subject.subject_id,
           name: subject.subject_name,
           category: getSubjectCategory(subject.subject_name),
+          slug: subject.slug,
           icon: getIconForSubject(subject.subject_name),
           iconBg: getIconBgForSubject(subject.subject_name),
           iconColor: getIconColorForSubject(subject.subject_name),
@@ -317,7 +330,7 @@ export default function Dashboard() {
                 </div>
 
                 <Link
-                  href={`/topics?subjectId=${subject.id}`}
+                  href={`/topics?subjectId=${subject.id}&subjectSlug=${subject.slug}`}
                   className="inline w-40 bg-[#1e74bb] text-white py-2 px-4 rounded-md text-sm hover:bg-[#1a67a7] transition-colors flex items-center"
                 >
                   Select a topic

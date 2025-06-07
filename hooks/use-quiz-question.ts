@@ -11,7 +11,7 @@ interface Option {
 
 interface Question {
   question_id: number;
-  quiz_id: number;
+  quizId: number;
   quiz_question_text: string;
   difficulty_level: string;
   is_active: boolean;
@@ -44,6 +44,8 @@ export function useQuizQuestion({
     number | null
   >(null);
 
+  const organizationId = localStorage.getItem("organizationId");
+
   const fetchQuestion = useCallback(
     async (questionIdToFetch?: number) => {
       const targetQuestionId = questionIdToFetch || currentQuestionId;
@@ -69,9 +71,7 @@ export function useQuizQuestion({
 
       try {
         console.log("Fetching question with ID:", targetQuestionId);
-        const endpoint = `/questions/questions/quiz-question/${targetQuestionId}?quiz_id=${quizId}&subject_id=${
-          subjectId || 1
-        }&topic_id=${topicId || 1}`;
+        const endpoint = `/questions/questions/quiz-question/${targetQuestionId}?quiz_id=${quizId}&organization_id=${organizationId}`;
 
         const response = await api.get<Question>(endpoint);
 
@@ -89,9 +89,7 @@ export function useQuizQuestion({
             `Question ID mismatch: requested ${targetQuestionId}, got ${response.data.question_id}. Retrying...`
           );
           // Retry with explicit question ID
-          const retryEndpoint = `/questions/questions/quiz-question/${targetQuestionId}?quiz_id=${quizId}&subject_id=${
-            subjectId || 1
-          }&topic_id=${topicId || 1}&force_question_id=${targetQuestionId}`;
+          const retryEndpoint = `/questions/questions/quiz-question/${targetQuestionId}?quiz_id=${quizId}&organization_id=${organizationId}`;
 
           const retryResponse = await api.get<Question>(retryEndpoint);
           if (retryResponse.ok && retryResponse.data) {

@@ -46,8 +46,12 @@ export default function TopicPage() {
   const searchParams = useSearchParams() // query params
   const subjectId = searchParams.get("subjectId")
   const topicId = searchParams.get("topicId")
+  const topicSlug = searchParams.get("topicSlug")
+  const subjectSlug = searchParams.get("subjectSlug")
   let subject = null as unknown as Subject;
   let topic = null as unknown as Topic;
+
+  const organizationId = localStorage.getItem("organizationId")
 
   // const topic = getTopic(params.subject, params.topic)
 
@@ -60,7 +64,7 @@ export default function TopicPage() {
   useEffect(() => {
     const fetchSubjectName = async () => {
       try {
-        const response = await api.get<Subject>(`/subjects/subjects/${subjectId}`)
+        const response = await api.get<Subject>(`/subjects/subjects/${subjectSlug}/${subjectId}?organization_id=${organizationId}`)
 
         if (response.ok) {
           subject = response.data
@@ -79,7 +83,7 @@ export default function TopicPage() {
   useEffect(() => {
     const fetchTopicName = async () => {
       try {
-        const response = await api.get<Topic>(`/topics/topics/${topicId}`)
+        const response = await api.get<Topic>(`/topics/topics/${topicSlug}/${topicId}?organization_id=${organizationId}`)
 
         if (response.ok) {
           topic = response.data
@@ -95,30 +99,12 @@ export default function TopicPage() {
     fetchTopicName()
   }, [topicId])
 
-  // useEffect(() => {
-  //   const fetchProgressData = async () => {
-  //     try {
-
-  //       const userId = localStorage.getItem("userId")
-  //       const response = await api.get<any>(`user-quiz-progress/quiz-progress/${userId}?subject_id=${subjectId}&topic_id=${topicId}`)
-  //       const data = await response.data
-  //       setQuizzes(data)
-  //     } catch (error) {
-  //       console.error("Error fetching progress data:", error)
-  //     } finally {
-  //       setIsLoading(false)
-  //     }
-  //   }
-
-  //   fetchProgressData()
-  // }, [])
-
   useEffect(() => {
     const fetchProgressData = async () => {
       try {
 
         const userId = localStorage.getItem("userId")
-        const response = await api.get<any>(`quizzes/quizzes/by-subject-topic/${subjectId}/${topicId}`)
+        const response = await api.get<any>(`user-quiz-dashboard-progress/quiz-progress/progress?user_id=${userId}&organization_id=${organizationId}&topic_slug=${topicSlug}&subject_id=${subjectId}&topic_id=${topicId}`)
         const data = await response.data
         setQuizzes(data)
       } catch (error) {
@@ -130,6 +116,24 @@ export default function TopicPage() {
 
     fetchProgressData()
   }, [])
+
+  // useEffect(() => {
+  //   const fetchProgressData = async () => {
+  //     try {
+
+  //       const userId = localStorage.getItem("userId")
+  //       const response = await api.get<any>(`quizzes/quizzes/by-subject-topic/${subjectId}/${topicId}?organization_id=${organizationId}`)
+  //       const data = await response.data
+  //       setQuizzes(data)
+  //     } catch (error) {
+  //       console.error("Error fetching progress data:", error)
+  //     } finally {
+  //       setIsLoading(false)
+  //     }
+  //   }
+
+  //   fetchProgressData()
+  // }, [])
 
   // Icons for different quiz types
   const quizIcons = ["📊", "📈", "📏", "🧮", "📚", "🔍", "🧩", "🎯"]
@@ -219,7 +223,7 @@ export default function TopicPage() {
                 questions={quiz.total_questions}
                 time={quiz.time_limit}
                 difficulty={quiz.level || "Beginner"}
-                href={`/quiz?quizId=${quiz.quiz_id}&subjectId=${subjectId}&topicId=${topicId}`}
+                href={`/quiz?quizId=${quiz.quiz_id}&subjectId=${subjectId}&topicId=${topicId}&topicSlug=${topicSlug}&subjectSlug=${subjectSlug}`}
                 icon={quiz.icon || quizIcons[index % quizIcons.length]}
                 iconBg={quiz.iconBg || iconBgs[index % iconBgs.length]}
                 progress={quiz.progress_percentage} // Use quiz progress or generate random for demo
