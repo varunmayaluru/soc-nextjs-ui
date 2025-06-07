@@ -1,5 +1,5 @@
 export type Organization = {
-  organization_id: number;
+  id: number;
   organization_name: string;
   slug: string;
   description: string;
@@ -12,8 +12,9 @@ export type Organization = {
 
 export type Subject = {
   organization_id: number;
-  subject_id: number;
+  id: number;
   subject_name: string;
+  slug: string;
   is_active: boolean;
   created_by: number;
   create_date_time: string;

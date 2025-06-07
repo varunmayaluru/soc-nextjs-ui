@@ -53,7 +53,8 @@ import type { Subject } from "@/app/types/types"
 type Topic = {
   organization_id: number
   subject_id: number
-  topic_id: number
+  slug: string
+  id: number
   topic_name: string
   is_active: boolean
   created_by: string
@@ -78,6 +79,8 @@ export default function TopicsPage() {
   const searchParams = useSearchParams() // query params
 
   const subjectId = params.id as string
+  console.log(subjectId)
+  const subjectSlug = searchParams.get("subject_slug")
   const organizationId = searchParams.get("organization_id")
   const organizationName = searchParams.get("organization_name")
 
@@ -90,7 +93,7 @@ export default function TopicsPage() {
   // Fetch subject from API
   const fetchSubject = async () => {
     try {
-      const response = await api.get<Subject>(`/subjects/subjects/${subjectId}`)
+      const response = await api.get<Subject>(`/subjects/subjects/${subjectSlug}/${subjectId}?organization_id=${organizationId}`)
 
       if (response.ok) {
         setSubject(response.data)
@@ -111,7 +114,7 @@ export default function TopicsPage() {
   const fetchTopics = async () => {
     setIsLoading(true)
     try {
-      const response = await api.get<Topic[]>(`/topics/topics/by-subject/${subjectId}`)
+      const response = await api.get<Topic[]>(`/topics/topics/by-subject/${subjectId}?organization_id=${organizationId}`)
 
       if (response.ok) {
         setTopics(response.data)
@@ -144,12 +147,12 @@ export default function TopicsPage() {
     })
 
   // Delete topic handler
-  const handleDeleteTopic = async (id: number) => {
+  const handleDeleteTopic = async (id: number, slug: string, organizationId: number) => {
     try {
-      const response = await api.delete(`topics/topics/${id}`)
+      const response = await api.delete(`topics/topics/${slug}/${id}?organization_id=${organizationId}`)
 
       if (response.ok) {
-        setTopics(topics.filter((topic) => topic.topic_id !== id))
+        setTopics(topics.filter((topic) => topic.id !== id))
         toast({
           title: "Success",
           description: "Topic deleted successfully",
@@ -206,11 +209,11 @@ export default function TopicsPage() {
                   <DialogDescription>Create a new topic for {subject?.subject_name}.</DialogDescription>
                 </DialogHeader>
                 <TopicForm
-                  subjectId={Number.parseInt(subjectId)}
+                  subjectId={subjectId}
                   subjectName={subject?.subject_name || ""}
                   // createdBy={0}
                   organizationName={organizationName || ""}
-                  organizationId={Number.parseInt(organizationId || "")}
+                  organizationId={organizationId || ""}
                   onSuccess={() => {
                     fetchTopics()
                     setAddDialogOpen(false)
@@ -402,15 +405,15 @@ export default function TopicsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTopics.map((topic) => (
                 <Card
-                  key={topic.topic_id}
-                  className={`overflow-hidden transition-all duration-300 group hover:shadow-lg ${hoveredCard === topic.topic_id ? "border-[#1e74bb] shadow-md translate-y-[-4px]" : "border-gray-100"
+                  key={topic.id}
+                  className={`overflow-hidden transition-all duration-300 group hover:shadow-lg ${hoveredCard === topic.id ? "border-[#1e74bb] shadow-md translate-y-[-4px]" : "border-gray-100"
                     }`}
-                  onMouseEnter={() => setHoveredCard(topic.topic_id)}
+                  onMouseEnter={() => setHoveredCard(topic.id)}
                   onMouseLeave={() => setHoveredCard(null)}
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#e6f0f9] to-transparent opacity-50 rounded-bl-full pointer-events-none"></div>
                   <CardHeader
-                    className={`pb-2 relative ${hoveredCard === topic.topic_id
+                    className={`pb-2 relative ${hoveredCard === topic.id
                       ? "bg-gradient-to-r from-[#1e74bb] to-[#4a9eda] text-white"
                       : "bg-gradient-to-r from-[#e6f0f9] to-white"
                       }`}
@@ -418,22 +421,22 @@ export default function TopicsPage() {
                     <div className="flex justify-between items-start">
                       <div className="flex items-start gap-3">
                         <div
-                          className={`rounded-full p-2 ${hoveredCard === topic.topic_id ? "bg-white text-[#1e74bb]" : "bg-[#1e74bb] text-white"
+                          className={`rounded-full p-2 ${hoveredCard === topic.id ? "bg-white text-[#1e74bb]" : "bg-[#1e74bb] text-white"
                             }`}
                         >
                           <BookOpenCheck className="h-5 w-5" />
                         </div>
                         <div>
                           <CardTitle
-                            className={`text-lg ${hoveredCard === topic.topic_id ? "text-white" : "text-gray-800"}`}
+                            className={`text-lg ${hoveredCard === topic.id ? "text-white" : "text-gray-800"}`}
                           >
                             {topic.topic_name}
                           </CardTitle>
                           <p
-                            className={`text-xs mt-1 ${hoveredCard === topic.topic_id ? "text-gray-100" : "text-gray-500"
+                            className={`text-xs mt-1 ${hoveredCard === topic.id ? "text-gray-100" : "text-gray-500"
                               }`}
                           >
-                            ID: {topic.topic_id}
+                            ID: {topic.id}
                           </p>
                         </div>
                       </div>
@@ -441,10 +444,10 @@ export default function TopicsPage() {
                         variant={topic.is_active ? "default" : "outline"}
                         className={
                           topic.is_active
-                            ? hoveredCard === topic.topic_id
+                            ? hoveredCard === topic.id
                               ? "bg-white text-[#1e74bb] hover:bg-gray-100"
                               : "bg-green-100 text-green-800 hover:bg-green-200"
-                            : hoveredCard === topic.topic_id
+                            : hoveredCard === topic.id
                               ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
                               : "text-gray-500"
                         }
@@ -469,7 +472,7 @@ export default function TopicsPage() {
                   </CardContent>
                   <CardFooter className="flex justify-between bg-gray-50 border-t border-gray-100 p-4">
                     <Link
-                      href={`/admin/subjects/${subjectId}/topics/${topic.topic_id}/quizzes?organization_id=${organizationId}&organization_name=${organizationName}`}
+                      href={`/admin/subjects/${subjectId}/topics/${topic.id}/quizzes?organization_id=${organizationId}&organization_name=${organizationName}&subject_slug=${subjectSlug}&topic_slug=${topic.slug}`}
                     >
                       <Button
                         variant="outline"
@@ -482,8 +485,8 @@ export default function TopicsPage() {
                     </Link>
                     <div className="flex gap-2">
                       <Dialog
-                        open={editDialogId === topic.topic_id}
-                        onOpenChange={(open) => setEditDialogId(open ? topic.topic_id : null)}
+                        open={editDialogId === topic.id}
+                        onOpenChange={(open) => setEditDialogId(open ? topic.id : null)}
                       >
                         <DialogTrigger asChild>
                           <Button
@@ -501,10 +504,10 @@ export default function TopicsPage() {
                           </DialogHeader>
                           <TopicForm
                             topic={topic}
-                            subjectId={Number.parseInt(subjectId)}
+                            subjectId={subjectId}
                             subjectName={subject?.subject_name || ""}
                             // createdBy={Number.parseInt(topic.created_by)}
-                            organizationId={Number.parseInt(organizationId || "")}
+                            organizationId={organizationId || ""}
                             organizationName={organizationName || ""}
                             onSuccess={() => {
                               fetchTopics()
@@ -536,7 +539,7 @@ export default function TopicsPage() {
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
                               className="bg-red-500 hover:bg-red-600"
-                              onClick={() => handleDeleteTopic(topic.topic_id)}
+                              onClick={() => handleDeleteTopic(topic.id, topic.slug, topic.organization_id)}
                             >
                               Delete
                             </AlertDialogAction>
@@ -593,11 +596,11 @@ export default function TopicsPage() {
                     <tbody>
                       {filteredTopics.map((topic, index) => (
                         <tr
-                          key={topic.topic_id}
+                          key={topic.id}
                           className={`border-b hover:bg-[#f0f7ff] transition-colors ${index % 2 === 0 ? "bg-white" : "bg-[#f8fafc]"
                             }`}
                         >
-                          <td className="px-4 py-3 text-sm">{topic.topic_id}</td>
+                          <td className="px-4 py-3 text-sm">{topic.id}</td>
                           <td className="px-4 py-3 text-sm font-medium">{topic.topic_name}</td>
                           <td className="px-4 py-3 text-sm">
                             <Badge
@@ -613,7 +616,7 @@ export default function TopicsPage() {
                           <td className="px-4 py-3 text-right">
                             <div className="flex justify-end gap-2">
                               <Link
-                                href={`/admin/subjects/${subjectId}/topics/${topic.topic_id}/quizzes?organization_id=${organizationId}&organization_name=${organizationName}`}
+                                href={`/admin/subjects/${subjectId}/topics/${topic.id}/quizzes?organization_id=${organizationId}&organization_name=${organizationName}`}
                               >
                                 <Button
                                   variant="outline"
@@ -626,8 +629,8 @@ export default function TopicsPage() {
                               </Link>
 
                               <Dialog
-                                open={editDialogId === topic.topic_id}
-                                onOpenChange={(open) => setEditDialogId(open ? topic.topic_id : null)}
+                                open={editDialogId === topic.id}
+                                onOpenChange={(open) => setEditDialogId(open ? topic.id : null)}
                               >
                                 <DialogTrigger asChild>
                                   <Button
@@ -646,10 +649,10 @@ export default function TopicsPage() {
                                   </DialogHeader>
                                   <TopicForm
                                     topic={topic}
-                                    subjectId={Number.parseInt(subjectId)}
+                                    subjectId={subjectId || ""}
                                     subjectName={subject?.subject_name || ""}
                                     // createdBy={Number.parseInt(topic.created_by)}
-                                    organizationId={Number.parseInt(organizationId || "")}
+                                    organizationId={organizationId || ""}
                                     organizationName={organizationName || ""}
                                     onSuccess={() => {
                                       fetchTopics()
@@ -682,7 +685,7 @@ export default function TopicsPage() {
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction
                                       className="bg-red-500 hover:bg-red-600"
-                                      onClick={() => handleDeleteTopic(topic.topic_id)}
+                                      onClick={() => handleDeleteTopic(topic.id, topic.slug, topic.organization_id)}
                                     >
                                       Delete
                                     </AlertDialogAction>
@@ -708,10 +711,10 @@ export default function TopicsPage() {
 // Topic Form Component
 interface TopicFormProps {
   topic?: Topic
-  subjectId: number
+  subjectId: string
   subjectName: string
   organizationName: string
-  organizationId: number
+  organizationId: string
   // createdBy: number
   onSuccess: () => void
 }
@@ -721,6 +724,7 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, organizati
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     topic_name: topic?.topic_name || "",
+    slug: topic?.slug || "",
     is_active: topic?.is_active ?? true,
     created_by: topic?.created_by || 1,
   })
@@ -740,6 +744,14 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, organizati
         throw new Error("Topic title is required")
       }
 
+      if (!formData.slug) {
+        throw new Error("Topic Slug is required")
+      }
+
+      if (formData.slug.includes(" ")) {
+        throw new Error("Slug should not contain spaces")
+      }
+
       const userId = localStorage.getItem("userId")
       if (!userId) {
         throw new Error("User ID not found")
@@ -754,7 +766,7 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, organizati
 
       // This would be replaced with your actual API endpoint
       const response = topic
-        ? await api.put(`/topics/topics/${topic.topic_id}`, payload)
+        ? await api.put(`/topics/topics/${topic.slug}/${topic.id}?organization_id=${topic.organization_id}`, payload)
         : await api.post("/topics/topics", payload)
 
       if (response.ok) {
@@ -823,6 +835,21 @@ function TopicForm({ topic, subjectId, subjectName, organizationName, organizati
             value={formData.topic_name}
             onChange={handleChange}
             placeholder="e.g., Arithmetic & Number Sense"
+            required
+            className="border-gray-200 focus-visible:ring-[#1e74bb]"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="slug" className="text-sm font-medium">
+            Topic Slug <span className="text-red-500">*</span>
+          </label>
+          <Input
+            id="slug"
+            name="slug"
+            value={formData.slug}
+            onChange={handleChange}
+            placeholder="e.g., Arithmetic_Number_Sense"
             required
             className="border-gray-200 focus-visible:ring-[#1e74bb]"
           />

@@ -57,6 +57,8 @@ export default function SubjectsPage() {
   const [editDialogOpen, setEditDialogOpen] = useState<number | null>(null)
   const [hoveredCard, setHoveredCard] = useState<number | null>(null)
 
+  const organizationId = localStorage.getItem("organizationId")
+
   // Fetch subjects on component mount
   useEffect(() => {
     const fetchData = async () => {
@@ -70,7 +72,7 @@ export default function SubjectsPage() {
   const fetchOrganizations = async (): Promise<Organization[]> => {
     setIsLoading(true)
     try {
-      const response = await api.get<Organization[]>(`/organizations/organizations/organizations`)
+      const response = await api.get<Organization[]>(`/organizations/organizations`)
       if (response.ok) {
         const data = response.data
         setOrganizations(data)
@@ -95,10 +97,11 @@ export default function SubjectsPage() {
   const fetchSubjects = async (orgs: Organization[]) => {
     setIsLoading(true)
     try {
-      const response = await api.get<Subject[]>("/subjects/subjects/")
+      let organization_id = localStorage.getItem("organizationId")
+      const response = await api.get<Subject[]>(`/subjects/subjects/?organization_id=${organization_id}`)
       if (response.ok) {
         const subjectsWithOrganizationName = response.data.map((subject) => {
-          const organization = orgs.find((org) => org.organization_id === subject.organization_id)
+          const organization = orgs.find((org) => org.id === subject.organization_id)
           return {
             ...subject,
             organization_name: organization ? organization.organization_name : "Unknown",
@@ -140,9 +143,9 @@ export default function SubjectsPage() {
     })
 
   // Delete subject handler
-  const handleDeleteSubject = async (id: number) => {
+  const handleDeleteSubject = async (id: number, slug: string, organizationId: number) => {
     try {
-      const response = await api.delete(`/subjects/subjects/${id}`)
+      const response = await api.delete(`/subjects/subjects/${slug}/${id}?organization_id=${organizationId}`)
 
       if (response.ok) {
         fetchSubjects(organizations)
@@ -200,7 +203,7 @@ export default function SubjectsPage() {
                     setAddDialogOpen(false)
                   }}
                   organizationOptions={organizations.map((org) => ({
-                    value: org.organization_id,
+                    value: org.id,
                     label: org.organization_name,
                   }))}
                 />
@@ -259,7 +262,7 @@ export default function SubjectsPage() {
                 setAddDialogOpen(false)
               }}
               organizationOptions={organizations.map((org) => ({
-                value: org.organization_id,
+                value: org.id,
                 label: org.organization_name,
               }))}
             />
@@ -302,8 +305,8 @@ export default function SubjectsPage() {
                 </DropdownMenuItem>
                 {organizations.map((org) => (
                   <DropdownMenuItem
-                    key={org.organization_id}
-                    onClick={() => setFilterOrg(org.organization_id)}
+                    key={org.id}
+                    onClick={() => setFilterOrg(org.id)}
                     className="hover:bg-brand-light"
                   >
                     {org.organization_name}
@@ -360,10 +363,10 @@ export default function SubjectsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredSubjects.map((subject) => (
                 <Card
-                  key={subject.subject_id}
-                  className={`overflow-hidden transition-all duration-200 ${hoveredCard === subject.subject_id ? "shadow-md border-brand" : "shadow border-gray-200"
+                  key={subject.id}
+                  className={`overflow-hidden transition-all duration-200 ${hoveredCard === subject.id ? "shadow-md border-brand" : "shadow border-gray-200"
                     }`}
-                  onMouseEnter={() => setHoveredCard(subject.subject_id)}
+                  onMouseEnter={() => setHoveredCard(subject.id)}
                   onMouseLeave={() => setHoveredCard(null)}
                 >
                   <CardHeader className="pb-2 bg-gradient-to-r from-brand-light to-white">
@@ -392,10 +395,11 @@ export default function SubjectsPage() {
                     <div className="flex justify-between items-center">
                       <Link
                         href={{
-                          pathname: `/admin/subjects/${subject.subject_id}/topics`,
+                          pathname: `/admin/subjects/${subject.id}/topics`,
                           query: {
                             organization_id: subject.organization_id,
                             organization_name: subject.organization_name,
+                            subject_slug: subject.slug,
                           },
                         }}
                       >
@@ -410,8 +414,8 @@ export default function SubjectsPage() {
                       </Link>
                       <div className="flex gap-2">
                         <Dialog
-                          open={editDialogOpen === subject.subject_id}
-                          onOpenChange={(open) => setEditDialogOpen(open ? subject.subject_id : null)}
+                          open={editDialogOpen === subject.id}
+                          onOpenChange={(open) => setEditDialogOpen(open ? subject.id : null)}
                         >
                           <DialogTrigger asChild>
                             <Button
@@ -434,7 +438,7 @@ export default function SubjectsPage() {
                                 setEditDialogOpen(null)
                               }}
                               organizationOptions={organizations.map((org) => ({
-                                value: org.organization_id,
+                                value: org.id,
                                 label: org.organization_name,
                               }))}
                             />
@@ -463,7 +467,7 @@ export default function SubjectsPage() {
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
                                 className="bg-red-500 hover:bg-red-600"
-                                onClick={() => handleDeleteSubject(subject.subject_id)}
+                                onClick={() => handleDeleteSubject(subject.id, subject.slug, subject.organization_id)}
                               >
                                 Delete
                               </AlertDialogAction>
@@ -510,11 +514,11 @@ export default function SubjectsPage() {
                     <tbody>
                       {filteredSubjects.map((subject, index) => (
                         <tr
-                          key={subject.subject_id}
+                          key={subject.id}
                           className={`border-b hover:bg-brand-light transition-colors ${index % 2 === 0 ? "bg-white" : "bg-gray-50"
                             }`}
                         >
-                          <td className="px-4 py-3 text-sm text-gray-600">{subject.subject_id}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600">{subject.id}</td>
                           <td className="px-4 py-3 text-sm font-medium text-gray-800">{subject.subject_name}</td>
                           <td className="px-4 py-3 text-sm text-gray-600">{subject.organization_name}</td>
                           <td className="px-4 py-3 text-sm">
@@ -532,7 +536,7 @@ export default function SubjectsPage() {
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex justify-end gap-2">
-                              <Link href={`/admin/subjects/${subject.subject_id}/topics`}>
+                              <Link href={`/admin/subjects/${subject.id}/topics`}>
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -544,8 +548,8 @@ export default function SubjectsPage() {
                               </Link>
 
                               <Dialog
-                                open={editDialogOpen === subject.subject_id}
-                                onOpenChange={(open) => setEditDialogOpen(open ? subject.subject_id : null)}
+                                open={editDialogOpen === subject.id}
+                                onOpenChange={(open) => setEditDialogOpen(open ? subject.id : null)}
                               >
                                 <DialogTrigger asChild>
                                   <Button
@@ -569,7 +573,7 @@ export default function SubjectsPage() {
                                       setEditDialogOpen(null)
                                     }}
                                     organizationOptions={organizations.map((org) => ({
-                                      value: org.organization_id,
+                                      value: org.id,
                                       label: org.organization_name,
                                     }))}
                                   />
@@ -599,7 +603,7 @@ export default function SubjectsPage() {
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction
                                       className="bg-red-500 hover:bg-red-600"
-                                      onClick={() => handleDeleteSubject(subject.subject_id)}
+                                      onClick={() => handleDeleteSubject(subject.id, subject.slug, subject.organization_id)}
                                     >
                                       Delete
                                     </AlertDialogAction>
@@ -632,16 +636,19 @@ export function SubjectForm({ subject, onSuccess, organizationOptions }: Subject
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
 
+  const user_id = localStorage.getItem("userId")
+
   const [formData, setFormData] = useState({
     subject_name: subject?.subject_name || "",
     organization_id: subject?.organization_id || 0,
+    slug: subject?.slug || "",
     is_active: subject?.is_active ?? true,
-    created_by: subject?.created_by || 0, // hardcode or get from session if needed
+    created_by: user_id, // hardcode or get from session if needed
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: name === "organization_id" ? +value : value }))
+    setFormData((prev) => ({ ...prev, [name]: name === "id" ? +value : value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -649,9 +656,15 @@ export function SubjectForm({ subject, onSuccess, organizationOptions }: Subject
     setIsLoading(true)
 
     try {
-      if (!formData.subject_name || !formData.organization_id) {
+      if (!formData.subject_name || !formData.organization_id || !formData.slug) {
         throw new Error("Please fill in all required fields")
       }
+
+      if (formData.slug.includes(" ")) {
+        throw new Error("Slug should not contain spaces")
+      }
+
+
 
       const payload = {
         ...formData,
@@ -659,7 +672,7 @@ export function SubjectForm({ subject, onSuccess, organizationOptions }: Subject
       }
 
       const response = subject
-        ? await api.put(`/subjects/subjects/${subject.subject_id}`, payload)
+        ? await api.put(`/subjects/subjects/${subject.slug}/${subject.id}?organization_id=${subject.organization_id}`, payload)
         : await api.post("subjects/subjects/", {
           ...payload,
           create_date_time: new Date().toISOString(),
@@ -698,6 +711,19 @@ export function SubjectForm({ subject, onSuccess, organizationOptions }: Subject
             id="subject_name"
             name="subject_name"
             value={formData.subject_name}
+            onChange={handleChange}
+            placeholder="e.g., Mathematics"
+            className="border-gray-300 focus:border-brand focus:ring-brand"
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="slug">slug *</Label>
+          <Input
+            id="slug"
+            name="slug"
+            value={formData.slug}
             onChange={handleChange}
             placeholder="e.g., Mathematics"
             className="border-gray-300 focus:border-brand focus:ring-brand"

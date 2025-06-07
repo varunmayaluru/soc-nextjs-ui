@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import {
   Plus,
   Pencil,
@@ -56,6 +56,7 @@ import QuizUploadForm from "@/components/admin/quiz-upload-form"
 type Subject = {
   subject_id: number
   subject_name: string
+  slug: string
   organization_id: number
   is_active: boolean
   created_by: number
@@ -66,6 +67,7 @@ type Topic = {
   organization_id: number
   subject_id: number
   topic_id: number
+  slug: string
   topic_name: string
   is_active: boolean
   created_by: string
@@ -73,10 +75,11 @@ type Topic = {
 }
 
 type Quiz = {
-  quiz_id: number
+  id: number
   title: string
   description: string
   topic_id: number
+  slug: string
   subject_id: number
   organization_id: number
   level: string
@@ -111,6 +114,12 @@ export default function QuizzesPage() {
   const subjectId = params.id as string
   const topicId = params.topicId as string
 
+  const searchParams = useSearchParams()
+
+  const subjectSlug = searchParams.get("subject_slug")
+  const topicSlug = searchParams.get("topic_slug")
+  const organizationId = searchParams.get("organization_id")
+
   // Fetch subject, topic, and quizzes on component mount
   useEffect(() => {
     const fetchData = async () => {
@@ -125,7 +134,7 @@ export default function QuizzesPage() {
   // Fetch subject from API
   const fetchSubject = async () => {
     try {
-      const response = await api.get<Subject>(`/subjects/subjects/${subjectId}`)
+      const response = await api.get<Subject>(`/subjects/subjects/${subjectSlug}/${subjectId}?organization_id=${organizationId}`)
 
       if (response.ok) {
         setSubject(response.data)
@@ -145,7 +154,7 @@ export default function QuizzesPage() {
   // Fetch topic from API
   const fetchTopic = async () => {
     try {
-      const response = await api.get<Topic>(`/topics/topics/${topicId}`)
+      const response = await api.get<Topic>(`/topics/topics/${topicSlug}/${topicId}?organization_id=${organizationId}`)
 
       if (response.ok) {
         setTopic(response.data)
@@ -167,7 +176,7 @@ export default function QuizzesPage() {
     setIsLoading(true)
     try {
       // Use the API endpoint for fetching quizzes by topic
-      const response = await api.get<Quiz[]>(`quizzes/quizzes/by-subject-topic/${subjectId}/${topicId}`)
+      const response = await api.get<Quiz[]>(`quizzes/quizzes/by-subject-topic/${subjectId}/${topicId}?organization_id=${organizationId}`)
 
       if (response.ok) {
         setQuizzes(response.data)
@@ -202,10 +211,10 @@ export default function QuizzesPage() {
   // Delete quiz handler
   const handleDeleteQuiz = async (id: number) => {
     try {
-      const response = await api.delete(`/quizzes/quizzes/${id}`)
+      const response = await api.delete(`/quizzes/quizzes/${id}?organization_id=${organizationId}`)
 
       if (response.ok) {
-        setQuizzes(quizzes.filter((quiz) => quiz.quiz_id !== id))
+        setQuizzes(quizzes.filter((quiz) => quiz.id !== id))
         toast({
           title: "Success",
           description: "Quiz deleted successfully",
@@ -283,8 +292,9 @@ export default function QuizzesPage() {
                   <DialogDescription>Create a new quiz for {topic?.topic_name}.</DialogDescription>
                 </DialogHeader>
                 <QuizForm
-                  subjectId={Number(subjectId)}
-                  topicId={Number(topicId)}
+                  subjectId={subjectId}
+                  topicId={topicId}
+                  organizationId={organizationId || ""}
                   subjectName={subject?.subject_name || ""}
                   topicName={topic?.topic_name || ""}
                   onSuccess={() => {
@@ -494,10 +504,10 @@ export default function QuizzesPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredQuizzes.map((quiz) => (
                 <div
-                  key={quiz.quiz_id}
-                  className={`group relative bg-white rounded-lg shadow-md border overflow-hidden transition-all duration-300 hover:shadow-xl ${hoveredCard === quiz.quiz_id ? "border-[#1e74bb] translate-y-[-4px]" : "border-gray-100"
+                  key={quiz.id}
+                  className={`group relative bg-white rounded-lg shadow-md border overflow-hidden transition-all duration-300 hover:shadow-xl ${hoveredCard === quiz.id ? "border-[#1e74bb] translate-y-[-4px]" : "border-gray-100"
                     }`}
-                  onMouseEnter={() => setHoveredCard(quiz.quiz_id)}
+                  onMouseEnter={() => setHoveredCard(quiz.id)}
                   onMouseLeave={() => setHoveredCard(null)}
                 >
                   {/* Decorative diagonal element */}
@@ -521,7 +531,7 @@ export default function QuizzesPage() {
                   <div className="p-5 relative z-10">
                     <div className="flex items-start gap-3 mb-4">
                       <div
-                        className={`rounded-full p-2.5 ${hoveredCard === quiz.quiz_id ? "bg-[#1e74bb] text-white" : "bg-[#e6f0f9] text-[#1e74bb]"
+                        className={`rounded-full p-2.5 ${hoveredCard === quiz.id ? "bg-[#1e74bb] text-white" : "bg-[#e6f0f9] text-[#1e74bb]"
                           } transition-colors duration-300`}
                       >
                         <FileText className="h-5 w-5" />
@@ -597,8 +607,8 @@ export default function QuizzesPage() {
                     </div>
                     <div className="flex gap-2">
                       <Dialog
-                        open={editDialogId === quiz.quiz_id}
-                        onOpenChange={(open) => setEditDialogId(open ? quiz.quiz_id : null)}
+                        open={editDialogId === quiz.id}
+                        onOpenChange={(open) => setEditDialogId(open ? quiz.id : null)}
                       >
                         <DialogTrigger asChild>
                           <Button
@@ -616,8 +626,9 @@ export default function QuizzesPage() {
                           </DialogHeader>
                           <QuizForm
                             quiz={quiz}
-                            subjectId={Number(subjectId)}
-                            topicId={Number(topicId)}
+                            subjectId={subjectId || ""}
+                            topicId={topicId || ""}
+                            organizationId={organizationId || ""}
                             subjectName={subject?.subject_name || ""}
                             topicName={topic?.topic_name || ""}
                             onSuccess={() => {
@@ -650,7 +661,7 @@ export default function QuizzesPage() {
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
                               className="bg-red-500 hover:bg-red-600"
-                              onClick={() => handleDeleteQuiz(quiz.quiz_id)}
+                              onClick={() => handleDeleteQuiz(quiz.id)}
                             >
                               Delete
                             </AlertDialogAction>
@@ -709,11 +720,11 @@ export default function QuizzesPage() {
                     <tbody>
                       {filteredQuizzes.map((quiz, index) => (
                         <tr
-                          key={quiz.quiz_id}
+                          key={quiz.id}
                           className={`border-b hover:bg-[#f0f7ff] transition-colors ${index % 2 === 0 ? "bg-white" : "bg-[#f8fafc]"
                             }`}
                         >
-                          <td className="px-4 py-3 text-sm">{quiz.quiz_id}</td>
+                          <td className="px-4 py-3 text-sm">{quiz.id}</td>
                           <td className="px-4 py-3 text-sm font-medium">{quiz.title}</td>
                           <td className="px-4 py-3 text-sm">{formatTimeLimit(quiz.time_limit)}</td>
                           <td className="px-4 py-3 text-sm">{quiz.passing_score}%</td>
@@ -750,8 +761,8 @@ export default function QuizzesPage() {
                               </Button>
 
                               <Dialog
-                                open={editDialogId === quiz.quiz_id}
-                                onOpenChange={(open) => setEditDialogId(open ? quiz.quiz_id : null)}
+                                open={editDialogId === quiz.id}
+                                onOpenChange={(open) => setEditDialogId(open ? quiz.id : null)}
                               >
                                 <DialogTrigger asChild>
                                   <Button
@@ -770,8 +781,9 @@ export default function QuizzesPage() {
                                   </DialogHeader>
                                   <QuizForm
                                     quiz={quiz}
-                                    subjectId={Number(subjectId)}
-                                    topicId={Number(topicId)}
+                                    subjectId={subjectId}
+                                    topicId={topicId}
+                                    organizationId={organizationId || ""}
                                     subjectName={subject?.subject_name || ""}
                                     topicName={topic?.topic_name || ""}
                                     onSuccess={() => {
@@ -805,7 +817,7 @@ export default function QuizzesPage() {
                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                                     <AlertDialogAction
                                       className="bg-red-500 hover:bg-red-600"
-                                      onClick={() => handleDeleteQuiz(quiz.quiz_id)}
+                                      onClick={() => handleDeleteQuiz(quiz.id)}
                                     >
                                       Delete
                                     </AlertDialogAction>
@@ -839,9 +851,9 @@ export default function QuizzesPage() {
           </DialogHeader>
           {selectedQuizForUpload && (
             <QuizUploadForm
-              subjectId={Number(subjectId)}
-              topicId={Number(topicId)}
-              quizId={selectedQuizForUpload.quiz_id}
+              subjectId={subjectId}
+              topicId={topicId}
+              quizId={selectedQuizForUpload.id.toString()}
               quizTitle={selectedQuizForUpload.title}
               onSuccess={() => {
                 fetchQuizzes()
@@ -859,18 +871,20 @@ export default function QuizzesPage() {
 // Quiz Form Component
 interface QuizFormProps {
   quiz?: Quiz
-  subjectId: number
-  topicId: number
+  subjectId: string
+  topicId: string
   subjectName: string
   topicName: string
+  organizationId: string
   onSuccess: () => void
 }
 
-function QuizForm({ quiz, subjectId, topicId, subjectName, topicName, onSuccess }: QuizFormProps) {
+function QuizForm({ quiz, subjectId, topicId, subjectName, topicName, organizationId, onSuccess }: QuizFormProps) {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     title: quiz?.title || "",
+    slug: quiz?.slug || "",
     description: quiz?.description || "",
     time_limit: quiz?.time_limit || 300, // Default 5 minutes
     passing_score: quiz?.passing_score || 70,
@@ -898,17 +912,26 @@ function QuizForm({ quiz, subjectId, topicId, subjectName, topicName, onSuccess 
         throw new Error("Quiz name is required")
       }
 
+      if (!formData.slug) {
+        throw new Error("Quiz slug is required")
+      }
+
+      //check slug should not contain spaces
+      if (formData.slug.includes(" ")) {
+        throw new Error("Slug should not contain spaces")
+      }
+
       let userId = localStorage.getItem("userId")
       if (!userId) {
         userId = "1"
       }
 
-      const organizationId = localStorage.getItem("organizationId")
+
       const payload = {
         ...formData,
         subject_id: subjectId,
         topic_id: topicId,
-        organization_id: Number.parseInt(organizationId || "1"), // Default to 1 if not found
+        organization_id: organizationId, // Default to 1 if not found
         created_by: userId, // Hardcoded for now
         create_date_time: new Date().toISOString(),
         update_date_time: new Date().toISOString(),
@@ -916,7 +939,7 @@ function QuizForm({ quiz, subjectId, topicId, subjectName, topicName, onSuccess 
 
       // API endpoint for creating or updating a quiz
       const response = quiz
-        ? await api.put(`/quizzes/quizzes/${quiz.quiz_id}`, payload)
+        ? await api.put(`/quizzes/quizzes/${quiz.id}?organization_id=${organizationId}`, payload)
         : await api.post("/quizzes/quizzes/", payload)
 
       if (response.ok) {
@@ -964,6 +987,21 @@ function QuizForm({ quiz, subjectId, topicId, subjectName, topicName, onSuccess 
             value={formData.title}
             onChange={handleChange}
             placeholder="e.g., Basic Arithmetic Quiz"
+            required
+            className="border-gray-200 focus-visible:ring-[#1e74bb]"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="slug">
+            Quiz Slug <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="slug"
+            name="slug"
+            value={formData.slug}
+            onChange={handleChange}
+            placeholder="e.g., Basic_Arithmetic_Quiz"
             required
             className="border-gray-200 focus-visible:ring-[#1e74bb]"
           />

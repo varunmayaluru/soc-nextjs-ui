@@ -11,9 +11,9 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import * as XLSX from "xlsx"
 
 interface QuizUploadFormProps {
-    subjectId: number
-    topicId: number
-    quizId: number
+    subjectId: string
+    topicId: string
+    quizId: string
     quizTitle: string
     onSuccess: () => void
 }

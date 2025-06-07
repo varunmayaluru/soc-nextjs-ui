@@ -61,7 +61,7 @@ export default function UsersPage() {
     const fetchOrganizations = async () => {
       try {
         setOrganizations([]) // Reset organizations before fetching
-        const response = await api.get<Organization[]>("/organizations/organizations/organizations")
+        const response = await api.get<Organization[]>("/organizations/organizations")
         console.log("Organizations fetched:", response.data)
         // Handle the fetched organizations as needed
         if (response.status === 200) {
@@ -90,7 +90,7 @@ export default function UsersPage() {
     setSelectedOrganization(organizationName);
     setUsers([]);
     console.log("Selected organization:", organizationName);
-    const orgId = organizations.find(org => org.organization_name === organizationName)?.organization_id;
+    const orgId = organizations.find(org => org.organization_name === organizationName)?.id;
     const response = await api.get(`/users/organizations/${orgId}/users`)
       .then((response) => {
         if (response.status === 200 && Array.isArray(response.data)) {
@@ -380,9 +380,9 @@ export default function UsersPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="organization_id">Organization</Label>
+                      <Label htmlFor="id">Organization</Label>
                       <Select
-                        value={form.organization_id}
+                        value={form.organization_id.toString()}
                         onValueChange={(value) => setForm({ ...form, organization_id: value })}
                       >
                         <SelectTrigger className={organizationError.show && form.organization_id === "" ? "border-red-500" : ""}>
@@ -390,7 +390,7 @@ export default function UsersPage() {
                         </SelectTrigger>
                         <SelectContent>
                           {organizations.map((organization) => (
-                            <SelectItem key={organization.organization_id} value={organization.organization_id.toString()}>
+                            <SelectItem key={organization.id} value={organization.id.toString()}>
                               {organization.organization_name}
                             </SelectItem>
                           ))}
@@ -538,7 +538,7 @@ export default function UsersPage() {
               <div className="flex items-center gap-4 pb-2">
                 <Select
                   value={selectedOrganization}
-                  // onValueChange={(value) => setForm({ ...form, organization_id: value })}
+                  // onValueChange={(value) => setForm({ ...form, id: value })}
                   onValueChange={(value) => { bindUsersToOrganization(value) }}>
                   <SelectTrigger id="organization-filter" className="w-[180px] bg-white">
                     <SelectValue placeholder="Select organization" />
@@ -547,7 +547,7 @@ export default function UsersPage() {
                     {/* Render organizations dynamically, first value is default */}
                     {/* <SelectItem value="Select organization">Select organization</SelectItem> */}
                     {(Array.isArray(organizations) ? organizations : []).map((org) => (
-                      <SelectItem key={org.organization_id} value={org.organization_name}>
+                      <SelectItem key={org.id} value={org.organization_name}>
                         {org.organization_name}
                       </SelectItem>
                     ))}
@@ -710,7 +710,7 @@ export default function UsersPage() {
                                       )
                                     ) {
                                       try {
-                                        const response = await api.delete(`/users/users/${user.user_id}?organization_id=${user.organization_id}`);
+                                        const response = await api.delete(`/users/users/${user.user_id}?id=${user.organization_id}`);
                                         if (response.status === 200 || response.status === 204) {
                                           toast.success("User deleted successfully");
                                           // Refresh users list
