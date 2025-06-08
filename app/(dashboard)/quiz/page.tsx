@@ -7,6 +7,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import { QuizInterface } from "@/components/quiz-interface"
 import { useParams, useSearchParams } from "next/navigation"
+import Link from "next/link"
+import QuizCompletion from "@/components/quiz/quiz-completion"
 
 // Define the Question interface
 interface Question {
@@ -81,6 +83,7 @@ export default function QuizPage() {
   const [currentquestionId, setCurrentquestionId] = useState<number | null>(1)
   const [quizStatus, setQuizStatus] = useState<boolean>(false)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [quizCompleted, setQuizCompleted] = useState(false)
 
   const searchParams = useSearchParams() // query params
   const subjectId = searchParams.get("subjectId")
@@ -368,6 +371,11 @@ export default function QuizPage() {
 
   return (
     <div>
+
+
+
+
+
       <QuizInterface
         topicSlug={topicSlug || ""}
         subjectSlug={subjectSlug || ""}
@@ -383,6 +391,8 @@ export default function QuizPage() {
         setQuizStatus={setQuizStatus}
         onRetakeQuiz={handleRetakeQuiz}
       />
+
+
     </div>
   )
 }

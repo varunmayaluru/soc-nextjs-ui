@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import QuizCompletion from "./quiz/quiz-completion"
 
 interface Option {
   id: number
@@ -96,6 +97,8 @@ export function QuizInterface({
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now())
   const [totalQuizTime, setTotalQuizTime] = useState<number>(0)
   const [questionTimes, setQuestionTimes] = useState<Record<number, number>>({})
+
+  const [quizCompleted, setQuizCompleted] = useState(false)
 
   const { question, loading, error, fetchQuestion } = useQuizQuestion({
     quizId,
@@ -492,77 +495,95 @@ export function QuizInterface({
   // }
 
   return (
-    <div className="mx-auto bg-white">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-        <QuestionPanel
-          topicSlug={topicSlug || ""}
-          subjectSlug={subjectSlug || ""}
-          subjectName={subjectName}
-          topicName={topicName}
-          quizName={quizName}
-          subjectId={subjectId || ""}
-          topicId={topicId || ""}
-          quizId={quizId}
-          quizStatus={quizStatus}
-          question={question}
-          currentQuestionId={currentQuestionId}
+    <>
+      {quizCompleted &&
+        <QuizCompletion
+          score={0}
           totalQuestions={totalQuestions}
-          paginationNumbers={paginationNumbers}
-          selectedOption={selectedOption}
-          isAnswerChecked={isAnswerChecked}
-          isCorrect={isCorrect}
-          onOptionSelect={handleOptionSelect}
-          onNavigate={navigateToQuestion}
-          onSubmit={checkAnswer}
-          onQuestionSelect={handleQuestionSelect}
-          onRetakeQuiz={handleRetakeQuiz}
-          showRetakeDialog={showRetakeDialog}
-          setShowRetakeDialog={setShowRetakeDialog}
-          isRetaking={isRetaking}
-          quizProgress={quizProgress}
+          timeSpent={"900"}
+          subject={subjectName}
+          quizTitle={quizName || ""}
+          correctAnswers={0}
+          incorrectAnswers={0}
+          noAnswers={0}
+          skippedAnswers={0}
         />
+      }
+      {quizCompleted &&
+        <div className="mx-auto bg-white">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+            <QuestionPanel
+              topicSlug={topicSlug || ""}
+              subjectSlug={subjectSlug || ""}
+              subjectName={subjectName}
+              topicName={topicName}
+              quizName={quizName}
+              subjectId={subjectId || ""}
+              topicId={topicId || ""}
+              quizId={quizId}
+              quizStatus={quizStatus}
+              question={question}
+              currentQuestionId={currentQuestionId}
+              totalQuestions={totalQuestions}
+              paginationNumbers={paginationNumbers}
+              selectedOption={selectedOption}
+              isAnswerChecked={isAnswerChecked}
+              isCorrect={isCorrect}
+              onOptionSelect={handleOptionSelect}
+              onNavigate={navigateToQuestion}
+              onSubmit={checkAnswer}
+              onQuestionSelect={handleQuestionSelect}
+              onRetakeQuiz={handleRetakeQuiz}
+              showRetakeDialog={showRetakeDialog}
+              setShowRetakeDialog={setShowRetakeDialog}
+              isRetaking={isRetaking}
+              quizProgress={quizProgress}
+            />
 
-        <ChatPanel
-          messages={messages}
-          isTyping={isTyping}
-          onSendMessage={sendMessage}
-          disabled={!isAnswerChecked || isCorrect}
-        />
-      </div>
+            <ChatPanel
+              messages={messages}
+              isTyping={isTyping}
+              onSendMessage={sendMessage}
+              disabled={!isAnswerChecked || isCorrect}
+            />
+          </div>
 
-      <RelevantLinks links={relevantLinks} />
+          <RelevantLinks links={relevantLinks} />
 
-      {/* Retake Confirmation Dialog */}
-      <Dialog open={showRetakeDialog} onOpenChange={setShowRetakeDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Retake Quiz</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to retake this quiz? This will start a new attempt and your current progress will be
-              saved as attempt {quizProgress?.attempts_count || 1}.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRetakeDialog(false)} disabled={isRetaking}>
-              Cancel
-            </Button>
-            <Button onClick={handleRetakeQuiz} disabled={isRetaking} className="flex items-center gap-2">
-              {isRetaking ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Starting...
-                </>
-              ) : (
-                <>
-                  <RotateCcw className="h-4 w-4" />
-                  Start New Attempt
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+          {/* Retake Confirmation Dialog */}
+          <Dialog open={showRetakeDialog} onOpenChange={setShowRetakeDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Retake Quiz</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to retake this quiz? This will start a new attempt and your current progress will be
+                  saved as attempt {quizProgress?.attempts_count || 1}.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowRetakeDialog(false)} disabled={isRetaking}>
+                  Cancel
+                </Button>
+                <Button onClick={handleRetakeQuiz} disabled={isRetaking} className="flex items-center gap-2">
+                  {isRetaking ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Starting...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="h-4 w-4" />
+                      Start New Attempt
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      }
+
+    </>
   )
 }
 
