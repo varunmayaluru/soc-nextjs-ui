@@ -40,14 +40,14 @@ interface Topic {
 export default function TopicPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [quizzes, setQuizzes] = useState<any>([])
-  const [subjectName, setSubjectName] = useState<string>("")
-  const [topicName, setTopicName] = useState<string>("")
 
   const searchParams = useSearchParams() // query params
   const subjectId = searchParams.get("subjectId")
   const topicId = searchParams.get("topicId")
   const topicSlug = searchParams.get("topicSlug")
   const subjectSlug = searchParams.get("subjectSlug")
+  const subjectName = searchParams.get("subjectName")
+  const topicName = searchParams.get("topicName")
   let subject = null as unknown as Subject;
   let topic = null as unknown as Topic;
 
@@ -61,50 +61,13 @@ export default function TopicPage() {
 
   // const quizzes = getQuizzes(params.topic)
 
-  useEffect(() => {
-    const fetchSubjectName = async () => {
-      try {
-        const response = await api.get<Subject>(`/subjects/subjects/${subjectSlug}/${subjectId}?organization_id=${organizationId}`)
-
-        if (response.ok) {
-          subject = response.data
-          setSubjectName(subject.subject_name)
-        } else {
-          throw new Error("Failed to fetch subject name")
-        }
-      } catch (error) {
-        console.error("Error fetching subject name:", error)
-      }
-    }
-
-    fetchSubjectName()
-  }, [subjectId])
-
-  useEffect(() => {
-    const fetchTopicName = async () => {
-      try {
-        const response = await api.get<Topic>(`/topics/topics/${topicSlug}/${topicId}?organization_id=${organizationId}`)
-
-        if (response.ok) {
-          topic = response.data
-          setTopicName(topic.topic_name)
-        } else {
-          throw new Error("Failed to fetch topic name")
-        }
-      } catch (error) {
-        console.error("Error fetching topic name:", error)
-      }
-    }
-
-    fetchTopicName()
-  }, [topicId])
 
   useEffect(() => {
     const fetchProgressData = async () => {
       try {
 
         const userId = localStorage.getItem("userId")
-        const response = await api.get<any>(`user-quiz-dashboard-progress/quiz-progress/progress?user_id=${userId}&organization_id=${organizationId}&topic_slug=${topicSlug}&subject_id=${subjectId}&topic_id=${topicId}`)
+        const response = await api.get<any>(`user-quiz-progress/quiz-progress/progress?user_id=${userId}&organization_id=${organizationId}&topic_slug=${topicSlug}&subject_id=${subjectId}&topic_id=${topicId}`)
         const data = await response.data
         setQuizzes(data)
       } catch (error) {
@@ -179,7 +142,7 @@ export default function TopicPage() {
             </BreadcrumbSeparator>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link className="text-white text-md font-semibold" href={`/topics?subjectId=${subjectId}`}>
+                <Link className="text-white text-md font-semibold" href={`/topics?subjectId=${subjectId}&subjectSlug=${subjectSlug}&subjectName=${subjectName}`}>
                   {subjectName}
                 </Link>
               </BreadcrumbLink>
@@ -223,7 +186,7 @@ export default function TopicPage() {
                 questions={quiz.total_questions}
                 time={quiz.time_limit}
                 difficulty={quiz.level || "Beginner"}
-                href={`/quiz?quizId=${quiz.quiz_id}&subjectId=${subjectId}&topicId=${topicId}&topicSlug=${topicSlug}&subjectSlug=${subjectSlug}`}
+                href={`/quiz?quizId=${quiz.quiz_id}&subjectId=${subjectId}&topicId=${topicId}&topicSlug=${topicSlug}&subjectSlug=${subjectSlug}&quizName=${quiz.title}`}
                 icon={quiz.icon || quizIcons[index % quizIcons.length]}
                 iconBg={quiz.iconBg || iconBgs[index % iconBgs.length]}
                 progress={quiz.progress_percentage} // Use quiz progress or generate random for demo

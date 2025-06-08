@@ -7,6 +7,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
 import { QuizInterface } from "@/components/quiz-interface"
 import { useParams, useSearchParams } from "next/navigation"
+import Link from "next/link"
+import QuizCompletion from "@/components/quiz/quiz-completion"
 
 // Define the Question interface
 interface Question {
@@ -61,7 +63,7 @@ interface answers {
   user_id: number
   subject_id: number
   topic_id: number
-  quizId: number
+  quiz_id: number
   question_id: number
   attempt_id: number
   answer_text: string
@@ -76,12 +78,12 @@ export default function QuizPage() {
   const [error, setError] = useState<string | null>(null)
   const [subjectName, setSubjectName] = useState<string>("")
   const [topicName, setTopicName] = useState<string>("")
-  const [quizName, setQuizName] = useState<string>("")
   const [isQuizExists, setIsQuizExists] = useState(false)
   const [attemptId, setAttemptId] = useState<number | null>(null)
   const [currentquestionId, setCurrentquestionId] = useState<number | null>(1)
   const [quizStatus, setQuizStatus] = useState<boolean>(false)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [quizCompleted, setQuizCompleted] = useState(false)
 
   const searchParams = useSearchParams() // query params
   const subjectId = searchParams.get("subjectId")
@@ -89,6 +91,7 @@ export default function QuizPage() {
   const quizId = searchParams.get("quizId")
   const topicSlug = searchParams.get("topicSlug")
   const subjectSlug = searchParams.get("subjectSlug")
+  const quizName = searchParams.get("quizName")
   let subject = null as unknown as Subject
   let topic = null as unknown as Topic
   const userId = localStorage.getItem("userId")
@@ -132,24 +135,7 @@ export default function QuizPage() {
     fetchTopicName()
   }, [topicId])
 
-  useEffect(() => {
-    const fetchQuizName = async () => {
-      try {
-        const response = await api.get<Quiz>(`/quizzes/quizzes/by-subject-topic/${subjectId}/${topicId}?organization_id=${organizationId}`)
 
-        if (response.ok) {
-          const data = response.data
-          setQuizName(data.title)
-        } else {
-          throw new Error("Failed to fetch quiz name")
-        }
-      } catch (error) {
-        console.error("Error fetching quiz name:", error)
-      }
-    }
-
-    fetchQuizName()
-  }, [quizId])
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -195,7 +181,7 @@ export default function QuizPage() {
 
         const userId = localStorage.getItem("userId")
         const response = await api.get<any>(
-          `user-quiz-progress/quiz-progress/${userId}/exists?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quizId=${quizId}`,
+          `user-quiz-progress/quiz-progress/${userId}/exists?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
         )
 
         if (!response.ok) throw new Error(`API error: ${response.status}`)
@@ -210,7 +196,7 @@ export default function QuizPage() {
               user_id: userId,
               subject_id: subjectId,
               topic_id: topicId,
-              quizId: quizId,
+              quiz_id: quizId,
               question_id: 1,
               attempt_id: 1,
               is_complete: false,
@@ -224,7 +210,7 @@ export default function QuizPage() {
               user_id: userId,
               subject_id: subjectId,
               topic_id: topicId,
-              quizId: quizId,
+              quiz_id: quizId,
               is_complete: false,
               latest_score: 0,
               best_score: 0,
@@ -249,7 +235,7 @@ export default function QuizPage() {
             // If quiz exists, fetch the latest question and attempt
             try {
               const quizResponse = await api.get<quizSummary>(
-                `user-quiz-progress/quiz-progress/${userId}/latest-summary?organization_id=${organizationId}?subject_id=${subjectId}&topic_id=${topicId}&quizId=${quizId}`,
+                `user-quiz-progress/quiz-progress/${userId}/latest-summary?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
               )
 
               if (quizResponse.ok && quizResponse.data) {
@@ -307,7 +293,7 @@ export default function QuizPage() {
     try {
       // Fetch the latest quiz progress to get the current attempt count
       const progressResponse = await api.get<any>(
-        `user-quiz-progress/quiz-progress/${userId}/latest-summary?organization_id=${organizationId}?subject_id=${subjectId}&topic_id=${topicId}&quizId=${quizId}`,
+        `user-quiz-progress/quiz-progress/${userId}/latest-summary?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
       )
 
       if (progressResponse.ok && progressResponse.data) {
@@ -385,7 +371,14 @@ export default function QuizPage() {
 
   return (
     <div>
+
+
+
+
+
       <QuizInterface
+        topicSlug={topicSlug || ""}
+        subjectSlug={subjectSlug || ""}
         quizStatus={quizStatus}
         questionId={currentquestionId?.toString()}
         attemptId={attemptId}
@@ -394,10 +387,12 @@ export default function QuizPage() {
         topicId={topicId?.toString() || ""}
         subjectName={subjectName}
         topicName={topicName}
-        quizName={quizName}
+        quizName={quizName || ""}
         setQuizStatus={setQuizStatus}
         onRetakeQuiz={handleRetakeQuiz}
       />
+
+
     </div>
   )
 }

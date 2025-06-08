@@ -8,15 +8,30 @@ import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbS
 import Link from "next/link"
 
 interface Option {
-  quiz_question_option_id: number
+  id: number
   option_text: string
   is_correct: boolean
+  option_index: number
+  organization_id: number
 }
+
+// interface Question {
+//   question_id: number
+//   quiz_id: number
+//   quiz_question_text: string
+//   options: Option[]
+// }
 
 interface Question {
   question_id: number
   quiz_id: number
   quiz_question_text: string
+  difficulty_level: string
+  is_active: boolean
+  is_maths: boolean
+  created_by: number
+  create_date_time: string
+  update_date_time: string | null
   options: Option[]
 }
 
@@ -28,6 +43,8 @@ interface QuizProgress {
 }
 
 interface QuestionPanelProps {
+  topicSlug: string
+  subjectSlug: string
   subjectName: string
   topicName: string
   quizName: string
@@ -54,6 +71,8 @@ interface QuestionPanelProps {
 }
 
 export function QuestionPanel({
+  topicSlug,
+  subjectSlug,
   subjectName,
   topicName,
   quizName,
@@ -93,14 +112,14 @@ export function QuestionPanel({
             <BreadcrumbSeparator></BreadcrumbSeparator>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link className="text-white text-md font-semibold" href={`/topics?subjectId=${subjectId}`}>
+                <Link className="text-white text-md font-semibold" href={`/topics?subjectId=${subjectId}&subjectSlug=${subjectSlug}&subjectName=${subjectName}`}>
                   {subjectName}
                 </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator></BreadcrumbSeparator>
             <BreadcrumbItem>
-              <BreadcrumbLink className="text-white text-md font-semibold" href={`/quizzes?topicId=${topicId}&subjectId=${subjectId}`}>
+              <BreadcrumbLink className="text-white text-md font-semibold" href={`/quizzes?topicId=${topicId}&subjectId=${subjectId}&topicSlug=${topicSlug}&subjectSlug=${subjectSlug}&subjectName=${subjectName}&topicName=${topicName}`}>
                 {topicName}
               </BreadcrumbLink>
             </BreadcrumbItem>
@@ -168,12 +187,12 @@ export function QuestionPanel({
           className="space-y-2 gap-1 px-4 py-4 justify-center"
         >
           {question.options.map((option) => {
-            const isSelected = selectedOption === option.quiz_question_option_id
+            const isSelected = selectedOption === option.id
             const isCorrectOption = option.is_correct
 
             return (
               <div
-                key={option.quiz_question_option_id}
+                key={option.id}
                 className={`border min-w-[600px] max-w-[750px] rounded-full flex items-center transition-all duration-200 ${isSelected
                   ? isAnswerChecked
                     ? isCorrectOption
@@ -194,8 +213,8 @@ export function QuestionPanel({
                     }`}
                 >
                   <RadioGroupItem
-                    value={option.quiz_question_option_id.toString()}
-                    id={`option-${option.quiz_question_option_id}`}
+                    value={option.id.toString()}
+                    id={`option-${option.id}`}
                     className={`h-5 w-5 ${isSelected
                       ? isAnswerChecked
                         ? isCorrectOption
@@ -207,7 +226,7 @@ export function QuestionPanel({
                   />
                 </div>
                 <Label
-                  htmlFor={`option-${option.quiz_question_option_id}`}
+                  htmlFor={`option-${option.id}`}
                   className={`flex-grow cursor-pointer h-16 text-md flex items-center transition-colors ${isSelected
                     ? isAnswerChecked
                       ? isCorrectOption

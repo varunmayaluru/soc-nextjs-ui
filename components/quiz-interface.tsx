@@ -17,16 +17,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import QuizCompletion from "./quiz/quiz-completion"
 
 interface Option {
-  quiz_question_option_id: number
+  id: number
   option_text: string
   is_correct: boolean
+  option_index: number
+  organization_id: number
 }
 
 interface Question {
   question_id: number
-  quizId: number
+  quiz_id: number
   quiz_question_text: string
   difficulty_level: string
   is_active: boolean
@@ -52,6 +55,8 @@ interface QuizProgress {
 }
 
 export function QuizInterface({
+  topicSlug,
+  subjectSlug,
   subjectName,
   topicName,
   quizName,
@@ -64,6 +69,8 @@ export function QuizInterface({
   setQuizStatus,
   onRetakeQuiz,
 }: {
+  topicSlug: string
+  subjectSlug: string
   subjectName: string
   topicName: string
   quizName: string
@@ -90,6 +97,8 @@ export function QuizInterface({
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now())
   const [totalQuizTime, setTotalQuizTime] = useState<number>(0)
   const [questionTimes, setQuestionTimes] = useState<Record<number, number>>({})
+
+  const [quizCompleted, setQuizCompleted] = useState(false)
 
   const { question, loading, error, fetchQuestion } = useQuizQuestion({
     quizId,
@@ -128,7 +137,7 @@ export function QuizInterface({
   const loadQuizProgress = async () => {
     try {
       const response = await api.get<QuizProgress>(
-        `user-quiz-progress/quiz-progress/${userId}?subject_id=${subjectId}&topic_id=${topicId}&quizId=${quizId}`,
+        `user-quiz-attempts/quiz-attempts/${userId}/latest?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
       )
 
       if (response.ok && response.data) {
@@ -145,7 +154,7 @@ export function QuizInterface({
 
     setIsLoadingAnswer(true)
     try {
-      const endpoint = `/quizzes/quizzes/answers/${userId}?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quizId=${quizId}&question_id=${targetQuestionId}&attempt_id=${attemptId || 1}`
+      const endpoint = `/quizzes/quizzes/answers/${userId}?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}&question_id=${targetQuestionId}&attempt_id=${attemptId || 1}`
 
       const response = await api.get<ExistingAnswer>(endpoint)
 
@@ -176,7 +185,7 @@ export function QuizInterface({
 
   const quizData = async () => {
     try {
-      const response = await api.get<any>(`/quizzes/quizzes/${quizId}`)
+      const response = await api.get<any>(`/quizzes/quizzes/${quizId}?organization_id=${organizationId}`)
       if (response.ok) {
         const data = response.data
         setTotalQuestions(data?.total_questions)
@@ -210,7 +219,7 @@ export function QuizInterface({
   const checkAnswer = async () => {
     if (selectedOption === null || !question || isAnswerChecked) return
 
-    const selectedOptionData = question.options.find((option) => option.quiz_question_option_id === selectedOption)
+    const selectedOptionData = question.options.find((option) => option.id === selectedOption)
 
     // Calculate time spent on this question
     const questionCompletionTime = Math.floor((Date.now() - questionStartTime) / 1000)
@@ -233,11 +242,11 @@ export function QuizInterface({
         user_id: userId,
         subject_id: subjectId,
         topic_id: topicId,
-        quizId: quizId,
+        quiz_id: quizId,
         question_id: currentQuestionId,
         attempt_id: attemptId || 1,
         answer_text: "",
-        answer_choice_id: selectedOptionData?.quiz_question_option_id,
+        answer_choice_id: selectedOptionData?.id,
         is_correct: selectedOptionData?.is_correct || false,
       }
 
@@ -251,7 +260,7 @@ export function QuizInterface({
           user_id: userId,
           subject_id: subjectId,
           topic_id: topicId,
-          quizId: quizId,
+          quiz_id: quizId,
           question_id: currentQuestionId,
           attempt_id: attemptId || 1,
           is_complete: true,
@@ -325,7 +334,7 @@ export function QuizInterface({
         user_id: userId,
         subject_id: subjectId,
         topic_id: topicId,
-        quizId: quizId,
+        quiz_id: quizId,
         question_id: 1,
         attempt_id: newAttemptId,
         is_complete: false,
@@ -340,7 +349,7 @@ export function QuizInterface({
         user_id: userId,
         subject_id: subjectId,
         topic_id: topicId,
-        quizId: quizId,
+        quiz_id: quizId,
         is_complete: false,
         latest_score: 0,
         best_score: quizProgress?.best_score || 0, // Keep the best score
@@ -412,7 +421,7 @@ export function QuizInterface({
         user_id: userId,
         subject_id: subjectId,
         topic_id: topicId,
-        quizId: quizId,
+        quiz_id: quizId,
         question_id: newQuestionId,
         attempt_id: attemptId,
         is_complete: false,
@@ -466,9 +475,10 @@ export function QuizInterface({
     { title: "Mathematical Formulas Reference", href: "#" },
   ]
 
-  if (loading || isLoadingAnswer) {
-    return <QuizSkeleton />
-  }
+  // if (loading || isLoadingAnswer) {
+  //   console.log("Loading quiz interface...")
+  //   return <QuizSkeleton />
+  // }
 
   if (error) {
     return <QuizError error={error} onRetry={() => window.location.reload()} />
@@ -479,81 +489,101 @@ export function QuizInterface({
   }
 
   // Verify we have the correct question
-  if (question.question_id !== currentQuestionId) {
-    console.warn(`Question mismatch: displaying question ${question.question_id} but should be ${currentQuestionId}`)
-    return <QuizSkeleton />
-  }
+  // if (question.question_id !== currentQuestionId) {
+  //   console.warn(`Question mismatch: displaying question ${question.question_id} but should be ${currentQuestionId}`)
+  //   return <QuizSkeleton />
+  // }
 
   return (
-    <div className="mx-auto bg-white">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-        <QuestionPanel
-          subjectName={subjectName}
-          topicName={topicName}
-          quizName={quizName}
-          subjectId={subjectId || ""}
-          topicId={topicId || ""}
-          quizId={quizId}
-          quizStatus={quizStatus}
-          question={question}
-          currentQuestionId={currentQuestionId}
+    <>
+      {quizCompleted &&
+        <QuizCompletion
+          score={0}
           totalQuestions={totalQuestions}
-          paginationNumbers={paginationNumbers}
-          selectedOption={selectedOption}
-          isAnswerChecked={isAnswerChecked}
-          isCorrect={isCorrect}
-          onOptionSelect={handleOptionSelect}
-          onNavigate={navigateToQuestion}
-          onSubmit={checkAnswer}
-          onQuestionSelect={handleQuestionSelect}
-          onRetakeQuiz={handleRetakeQuiz}
-          showRetakeDialog={showRetakeDialog}
-          setShowRetakeDialog={setShowRetakeDialog}
-          isRetaking={isRetaking}
-          quizProgress={quizProgress}
+          timeSpent={"900"}
+          subject={subjectName}
+          quizTitle={quizName || ""}
+          correctAnswers={0}
+          incorrectAnswers={0}
+          noAnswers={0}
+          skippedAnswers={0}
         />
+      }
+      {quizCompleted &&
+        <div className="mx-auto bg-white">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+            <QuestionPanel
+              topicSlug={topicSlug || ""}
+              subjectSlug={subjectSlug || ""}
+              subjectName={subjectName}
+              topicName={topicName}
+              quizName={quizName}
+              subjectId={subjectId || ""}
+              topicId={topicId || ""}
+              quizId={quizId}
+              quizStatus={quizStatus}
+              question={question}
+              currentQuestionId={currentQuestionId}
+              totalQuestions={totalQuestions}
+              paginationNumbers={paginationNumbers}
+              selectedOption={selectedOption}
+              isAnswerChecked={isAnswerChecked}
+              isCorrect={isCorrect}
+              onOptionSelect={handleOptionSelect}
+              onNavigate={navigateToQuestion}
+              onSubmit={checkAnswer}
+              onQuestionSelect={handleQuestionSelect}
+              onRetakeQuiz={handleRetakeQuiz}
+              showRetakeDialog={showRetakeDialog}
+              setShowRetakeDialog={setShowRetakeDialog}
+              isRetaking={isRetaking}
+              quizProgress={quizProgress}
+            />
 
-        <ChatPanel
-          messages={messages}
-          isTyping={isTyping}
-          onSendMessage={sendMessage}
-          disabled={!isAnswerChecked || isCorrect}
-        />
-      </div>
+            <ChatPanel
+              messages={messages}
+              isTyping={isTyping}
+              onSendMessage={sendMessage}
+              disabled={!isAnswerChecked || isCorrect}
+            />
+          </div>
 
-      <RelevantLinks links={relevantLinks} />
+          <RelevantLinks links={relevantLinks} />
 
-      {/* Retake Confirmation Dialog */}
-      <Dialog open={showRetakeDialog} onOpenChange={setShowRetakeDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Retake Quiz</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to retake this quiz? This will start a new attempt and your current progress will be
-              saved as attempt {quizProgress?.attempts_count || 1}.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRetakeDialog(false)} disabled={isRetaking}>
-              Cancel
-            </Button>
-            <Button onClick={handleRetakeQuiz} disabled={isRetaking} className="flex items-center gap-2">
-              {isRetaking ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Starting...
-                </>
-              ) : (
-                <>
-                  <RotateCcw className="h-4 w-4" />
-                  Start New Attempt
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+          {/* Retake Confirmation Dialog */}
+          <Dialog open={showRetakeDialog} onOpenChange={setShowRetakeDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Retake Quiz</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to retake this quiz? This will start a new attempt and your current progress will be
+                  saved as attempt {quizProgress?.attempts_count || 1}.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowRetakeDialog(false)} disabled={isRetaking}>
+                  Cancel
+                </Button>
+                <Button onClick={handleRetakeQuiz} disabled={isRetaking} className="flex items-center gap-2">
+                  {isRetaking ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                      Starting...
+                    </>
+                  ) : (
+                    <>
+                      <RotateCcw className="h-4 w-4" />
+                      Start New Attempt
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      }
+
+    </>
   )
 }
 
@@ -564,9 +594,9 @@ function QuizSkeleton() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
         <div className="bg-white p-6">
           <div className="space-y-4">
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-4 w-1/4" />
-            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-8 w-3/4 bg-gray-200" />
+            <Skeleton className="h-4 w-1/4 bg-gray-200" />
+            <Skeleton className="h-24 w-full bg-gray-200" />
             <div className="space-y-2 mt-4">
               {Array(4)
                 .fill(0)

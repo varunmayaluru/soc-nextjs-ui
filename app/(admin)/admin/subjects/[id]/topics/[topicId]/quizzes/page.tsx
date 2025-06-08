@@ -851,6 +851,8 @@ export default function QuizzesPage() {
           </DialogHeader>
           {selectedQuizForUpload && (
             <QuizUploadForm
+              subjectName={subject?.subject_name || ""}
+              topicName={topic?.topic_name || ""}
               subjectId={subjectId}
               topicId={topicId}
               quizId={selectedQuizForUpload.id.toString()}
