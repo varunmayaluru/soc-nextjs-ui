@@ -246,7 +246,7 @@ export function QuizInterface({
         question_id: currentQuestionId,
         attempt_id: attemptId || 1,
         answer_text: "",
-        answer_choice_id: selectedOptionData?.id,
+        answer_choice_id: selectedOptionData?.option_index,
         is_correct: selectedOptionData?.is_correct || false,
       }
 
@@ -288,8 +288,8 @@ export function QuizInterface({
           user_id: userId,
           subject_id: subjectId,
           topic_id: topicId,
-          quizId: quizId,
-          is_complete: isComplete,
+          quiz_id: quizId,
+          is_completed: isComplete,
           latest_score: 0, // This should be calculated based on correct answers
           best_score: 0, // This should be updated if this is a better score
           attempts_count: quizProgress?.attempts_count || 1,
@@ -350,7 +350,7 @@ export function QuizInterface({
         subject_id: subjectId,
         topic_id: topicId,
         quiz_id: quizId,
-        is_complete: false,
+        is_completed: false,
         latest_score: 0,
         best_score: quizProgress?.best_score || 0, // Keep the best score
         attempts_count: newAttemptId,
@@ -509,7 +509,7 @@ export function QuizInterface({
           skippedAnswers={0}
         />
       }
-      {quizCompleted &&
+      {!quizCompleted &&
         <div className="mx-auto bg-white">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
             <QuestionPanel

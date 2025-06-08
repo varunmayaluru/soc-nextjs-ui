@@ -76,8 +76,6 @@ export default function QuizPage() {
   const [quiz, setQuiz] = useState<Quiz | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [subjectName, setSubjectName] = useState<string>("")
-  const [topicName, setTopicName] = useState<string>("")
   const [isQuizExists, setIsQuizExists] = useState(false)
   const [attemptId, setAttemptId] = useState<number | null>(null)
   const [currentquestionId, setCurrentquestionId] = useState<number | null>(1)
@@ -92,48 +90,13 @@ export default function QuizPage() {
   const topicSlug = searchParams.get("topicSlug")
   const subjectSlug = searchParams.get("subjectSlug")
   const quizName = searchParams.get("quizName")
+  const subjectName = searchParams.get("subjectName")
+  const topicName = searchParams.get("topicName")
   let subject = null as unknown as Subject
   let topic = null as unknown as Topic
   const userId = localStorage.getItem("userId")
   const organizationId = localStorage.getItem("organizationId")
 
-  useEffect(() => {
-    const fetchSubjectName = async () => {
-      try {
-        const response = await api.get<Subject>(`/subjects/subjects/${subjectSlug}/${subjectId}?organization_id=${organizationId}`)
-
-        if (response.ok) {
-          subject = response.data
-          setSubjectName(subject.subject_name)
-        } else {
-          throw new Error("Failed to fetch subject name")
-        }
-      } catch (error) {
-        console.error("Error fetching subject name:", error)
-      }
-    }
-
-    fetchSubjectName()
-  }, [subjectId])
-
-  useEffect(() => {
-    const fetchTopicName = async () => {
-      try {
-        const response = await api.get<Topic>(`/topics/topics/${topicSlug}/${topicId}?organization_id=${organizationId}`)
-
-        if (response.ok) {
-          topic = response.data
-          setTopicName(topic.topic_name)
-        } else {
-          throw new Error("Failed to fetch topic name")
-        }
-      } catch (error) {
-        console.error("Error fetching topic name:", error)
-      }
-    }
-
-    fetchTopicName()
-  }, [topicId])
 
 
 
@@ -211,7 +174,7 @@ export default function QuizPage() {
               subject_id: subjectId,
               topic_id: topicId,
               quiz_id: quizId,
-              is_complete: false,
+              is_completed: false,
               latest_score: 0,
               best_score: 0,
               attempts_count: 1,
@@ -235,7 +198,7 @@ export default function QuizPage() {
             // If quiz exists, fetch the latest question and attempt
             try {
               const quizResponse = await api.get<quizSummary>(
-                `user-quiz-progress/quiz-progress/${userId}/latest-summary?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
+                `user-quiz-attempts/quiz-attempts/${userId}/latest?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
               )
 
               if (quizResponse.ok && quizResponse.data) {
@@ -293,7 +256,7 @@ export default function QuizPage() {
     try {
       // Fetch the latest quiz progress to get the current attempt count
       const progressResponse = await api.get<any>(
-        `user-quiz-progress/quiz-progress/${userId}/latest-summary?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
+        `user-quiz-attempts/quiz-attempts/${userId}/latest?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
       )
 
       if (progressResponse.ok && progressResponse.data) {
@@ -371,11 +334,6 @@ export default function QuizPage() {
 
   return (
     <div>
-
-
-
-
-
       <QuizInterface
         topicSlug={topicSlug || ""}
         subjectSlug={subjectSlug || ""}
@@ -385,14 +343,12 @@ export default function QuizPage() {
         quizId={quizId?.toString() || ""}
         subjectId={subjectId?.toString() || ""}
         topicId={topicId?.toString() || ""}
-        subjectName={subjectName}
-        topicName={topicName}
+        subjectName={subjectName || ""}
+        topicName={topicName || ""}
         quizName={quizName || ""}
         setQuizStatus={setQuizStatus}
         onRetakeQuiz={handleRetakeQuiz}
       />
-
-
     </div>
   )
 }
