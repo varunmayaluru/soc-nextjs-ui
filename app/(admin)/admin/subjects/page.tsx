@@ -567,7 +567,14 @@ export default function SubjectsPage() {
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex justify-end gap-2">
-                              <Link href={`/admin/subjects/${subject.id}/topics`}>
+                              <Link  href={{
+                          pathname: `/admin/subjects/${subject.id}/topics`,
+                          query: {
+                            organization_id: subject.organization_id,
+                            organization_name: subject.organization_name,
+                            subject_slug: subject.slug,
+                          },
+                        }}>
                                 <Button
                                   variant="outline"
                                   size="sm"

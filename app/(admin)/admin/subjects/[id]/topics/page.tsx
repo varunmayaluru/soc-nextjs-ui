@@ -616,8 +616,8 @@ export default function TopicsPage() {
                           <td className="px-4 py-3 text-right">
                             <div className="flex justify-end gap-2">
                               <Link
-                                href={`/admin/subjects/${subjectId}/topics/${topic.id}/quizzes?organization_id=${organizationId}&organization_name=${organizationName}`}
-                              >
+                      href={`/admin/subjects/${subjectId}/topics/${topic.id}/quizzes?organization_id=${organizationId}&organization_name=${organizationName}&subject_slug=${subjectSlug}&topic_slug=${topic.slug}`}
+                    >
                                 <Button
                                   variant="outline"
                                   size="sm"
