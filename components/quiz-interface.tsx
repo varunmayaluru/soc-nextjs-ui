@@ -134,7 +134,7 @@ export function QuizInterface({
   const loadQuizProgress = async () => {
     try {
       const response = await api.get<QuizProgress>(
-        `user-quiz-progress/quiz-progress/${userId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
+        `user-quiz-attempts/quiz-attempts/${userId}/latest?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
       )
 
       if (response.ok && response.data) {

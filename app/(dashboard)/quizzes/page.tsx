@@ -67,7 +67,7 @@ export default function TopicPage() {
       try {
 
         const userId = localStorage.getItem("userId")
-        const response = await api.get<any>(`user-quiz-dashboard-progress/quiz-progress/progress?user_id=${userId}&organization_id=${organizationId}&topic_slug=${topicSlug}&subject_id=${subjectId}&topic_id=${topicId}`)
+        const response = await api.get<any>(`user-quiz-progress/quiz-progress/progress?user_id=${userId}&organization_id=${organizationId}&topic_slug=${topicSlug}&subject_id=${subjectId}&topic_id=${topicId}`)
         const data = await response.data
         setQuizzes(data)
       } catch (error) {
