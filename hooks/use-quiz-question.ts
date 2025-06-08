@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api-client";
 
 interface Option {
-  quiz_question_option_id: number;
+  id: number;
   option_text: string;
   is_correct: boolean;
+  option_index: number;
+  organization_id: number;
 }
 
 interface Question {

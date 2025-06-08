@@ -19,9 +19,11 @@ import {
 } from "@/components/ui/dialog"
 
 interface Option {
-  quiz_question_option_id: number
+  id: number
   option_text: string
   is_correct: boolean
+  option_index: number
+  organization_id: number
 }
 
 interface Question {
@@ -52,6 +54,8 @@ interface QuizProgress {
 }
 
 export function QuizInterface({
+  topicSlug,
+  subjectSlug,
   subjectName,
   topicName,
   quizName,
@@ -64,6 +68,8 @@ export function QuizInterface({
   setQuizStatus,
   onRetakeQuiz,
 }: {
+  topicSlug: string
+  subjectSlug: string
   subjectName: string
   topicName: string
   quizName: string
@@ -176,7 +182,7 @@ export function QuizInterface({
 
   const quizData = async () => {
     try {
-      const response = await api.get<any>(`/quizzes/quizzes/?organization_id=${organizationId}`)
+      const response = await api.get<any>(`/quizzes/quizzes/${quizId}?organization_id=${organizationId}`)
       if (response.ok) {
         const data = response.data
         setTotalQuestions(data?.total_questions)
@@ -210,7 +216,7 @@ export function QuizInterface({
   const checkAnswer = async () => {
     if (selectedOption === null || !question || isAnswerChecked) return
 
-    const selectedOptionData = question.options.find((option) => option.quiz_question_option_id === selectedOption)
+    const selectedOptionData = question.options.find((option) => option.id === selectedOption)
 
     // Calculate time spent on this question
     const questionCompletionTime = Math.floor((Date.now() - questionStartTime) / 1000)
@@ -237,7 +243,7 @@ export function QuizInterface({
         question_id: currentQuestionId,
         attempt_id: attemptId || 1,
         answer_text: "",
-        answer_choice_id: selectedOptionData?.quiz_question_option_id,
+        answer_choice_id: selectedOptionData?.id,
         is_correct: selectedOptionData?.is_correct || false,
       }
 
@@ -466,9 +472,10 @@ export function QuizInterface({
     { title: "Mathematical Formulas Reference", href: "#" },
   ]
 
-  if (loading || isLoadingAnswer) {
-    return <QuizSkeleton />
-  }
+  // if (loading || isLoadingAnswer) {
+  //   console.log("Loading quiz interface...")
+  //   return <QuizSkeleton />
+  // }
 
   if (error) {
     return <QuizError error={error} onRetry={() => window.location.reload()} />
@@ -479,15 +486,17 @@ export function QuizInterface({
   }
 
   // Verify we have the correct question
-  if (question.question_id !== currentQuestionId) {
-    console.warn(`Question mismatch: displaying question ${question.question_id} but should be ${currentQuestionId}`)
-    return <QuizSkeleton />
-  }
+  // if (question.question_id !== currentQuestionId) {
+  //   console.warn(`Question mismatch: displaying question ${question.question_id} but should be ${currentQuestionId}`)
+  //   return <QuizSkeleton />
+  // }
 
   return (
     <div className="mx-auto bg-white">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
         <QuestionPanel
+          topicSlug={topicSlug || ""}
+          subjectSlug={subjectSlug || ""}
           subjectName={subjectName}
           topicName={topicName}
           quizName={quizName}
@@ -564,9 +573,9 @@ function QuizSkeleton() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
         <div className="bg-white p-6">
           <div className="space-y-4">
-            <Skeleton className="h-8 w-3/4" />
-            <Skeleton className="h-4 w-1/4" />
-            <Skeleton className="h-24 w-full" />
+            <Skeleton className="h-8 w-3/4 bg-gray-200" />
+            <Skeleton className="h-4 w-1/4 bg-gray-200" />
+            <Skeleton className="h-24 w-full bg-gray-200" />
             <div className="space-y-2 mt-4">
               {Array(4)
                 .fill(0)

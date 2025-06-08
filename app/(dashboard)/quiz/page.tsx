@@ -76,7 +76,6 @@ export default function QuizPage() {
   const [error, setError] = useState<string | null>(null)
   const [subjectName, setSubjectName] = useState<string>("")
   const [topicName, setTopicName] = useState<string>("")
-  const [quizName, setQuizName] = useState<string>("")
   const [isQuizExists, setIsQuizExists] = useState(false)
   const [attemptId, setAttemptId] = useState<number | null>(null)
   const [currentquestionId, setCurrentquestionId] = useState<number | null>(1)
@@ -89,6 +88,7 @@ export default function QuizPage() {
   const quizId = searchParams.get("quizId")
   const topicSlug = searchParams.get("topicSlug")
   const subjectSlug = searchParams.get("subjectSlug")
+  const quizName = searchParams.get("quizName")
   let subject = null as unknown as Subject
   let topic = null as unknown as Topic
   const userId = localStorage.getItem("userId")
@@ -132,24 +132,7 @@ export default function QuizPage() {
     fetchTopicName()
   }, [topicId])
 
-  useEffect(() => {
-    const fetchQuizName = async () => {
-      try {
-        const response = await api.get<Quiz>(`/quizzes/quizzes/by-subject-topic/${subjectId}/${topicId}?organization_id=${organizationId}`)
 
-        if (response.ok) {
-          const data = response.data
-          setQuizName(data.title)
-        } else {
-          throw new Error("Failed to fetch quiz name")
-        }
-      } catch (error) {
-        console.error("Error fetching quiz name:", error)
-      }
-    }
-
-    fetchQuizName()
-  }, [quizId])
 
   useEffect(() => {
     const fetchQuiz = async () => {
@@ -386,6 +369,8 @@ export default function QuizPage() {
   return (
     <div>
       <QuizInterface
+        topicSlug={topicSlug || ""}
+        subjectSlug={subjectSlug || ""}
         quizStatus={quizStatus}
         questionId={currentquestionId?.toString()}
         attemptId={attemptId}
@@ -394,7 +379,7 @@ export default function QuizPage() {
         topicId={topicId?.toString() || ""}
         subjectName={subjectName}
         topicName={topicName}
-        quizName={quizName}
+        quizName={quizName || ""}
         setQuizStatus={setQuizStatus}
         onRetakeQuiz={handleRetakeQuiz}
       />

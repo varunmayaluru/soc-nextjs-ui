@@ -46,36 +46,18 @@ export default function SubjectPage() {
   const [progressData, setProgressData] = useState<TopicProgress[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [subjectName, setSubjectName] = useState<string>("")
 
   const searchParams = useSearchParams() // query params
   const subjectId = searchParams.get("subjectId")
   const subjectSlug = searchParams.get("subjectSlug")
+  const subjectName = searchParams.get("subjectName")
   console.log("subjectSlug", subjectSlug)
   let subject = null as unknown as Subject;
 
   const userId = localStorage.getItem("userId")
   const organizationId = localStorage.getItem("organizationId")
 
-  // Get subject name from the API based on subject ID
-  useEffect(() => {
-    const fetchSubjectName = async () => {
-      try {
-        const response = await api.get<Subject>(`/subjects/subjects/${subjectSlug}/${subjectId}?organization_id=${organizationId}`)
 
-        if (response.ok) {
-          subject = response.data
-          setSubjectName(subject.subject_name)
-        } else {
-          throw new Error("Failed to fetch subject name")
-        }
-      } catch (error) {
-        console.error("Error fetching subject name:", error)
-      }
-    }
-
-    fetchSubjectName()
-  }, [subjectId])
 
   // Fetch progress data
   useEffect(() => {
@@ -268,7 +250,7 @@ export default function SubjectPage() {
                       </span>
                     </p>
                     <Link
-                      href={`/quizzes?topicId=${topic.topic_id}&subjectId=${topic.subject_id}&topicSlug=${topic.slug}&subjectSlug=${subjectSlug}`}
+                      href={`/quizzes?topicId=${topic.topic_id}&subjectId=${topic.subject_id}&topicSlug=${topic.slug}&subjectSlug=${subjectSlug}&subjectName=${subjectName}&topicName=${topic.topic_name}`}
                       className="bg-[#1e74bb] text-white py-2 px-4 rounded-md text-sm flex items-center group-hover:bg-[#1a67a7] transition-all duration-300"
                     >
                       Select a Quiz
