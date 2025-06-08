@@ -30,9 +30,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Link from "next/link"
 import { toast } from "sonner"
 import { api } from "@/lib/api-client"
-import { Organization } from "@/app/types/types"
+import type { Organization } from "@/app/types/types"
 import { useEffect } from "react"
-import { set } from "date-fns"
 export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
@@ -54,6 +53,8 @@ export default function UsersPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [selectedOrganization, setSelectedOrganization] = useState<string>("")
   const [users, setUsers] = useState<UserForm[]>([])
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<UserForm | null>(null)
 
   // call ngonInit to fetch organizations
 
@@ -67,7 +68,7 @@ export default function UsersPage() {
         if (response.status === 200) {
           setOrganizations(response.data)
         } else {
-          toast.error(`Failed to fetch organizations. Server responded with status ${response.status}`);
+          toast.error(`Failed to fetch organizations. Server responded with status ${response.status}`)
         }
       } catch (error) {
         toast.error("Failed to fetch organizations")
@@ -84,24 +85,30 @@ export default function UsersPage() {
     }
   }, [organizations])
 
-
-
   const bindUsersToOrganization = async (organizationName: string) => {
-    setSelectedOrganization(organizationName);
-    setUsers([]);
-    console.log("Selected organization:", organizationName);
-    const orgId = organizations.find(org => org.organization_name === organizationName)?.id;
-    const response = await api.get(`/users/organizations/${orgId}/users`)
+    setSelectedOrganization(organizationName)
+    setUsers([])
+    console.log("Selected organization:", organizationName)
+    const orgId = organizations.find((org) => org.organization_name === organizationName)?.id
+    const response = await api
+      .get(`/users/organizations/${orgId}/users`)
       .then((response) => {
         if (response.status === 200 && Array.isArray(response.data)) {
-          // If you want to update the users grid, you need a users state
-          setUsers(response.data)
+         
+            const mappedUsers = response.data.map((user: any) => {
+              const { id, ...rest } = user
+              return {
+                ...rest,
+                user_id: id,
+              }
+            })
+            setUsers(mappedUsers)
         } else {
           toast.error("Failed to fetch users for organization")
         }
       })
       .catch((error) => {
-        setUsers([]);
+        setUsers([])
         toast.error("Error fetching users for organization")
       })
   }
@@ -187,7 +194,8 @@ export default function UsersPage() {
       setEmailError({ show: true, message: "Email is Required" })
       return false
     }
-    if (form.password === "") {
+    // Only require password for new users
+    if (form.password === "" && !isEditMode) {
       setPasswordError({ show: true, message: "Password is Required" })
       return false
     }
@@ -215,7 +223,8 @@ export default function UsersPage() {
       setEmailError({ show: true, message: "Email is not valid" })
       return false
     }
-    if (form.password.length < 6) {
+    // Only validate password length if it's provided (for edit mode)
+    if (form.password.length > 0 && form.password.length < 6) {
       setPasswordError({ show: true, message: "Password must be at least 6 characters" })
       return false
     }
@@ -236,10 +245,14 @@ export default function UsersPage() {
     if (!validateForm()) {
       return
     }
-    // Here you would typically send the form data to your backend API
-    createUser(form);
-    // Reset form after successful submission
-    ResetForm();
+
+    if (isEditMode && selectedUser) {
+      editUser({ ...form, user_id: selectedUser.user_id })
+    } else {
+      createUser(form)
+    }
+
+    ResetForm()
   }
   function ResetForm() {
     setForm({
@@ -257,9 +270,7 @@ export default function UsersPage() {
     })
   }
   // Create a new user (mock implementation)
-  const createUser = async (
-    newUser: Omit<UserForm, "status"> & { status?: string }
-  ) => {
+  const createUser = async (newUser: Omit<UserForm, "status"> & { status?: string }) => {
     try {
       // Here you would typically send the newUser data to your backend API
       newUser = {
@@ -271,20 +282,73 @@ export default function UsersPage() {
       // Simulate API call with a delay
       const response = await api.post<UserForm>("/users/register", newUser)
 
-      console.log("User created response:", response);
+      console.log("User created response:", response)
 
-      bindUsersToOrganization(organizations.find(org => org.organization_name === selectedOrganization)?.organization_name || "")
+      bindUsersToOrganization(
+        organizations.find((org) => org.organization_name === selectedOrganization)?.organization_name || "",
+      )
       if (response.status !== 201 && response.status !== 200) {
-        toast.error(`Failed to create user. Server responded with status ${response.status}`);
-        return;
+        toast.error(`Failed to create user. Server responded with status ${response.status}`)
+        return
       }
-      toast.success("User created successfully");
+      toast.success("User created successfully")
       setShowAddUserDialog(false)
-    }
-    catch (error) {
+    } catch (error) {
       console.error("Error creating user:", error)
       toast.error("Error creating user. Please try again.")
     }
+  }
+
+  const editUser = async (updatedUser: UserForm) => {
+    try {
+      console.log("Updating user:", updatedUser)
+      const payload = {
+        first_name: updatedUser.first_name,
+        last_name: updatedUser.last_name,
+        organization_id: updatedUser.organization_id,
+        role: updatedUser.role,
+        is_active: updatedUser.is_active,
+        last_login: new Date().toISOString(),
+        email_verified: updatedUser.email_verified,
+        update_date_time: new Date().toISOString(),
+      }
+      console.log("Payload for update:", payload)
+      const response = await api.patch(
+        `/users/users/${updatedUser.user_id}?organization_id=${updatedUser.organization_id}`,
+        payload
+      )
+
+      console.log("User updated response:", response)
+
+      if (response.status !== 200) {
+        toast.error(`Failed to update user. Server responded with status ${response.status}`)
+        return
+      }
+
+      toast.success("User updated successfully")
+      setShowAddUserDialog(false)
+      bindUsersToOrganization(selectedOrganization)
+    } catch (error) {
+      console.error("Error updating user:", error)
+      toast.error("Error updating user. Please try again.")
+    }
+  }
+
+  const openEditDialog = (user: UserForm) => {
+    setIsEditMode(true)
+    setSelectedUser(user)
+    setForm({
+      ...user,
+      password: "", // Don't populate password for security
+    })
+    setShowAddUserDialog(true)
+  }
+
+  const openAddDialog = () => {
+    setIsEditMode(false)
+    setSelectedUser(null)
+    ResetForm()
+    setShowAddUserDialog(true)
   }
 
   return (
@@ -300,17 +364,31 @@ export default function UsersPage() {
             <h1 className="text-2xl font-bold mb-1">Users</h1>
             <p className="text-gray-100">Manage your platform users</p>
           </div>
-          <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
+          <Dialog
+            open={showAddUserDialog}
+            onOpenChange={(open) => {
+              setShowAddUserDialog(open)
+              if (!open) {
+                setIsEditMode(false)
+                setSelectedUser(null)
+                ResetForm()
+              }
+            }}
+          >
             <DialogTrigger asChild>
-              <Button className="bg-white text-[#1e74bb] hover:bg-gray-100">
+              <Button className="bg-white text-[#1e74bb] hover:bg-gray-100" onClick={openAddDialog}>
                 <UserPlus className="h-4 w-4 mr-2" />
                 Add User
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[550px]">
               <DialogHeader>
-                <DialogTitle>Add New User</DialogTitle>
-                <DialogDescription>Create a new user account for your learning platform.</DialogDescription>
+                <DialogTitle>{isEditMode ? "Edit User" : "Add New User"}</DialogTitle>
+                <DialogDescription>
+                  {isEditMode
+                    ? "Update user account information."
+                    : "Create a new user account for your learning platform."}
+                </DialogDescription>
               </DialogHeader>
 
               <Tabs defaultValue="details" className="mt-4">
@@ -329,11 +407,11 @@ export default function UsersPage() {
                           value={form.first_name}
                           onChange={(e) => setForm({ ...form, first_name: e.target.value })}
                           placeholder="Enter first name"
-                          className={nameError.show ? "border-red-500" : ""} />
-                        {
-                          nameError.show && form.first_name === "" && (
-                            <p className="text-red-500 text-sm">{nameError.message || "First name is required"}</p>
-                          )}
+                          className={nameError.show ? "border-red-500" : ""}
+                        />
+                        {nameError.show && form.first_name === "" && (
+                          <p className="text-red-500 text-sm">{nameError.message || "First name is required"}</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="last-name">Last name</Label>
@@ -345,7 +423,8 @@ export default function UsersPage() {
                           className={lastNameError.show ? "border-red-500" : ""}
                         />
                         {lastNameError.show && form.last_name === "" && (
-                          <p className="text-red-500 text-sm">{lastNameError.message || "Last name is required"}</p>)}
+                          <p className="text-red-500 text-sm">{lastNameError.message || "Last name is required"}</p>
+                        )}
                       </div>
                     </div>
 
@@ -358,11 +437,14 @@ export default function UsersPage() {
                         value={form.email}
                         onChange={(e) => setForm({ ...form, email: e.target.value })}
                         className={emailError.show ? "border-red-500" : ""}
+                        disabled={isEditMode} 
                       />
                       {emailError.show && form.email === "" && (
-                        <p className="text-red-500 text-sm">{emailError.message || "Email is required"}</p>)}
+                        <p className="text-red-500 text-sm">{emailError.message || "Email is required"}</p>
+                      )}
                     </div>
 
+                    {!isEditMode && (
                     <div className="space-y-2">
                       <Label htmlFor="password">Password</Label>
                       <Input
@@ -370,13 +452,14 @@ export default function UsersPage() {
                         type="password"
                         value={form.password}
                         onChange={(e) => setForm({ ...form, password: e.target.value })}
-                        placeholder="Enter password"
-                        className={passwordError.show && form.password === "" ? "border-red-500" : ""}
+                        placeholder={"Enter password"}
+                        className={passwordError.show && form.password === "" && !isEditMode ? "border-red-500" : ""}
                       />
-                      {passwordError.show && form.password === "" && (
+                      {passwordError.show && form.password === "" && !isEditMode && (
                         <p className="text-red-500 text-sm">{passwordError.message || "Password is required"}</p>
                       )}
                     </div>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -385,7 +468,9 @@ export default function UsersPage() {
                         value={form.organization_id.toString()}
                         onValueChange={(value) => setForm({ ...form, organization_id: value })}
                       >
-                        <SelectTrigger className={organizationError.show && form.organization_id === "" ? "border-red-500" : ""}>
+                        <SelectTrigger
+                          className={organizationError.show && form.organization_id === "" ? "border-red-500" : ""}
+                        >
                           <SelectValue placeholder="Select organization" />
                         </SelectTrigger>
                         <SelectContent>
@@ -398,15 +483,14 @@ export default function UsersPage() {
                       </Select>
 
                       {organizationError.show && form.organization_id === "" && (
-                        <p className="text-red-500 text-sm">{organizationError.message || "Organization is required"}</p>
+                        <p className="text-red-500 text-sm">
+                          {organizationError.message || "Organization is required"}
+                        </p>
                       )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="role-dropdown">Role</Label>
-                      <Select
-                        value={form.role}
-                        onValueChange={(value) => setForm({ ...form, role: value })}
-                      >
+                      <Select value={form.role} onValueChange={(value) => setForm({ ...form, role: value })}>
                         <SelectTrigger className={roleError.show && form.role === "" ? "border-red-500" : ""}>
                           <SelectValue placeholder="Select role" />
                         </SelectTrigger>
@@ -486,10 +570,8 @@ export default function UsersPage() {
                 <Button variant="outline" onClick={() => setShowAddUserDialog(false)}>
                   Cancel
                 </Button>
-                <Button
-                  className="bg-[#1e74bb] hover:bg-[#1a65a3]"
-                  onClick={handleSubmit}>
-                  Create User
+                <Button className="bg-[#1e74bb] hover:bg-[#1a65a3]" onClick={handleSubmit}>
+                  {isEditMode ? "Update User" : "Create User"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -532,14 +614,15 @@ export default function UsersPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col space-y-4">
-
-
             <div className="flex flex-col sm:flex-row justify-between gap-4">
               <div className="flex items-center gap-4 pb-2">
                 <Select
                   value={selectedOrganization}
                   // onValueChange={(value) => setForm({ ...form, id: value })}
-                  onValueChange={(value) => { bindUsersToOrganization(value) }}>
+                  onValueChange={(value) => {
+                    bindUsersToOrganization(value)
+                  }}
+                >
                   <SelectTrigger id="organization-filter" className="w-[180px] bg-white">
                     <SelectValue placeholder="Select organization" />
                   </SelectTrigger>
@@ -554,8 +637,6 @@ export default function UsersPage() {
                   </SelectContent>
                 </Select>
                 <div className="relative w-full sm:w-72">
-
-
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
                   <Input
                     type="search"
@@ -644,7 +725,9 @@ export default function UsersPage() {
                           <div className="flex items-center gap-3">
                             <Avatar>
                               <AvatarFallback className="bg-[#1e74bb] text-white">
-                                {user.first_name?.split(" ").map((n) => n[0])
+                                {user.first_name
+                                  ?.split(" ")
+                                  .map((n) => n[0])
                                   .join("")}
                               </AvatarFallback>
                             </Avatar>
@@ -698,31 +781,30 @@ export default function UsersPage() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="bg-white">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem>Edit user</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => openEditDialog(user)}>Edit user</DropdownMenuItem>
                                 <DropdownMenuItem>Reset password</DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   className="text-red-600"
                                   onClick={async () => {
-                                    if (
-                                      window.confirm(
-                                        `Are you sure you want to delete user "${user.user_id}"?`
-                                      )
-                                    ) {
+                                    if (window.confirm(`Are you sure you want to delete user "${user.user_id}"?`)) {
                                       try {
-                                        const response = await api.delete(`/users/users/${user.user_id}?id=${user.organization_id}`);
+                                        const response = await api.delete(
+                                          `/users/users/${user.user_id}?id=${user.organization_id}`,
+                                        )
                                         if (response.status === 200 || response.status === 204) {
-                                          toast.success("User deleted successfully");
+                                          toast.success("User deleted successfully")
                                           // Refresh users list
-                                          bindUsersToOrganization(selectedOrganization);
+                                          bindUsersToOrganization(selectedOrganization)
                                         } else {
-                                          toast.error("Failed to delete user");
+                                          toast.error("Failed to delete user")
                                         }
                                       } catch (error) {
-                                        toast.error("Error deleting user");
+                                        toast.error("Error deleting user")
                                       }
                                     }
-                                  }}>
+                                  }}
+                                >
                                   Delete user
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
