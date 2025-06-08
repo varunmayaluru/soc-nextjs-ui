@@ -26,7 +26,7 @@ interface Option {
 
 interface Question {
   question_id: number
-  quizId: number
+  quiz_id: number
   quiz_question_text: string
   difficulty_level: string
   is_active: boolean
@@ -128,7 +128,7 @@ export function QuizInterface({
   const loadQuizProgress = async () => {
     try {
       const response = await api.get<QuizProgress>(
-        `user-quiz-progress/quiz-progress/${userId}?subject_id=${subjectId}&topic_id=${topicId}&quizId=${quizId}`,
+        `user-quiz-progress/quiz-progress/${userId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
       )
 
       if (response.ok && response.data) {
@@ -145,7 +145,7 @@ export function QuizInterface({
 
     setIsLoadingAnswer(true)
     try {
-      const endpoint = `/quizzes/quizzes/answers/${userId}?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quizId=${quizId}&question_id=${targetQuestionId}&attempt_id=${attemptId || 1}`
+      const endpoint = `/quizzes/quizzes/answers/${userId}?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}&question_id=${targetQuestionId}&attempt_id=${attemptId || 1}`
 
       const response = await api.get<ExistingAnswer>(endpoint)
 
@@ -176,7 +176,7 @@ export function QuizInterface({
 
   const quizData = async () => {
     try {
-      const response = await api.get<any>(`/quizzes/quizzes/${quizId}`)
+      const response = await api.get<any>(`/quizzes/quizzes/?organization_id=${organizationId}`)
       if (response.ok) {
         const data = response.data
         setTotalQuestions(data?.total_questions)
@@ -233,7 +233,7 @@ export function QuizInterface({
         user_id: userId,
         subject_id: subjectId,
         topic_id: topicId,
-        quizId: quizId,
+        quiz_id: quizId,
         question_id: currentQuestionId,
         attempt_id: attemptId || 1,
         answer_text: "",
@@ -251,7 +251,7 @@ export function QuizInterface({
           user_id: userId,
           subject_id: subjectId,
           topic_id: topicId,
-          quizId: quizId,
+          quiz_id: quizId,
           question_id: currentQuestionId,
           attempt_id: attemptId || 1,
           is_complete: true,
@@ -325,7 +325,7 @@ export function QuizInterface({
         user_id: userId,
         subject_id: subjectId,
         topic_id: topicId,
-        quizId: quizId,
+        quiz_id: quizId,
         question_id: 1,
         attempt_id: newAttemptId,
         is_complete: false,
@@ -340,7 +340,7 @@ export function QuizInterface({
         user_id: userId,
         subject_id: subjectId,
         topic_id: topicId,
-        quizId: quizId,
+        quiz_id: quizId,
         is_complete: false,
         latest_score: 0,
         best_score: quizProgress?.best_score || 0, // Keep the best score
@@ -412,7 +412,7 @@ export function QuizInterface({
         user_id: userId,
         subject_id: subjectId,
         topic_id: topicId,
-        quizId: quizId,
+        quiz_id: quizId,
         question_id: newQuestionId,
         attempt_id: attemptId,
         is_complete: false,

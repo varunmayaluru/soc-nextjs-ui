@@ -13,10 +13,23 @@ interface Option {
   is_correct: boolean
 }
 
+// interface Question {
+//   question_id: number
+//   quiz_id: number
+//   quiz_question_text: string
+//   options: Option[]
+// }
+
 interface Question {
   question_id: number
   quiz_id: number
   quiz_question_text: string
+  difficulty_level: string
+  is_active: boolean
+  is_maths: boolean
+  created_by: number
+  create_date_time: string
+  update_date_time: string | null
   options: Option[]
 }
 

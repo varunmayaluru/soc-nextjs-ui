@@ -61,7 +61,7 @@ interface answers {
   user_id: number
   subject_id: number
   topic_id: number
-  quizId: number
+  quiz_id: number
   question_id: number
   attempt_id: number
   answer_text: string
@@ -195,7 +195,7 @@ export default function QuizPage() {
 
         const userId = localStorage.getItem("userId")
         const response = await api.get<any>(
-          `user-quiz-progress/quiz-progress/${userId}/exists?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quizId=${quizId}`,
+          `user-quiz-progress/quiz-progress/${userId}/exists?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
         )
 
         if (!response.ok) throw new Error(`API error: ${response.status}`)
@@ -210,7 +210,7 @@ export default function QuizPage() {
               user_id: userId,
               subject_id: subjectId,
               topic_id: topicId,
-              quizId: quizId,
+              quiz_id: quizId,
               question_id: 1,
               attempt_id: 1,
               is_complete: false,
@@ -224,7 +224,7 @@ export default function QuizPage() {
               user_id: userId,
               subject_id: subjectId,
               topic_id: topicId,
-              quizId: quizId,
+              quiz_id: quizId,
               is_complete: false,
               latest_score: 0,
               best_score: 0,
@@ -249,7 +249,7 @@ export default function QuizPage() {
             // If quiz exists, fetch the latest question and attempt
             try {
               const quizResponse = await api.get<quizSummary>(
-                `user-quiz-progress/quiz-progress/${userId}/latest-summary?organization_id=${organizationId}?subject_id=${subjectId}&topic_id=${topicId}&quizId=${quizId}`,
+                `user-quiz-progress/quiz-progress/${userId}/latest-summary?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
               )
 
               if (quizResponse.ok && quizResponse.data) {
@@ -307,7 +307,7 @@ export default function QuizPage() {
     try {
       // Fetch the latest quiz progress to get the current attempt count
       const progressResponse = await api.get<any>(
-        `user-quiz-progress/quiz-progress/${userId}/latest-summary?organization_id=${organizationId}?subject_id=${subjectId}&topic_id=${topicId}&quizId=${quizId}`,
+        `user-quiz-progress/quiz-progress/${userId}/latest-summary?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
       )
 
       if (progressResponse.ok && progressResponse.data) {
