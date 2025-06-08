@@ -787,10 +787,10 @@ export default function UsersPage() {
                                 <DropdownMenuItem
                                   className="text-red-600"
                                   onClick={async () => {
-                                    if (window.confirm(`Are you sure you want to delete user "${user.user_id}"?`)) {
+                                    if (window.confirm(`Are you sure you want to delete user "${user.first_name}"?`)) {
                                       try {
                                         const response = await api.delete(
-                                          `/users/users/${user.user_id}?id=${user.organization_id}`,
+                                          `/users/users/${user.user_id}?organization_id=${user.organization_id}`,
                                         )
                                         if (response.status === 200 || response.status === 204) {
                                           toast.success("User deleted successfully")
