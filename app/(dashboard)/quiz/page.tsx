@@ -90,6 +90,7 @@ export default function QuizPage() {
   const topicSlug = searchParams.get("topicSlug")
   const subjectSlug = searchParams.get("subjectSlug")
   const quizName = searchParams.get("quizName")
+  const totalQuizQuestions = searchParams.get("totalQuizQuestions")
   const subjectName = searchParams.get("subjectName")
   const topicName = searchParams.get("topicName")
   let subject = null as unknown as Subject
@@ -335,6 +336,8 @@ export default function QuizPage() {
   return (
     <div>
       <QuizInterface
+        totalQuizQuestions={Number(totalQuizQuestions)}
+        isQuizExists={isQuizExists}
         topicSlug={topicSlug || ""}
         subjectSlug={subjectSlug || ""}
         quizStatus={quizStatus}

@@ -186,7 +186,7 @@ export default function TopicPage() {
                 questions={quiz.total_questions}
                 time={quiz.time_limit}
                 difficulty={quiz.level || "Beginner"}
-                href={`/quiz?quizId=${quiz.quiz_id}&subjectId=${subjectId}&topicId=${topicId}&topicSlug=${topicSlug}&subjectSlug=${subjectSlug}&quizName=${quiz.title}&subjectName=${subjectName}&topicName=${topicName}`}
+                href={`/quiz?quizId=${quiz.quiz_id}&subjectId=${subjectId}&topicId=${topicId}&topicSlug=${topicSlug}&subjectSlug=${subjectSlug}&quizName=${quiz.title}&subjectName=${subjectName}&topicName=${topicName}&totalQuizQuestions=${quiz.total_questions}`}
                 icon={quiz.icon || quizIcons[index % quizIcons.length]}
                 iconBg={quiz.iconBg || iconBgs[index % iconBgs.length]}
                 progress={quiz.progress_percentage} // Use quiz progress or generate random for demo
