@@ -207,7 +207,7 @@ export default function QuizPage() {
                 // Set quiz status based on the response
                 if (quizResponse.data.quiz_status === "complete") {
                   setQuizStatus(true)
-                  setCurrentquestionId(quizResponse.data.question_id)
+                  setCurrentquestionId(1)
                 } else {
                   setQuizStatus(false)
                   // If the question is complete, move to the next question

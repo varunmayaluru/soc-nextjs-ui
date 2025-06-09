@@ -221,6 +221,8 @@ export function QuizInterface({
 
     const selectedOptionData = question.options.find((option) => option.id === selectedOption)
 
+    console.log("Selected option data:", selectedOptionData)
+
     // Calculate time spent on this question
     const questionCompletionTime = Math.floor((Date.now() - questionStartTime) / 1000)
 
@@ -246,7 +248,7 @@ export function QuizInterface({
         question_id: currentQuestionId,
         attempt_id: attemptId || 1,
         answer_text: "",
-        answer_choice_id: selectedOptionData?.option_index,
+        answer_choice_id: selectedOptionData?.id,
         is_correct: selectedOptionData?.is_correct || false,
       }
 
