@@ -90,6 +90,7 @@ export default function QuizPage() {
   const topicSlug = searchParams.get("topicSlug")
   const subjectSlug = searchParams.get("subjectSlug")
   const quizName = searchParams.get("quizName")
+  const totalQuizQuestions = searchParams.get("totalQuizQuestions")
   const subjectName = searchParams.get("subjectName")
   const topicName = searchParams.get("topicName")
   let subject = null as unknown as Subject
@@ -207,7 +208,7 @@ export default function QuizPage() {
                 // Set quiz status based on the response
                 if (quizResponse.data.quiz_status === "complete") {
                   setQuizStatus(true)
-                  setCurrentquestionId(quizResponse.data.question_id)
+                  setCurrentquestionId(1)
                 } else {
                   setQuizStatus(false)
                   // If the question is complete, move to the next question
@@ -335,6 +336,8 @@ export default function QuizPage() {
   return (
     <div>
       <QuizInterface
+        totalQuizQuestions={Number(totalQuizQuestions)}
+        isQuizExists={isQuizExists}
         topicSlug={topicSlug || ""}
         subjectSlug={subjectSlug || ""}
         quizStatus={quizStatus}

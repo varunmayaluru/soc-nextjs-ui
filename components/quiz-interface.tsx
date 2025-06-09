@@ -55,6 +55,8 @@ interface QuizProgress {
 }
 
 export function QuizInterface({
+  isQuizExists,
+  totalQuizQuestions,
   topicSlug,
   subjectSlug,
   subjectName,
@@ -69,6 +71,8 @@ export function QuizInterface({
   setQuizStatus,
   onRetakeQuiz,
 }: {
+  isQuizExists: boolean
+  totalQuizQuestions: number
   topicSlug: string
   subjectSlug: string
   subjectName: string
@@ -88,7 +92,7 @@ export function QuizInterface({
   const [isCorrect, setIsCorrect] = useState(false)
   const [currentQuestionId, setCurrentQuestionId] = useState<number | null>(Number(questionId))
   const [isLoadingAnswer, setIsLoadingAnswer] = useState(false)
-  const [totalQuestions, setTotalQuestions] = useState(0)
+  // const [totalQuestions, setTotalQuestions] = useState(0)
   const [showRetakeDialog, setShowRetakeDialog] = useState(false)
   const [isRetaking, setIsRetaking] = useState(false)
   const [quizProgress, setQuizProgress] = useState<QuizProgress | null>(null)
@@ -116,6 +120,8 @@ export function QuizInterface({
     subjectId,
     topicId,
   })
+
+  console.log(totalQuizQuestions, "totalQuizQuestions")
 
   const userId = localStorage.getItem("userId")
   const organizationId = localStorage.getItem("organizationId")
@@ -183,24 +189,27 @@ export function QuizInterface({
     }
   }
 
-  const quizData = async () => {
-    try {
-      const response = await api.get<any>(`/quizzes/quizzes/${quizId}?organization_id=${organizationId}`)
-      if (response.ok) {
-        const data = response.data
-        setTotalQuestions(data?.total_questions)
-      } else {
-        throw new Error("Failed to fetch quiz data")
-      }
-    } catch (error) {
-      console.error("Error fetching quiz data:", error)
-    }
-  }
+  // const quizData = async () => {
+  //   try {
+  //     const response = await api.get<any>(`/quizzes/quizzes/${quizId}?organization_id=${organizationId}`)
+  //     if (response.ok) {
+  //       const data = response.data
+  //       // setTotalQuestions(data?.total_questions)
+  //     } else {
+  //       throw new Error("Failed to fetch quiz data")
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching quiz data:", error)
+  //   }
+  // }
 
   useEffect(() => {
     const initializeQuizData = async () => {
-      await quizData()
-      await loadQuizProgress()
+      // await quizData()
+
+      if (isQuizExists) {
+        await loadQuizProgress()
+      }
       if (currentQuestionId) {
         console.log("Loading existing answer for question:", currentQuestionId)
         await loadExistingAnswer(currentQuestionId)
@@ -220,6 +229,8 @@ export function QuizInterface({
     if (selectedOption === null || !question || isAnswerChecked) return
 
     const selectedOptionData = question.options.find((option) => option.id === selectedOption)
+
+    console.log("Selected option data:", selectedOptionData)
 
     // Calculate time spent on this question
     const questionCompletionTime = Math.floor((Date.now() - questionStartTime) / 1000)
@@ -246,7 +257,7 @@ export function QuizInterface({
         question_id: currentQuestionId,
         attempt_id: attemptId || 1,
         answer_text: "",
-        answer_choice_id: selectedOptionData?.option_index,
+        answer_choice_id: selectedOptionData?.id,
         is_correct: selectedOptionData?.is_correct || false,
       }
 
@@ -277,7 +288,7 @@ export function QuizInterface({
         }
 
         // Check if this is the last question to determine if the quiz is complete
-        const isComplete = currentQuestionId === totalQuestions
+        const isComplete = currentQuestionId === totalQuizQuestions
 
         // Calculate total completion time for the entire quiz
         const totalCompletionTime = isComplete ? totalQuizTime + questionCompletionTime : 0
@@ -400,7 +411,7 @@ export function QuizInterface({
 
     const newQuestionId = direction === "next" ? currentQuestionId + 1 : currentQuestionId - 1
 
-    if (newQuestionId < 1 || newQuestionId > totalQuestions) return
+    if (newQuestionId < 1 || newQuestionId > totalQuizQuestions) return
 
     try {
       // Reset chat and UI state immediately
@@ -429,6 +440,8 @@ export function QuizInterface({
         is_ai_assisted: false,
         completion_time_seconds: 0,
       }
+
+      console.log("################# navigate to next question post############")
 
       const response = await api.post<any>(`user-quiz-attempts/quiz-attempts/`, quizAttemptPayload)
 
@@ -466,7 +479,7 @@ export function QuizInterface({
   }
 
   // Generate pagination numbers
-  const paginationNumbers = Array.from({ length: totalQuestions }, (_, i) => i + 1)
+  const paginationNumbers = Array.from({ length: totalQuizQuestions }, (_, i) => i + 1)
 
   // Mock relevant links
   const relevantLinks = [
@@ -499,7 +512,7 @@ export function QuizInterface({
       {quizCompleted &&
         <QuizCompletion
           score={0}
-          totalQuestions={totalQuestions}
+          totalQuestions={totalQuizQuestions}
           timeSpent={"900"}
           subject={subjectName}
           quizTitle={quizName || ""}
@@ -524,7 +537,7 @@ export function QuizInterface({
               quizStatus={quizStatus}
               question={question}
               currentQuestionId={currentQuestionId}
-              totalQuestions={totalQuestions}
+              totalQuestions={totalQuizQuestions}
               paginationNumbers={paginationNumbers}
               selectedOption={selectedOption}
               isAnswerChecked={isAnswerChecked}
