@@ -45,9 +45,15 @@ interface UseQuizChatProps {
   quizId: string;
   subjectId?: string;
   topicId?: string;
+  currentQuestionId: number | null;
+  attemptId?: number | null;
+  selectedOptionData: Option | undefined;
 }
 
 export function useQuizChat({
+  currentQuestionId,
+  attemptId,
+  selectedOptionData,
   question,
   selectedOption,
   contextAnswer: initialContextAnswer,
@@ -64,6 +70,9 @@ export function useQuizChat({
   >([]);
   const [feedbackCounter, setFeedbackCounter] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const organizationId = localStorage.getItem("organizationId");
+  const userId = localStorage.getItem("userId");
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -312,23 +321,31 @@ export function useQuizChat({
           });
         }
 
-        // if(feedbackCounter === 0) {
-        //   const payload = {
-        //       organization_id: organizationId,
-        //       user_id: userId,
-        //       subject_id: subjectId,
-        //       topic_id: topicId,
-        //       quiz_id: quizId,
-        //       question_id: currentQuestionId,
-        //       attempt_id: attemptId || 1,
-        //       is_complete: true,
-        //       is_correct: selectedOptionData?.is_correct || false,
-        //       is_ai_assisted: messages.length > 0,
-        //       completion_time_seconds: questionCompletionTime,
-        //     }
+        console.log("feedbackCounter:" + feedbackCounter);
 
-        //     const attemptResponse = await api.patch(`/user-quiz-attempts/quiz-attempts/`, payload)
-        // }
+        if (feedbackCounter === 0) {
+          const payload = {
+            organization_id: organizationId,
+            user_id: userId,
+            subject_id: subjectId,
+            topic_id: topicId,
+            quiz_id: quizId,
+            question_id: currentQuestionId,
+            attempt_id: attemptId || 1,
+            is_complete: true,
+            is_correct: selectedOptionData?.is_correct || false,
+            is_ai_assisted: true,
+            completion_time_seconds: 0,
+          };
+          const attemptResponse = await api.patch(
+            `/user-quiz-attempts/quiz-attempts/`,
+            payload
+          );
+
+          if (attemptResponse.ok) {
+            console.log("✅ Attempt updated:", attemptResponse.data);
+          }
+        }
 
         setFeedbackCounter((prev) => prev + 1);
       } else {

@@ -101,6 +101,7 @@ export function QuizInterface({
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now())
   const [totalQuizTime, setTotalQuizTime] = useState<number>(0)
   const [questionTimes, setQuestionTimes] = useState<Record<number, number>>({})
+  const [selectedOptionData, setSelectedOptionData] = useState<Option | undefined>(undefined)
 
   const [quizCompleted, setQuizCompleted] = useState(false)
 
@@ -113,6 +114,9 @@ export function QuizInterface({
   })
 
   const { messages, isTyping, sendMessage, initializeChat, resetChat } = useQuizChat({
+    currentQuestionId,
+    attemptId,
+    selectedOptionData,
     question,
     selectedOption,
     contextAnswer: "",
@@ -229,9 +233,10 @@ export function QuizInterface({
   const checkAnswer = async () => {
     if (selectedOption === null || !question || isAnswerChecked) return
 
-    const selectedOptionData = question.options.find((option) => option.id === selectedOption)
+    const selectedOptionArray = question.options.find((option) => option.id === selectedOption)
 
-    console.log("Selected option data:", selectedOptionData)
+    console.log("Selected option data:", selectedOptionArray)
+    setSelectedOptionData(selectedOptionArray)
 
     // Calculate time spent on this question
     const questionCompletionTime = Math.floor((Date.now() - questionStartTime) / 1000)
@@ -245,7 +250,7 @@ export function QuizInterface({
     // Update total quiz time
     setTotalQuizTime((prev) => prev + questionCompletionTime)
 
-    setIsCorrect(selectedOptionData?.is_correct || false)
+    setIsCorrect(selectedOptionArray?.is_correct || false)
 
     try {
       // First, save the answer
@@ -258,8 +263,8 @@ export function QuizInterface({
         question_id: currentQuestionId,
         attempt_id: attemptId || 1,
         answer_text: "",
-        answer_choice_id: selectedOptionData?.id,
-        is_correct: selectedOptionData?.is_correct || false,
+        answer_choice_id: selectedOptionArray?.id,
+        is_correct: selectedOptionArray?.is_correct || false,
       }
 
       const response = await api.post(`/quizzes/quizzes/answers`, checkAnswerPayload)
@@ -276,7 +281,7 @@ export function QuizInterface({
           question_id: currentQuestionId,
           attempt_id: attemptId || 1,
           is_complete: true,
-          is_correct: selectedOptionData?.is_correct || false,
+          is_correct: selectedOptionArray?.is_correct || false,
           is_ai_assisted: messages.length > 0,
           completion_time_seconds: questionCompletionTime,
         }
@@ -329,8 +334,8 @@ export function QuizInterface({
 
     setIsAnswerChecked(true)
 
-    if (!selectedOptionData?.is_correct) {
-      await initializeChat(selectedOptionData)
+    if (!selectedOptionArray?.is_correct) {
+      await initializeChat(selectedOptionArray)
     }
   }
 
