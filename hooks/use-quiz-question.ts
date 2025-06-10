@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { api } from "@/lib/api-client";
 
 interface Option {
@@ -40,81 +40,60 @@ export function useQuizQuestion({
   currentQuestionId,
 }: UseQuizQuestionProps) {
   const [question, setQuestion] = useState<Question | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastFetchedQuestionId, setLastFetchedQuestionId] = useState<
     number | null
   >(null);
+  const hasFetchedRef = useRef<Set<number>>(new Set());
 
-  const organizationId = localStorage.getItem("organizationId");
+  // Safely access localStorage on client side only
+  const organizationId =
+    typeof window !== "undefined"
+      ? localStorage.getItem("organizationId")
+      : null;
 
   const fetchQuestion = useCallback(
-    async (questionIdToFetch?: number) => {
-      const targetQuestionId = questionIdToFetch || currentQuestionId;
-
-      if (!targetQuestionId) {
-        setError("No question ID provided");
-        setLoading(false);
+    async (targetQuestionId: number) => {
+      if (!targetQuestionId || hasFetchedRef.current.has(targetQuestionId)) {
         return;
       }
 
-      // Don't fetch if we already have the correct question
-      if (
-        question &&
-        question.question_id === targetQuestionId &&
-        lastFetchedQuestionId === targetQuestionId
-      ) {
-        setLoading(false);
-        return;
-      }
-
+      hasFetchedRef.current.add(targetQuestionId);
       setLoading(true);
       setError(null);
 
       try {
-        console.log("Fetching question with ID:", targetQuestionId);
         const endpoint = `/questions/questions/quiz-question/${targetQuestionId}?quiz_id=${quizId}&organization_id=${organizationId}`;
+        console.log("Fetching question:", endpoint);
 
         const response = await api.get<Question>(endpoint);
 
         if (!response.ok) {
-          throw new Error(`Failed to fetch question: ${response.status}`);
+          throw new Error(`Failed to fetch: ${response.status}`);
         }
 
         if (!response.data) {
-          throw new Error("No question data received");
+          throw new Error("No data received");
         }
 
-        // Verify we got the correct question
         if (response.data.question_id !== targetQuestionId) {
-          console.warn(
-            `Question ID mismatch: requested ${targetQuestionId}, got ${response.data.question_id}. Retrying...`
-          );
-          // Retry with explicit question ID
-          const retryEndpoint = `/questions/questions/quiz-question/${targetQuestionId}?quiz_id=${quizId}&organization_id=${organizationId}`;
-
-          const retryResponse = await api.get<Question>(retryEndpoint);
+          // Retry if mismatch
+          const retryResponse = await api.get<Question>(endpoint);
           if (retryResponse.ok && retryResponse.data) {
             setQuestion(retryResponse.data);
             setLastFetchedQuestionId(targetQuestionId);
-            console.log(
-              "Question fetched successfully on retry:",
-              retryResponse.data
-            );
           } else {
-            throw new Error(`Failed to fetch correct question after retry`);
+            throw new Error("Retry failed to fetch question");
           }
         } else {
           setQuestion(response.data);
           setLastFetchedQuestionId(targetQuestionId);
-          console.log("Question fetched successfully:", response.data);
         }
       } catch (err) {
-        console.error("Error fetching question:", err);
+        console.error("Fetch error:", err);
         setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load question. Please try again."
+          err instanceof Error ? err.message : "Failed to load question"
         );
         setQuestion(null);
         setLastFetchedQuestionId(null);
@@ -122,14 +101,7 @@ export function useQuizQuestion({
         setLoading(false);
       }
     },
-    [
-      quizId,
-      subjectId,
-      topicId,
-      currentQuestionId,
-      question,
-      lastFetchedQuestionId,
-    ]
+    [quizId, organizationId]
   );
 
   useEffect(() => {

@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { secureApi } from "@/lib/secure-api-client";
+import { api } from "@/lib/api-client";
 
 interface Message {
   id: number;
@@ -310,6 +311,24 @@ export function useQuizChat({
             type: "feedback",
           });
         }
+
+        // if(feedbackCounter === 0) {
+        //   const payload = {
+        //       organization_id: organizationId,
+        //       user_id: userId,
+        //       subject_id: subjectId,
+        //       topic_id: topicId,
+        //       quiz_id: quizId,
+        //       question_id: currentQuestionId,
+        //       attempt_id: attemptId || 1,
+        //       is_complete: true,
+        //       is_correct: selectedOptionData?.is_correct || false,
+        //       is_ai_assisted: messages.length > 0,
+        //       completion_time_seconds: questionCompletionTime,
+        //     }
+
+        //     const attemptResponse = await api.patch(`/user-quiz-attempts/quiz-attempts/`, payload)
+        // }
 
         setFeedbackCounter((prev) => prev + 1);
       } else {

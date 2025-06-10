@@ -101,38 +101,38 @@ export default function QuizPage() {
 
 
 
-  useEffect(() => {
-    const fetchQuiz = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
+  // useEffect(() => {
+  //   const fetchQuiz = async () => {
+  //     try {
+  //       setIsLoading(true)
+  //       setError(null)
 
-        // Note: This endpoint seems to always return question 1 data
-        // We'll use it just to verify the quiz exists, not for question data
-        const response = await api.get<Quiz>(
-          `questions/questions/quiz-question/1?quiz_id=${quizId}&organization_id=${organizationId}`,
-        )
+  //       // Note: This endpoint seems to always return question 1 data
+  //       // We'll use it just to verify the quiz exists, not for question data
+  //       const response = await api.get<Quiz>(
+  //         `questions/questions/quiz-question/1?quiz_id=${quizId}&organization_id=${organizationId}`,
+  //       )
 
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`)
-        }
+  //       if (!response.ok) {
+  //         throw new Error(`API error: ${response.status}`)
+  //       }
 
-        if (response.data) {
-          console.log("Quiz verified:", response.data)
-          setQuiz(response.data)
-        } else {
-          throw new Error("No quiz data received")
-        }
-      } catch (error) {
-        console.error("Error fetching quiz:", error)
-        setError(error instanceof Error ? error.message : "Failed to load quiz")
-      } finally {
-        setIsLoading(false)
-      }
-    }
+  //       if (response.data) {
+  //         console.log("Quiz verified:", response.data)
+  //         setQuiz(response.data)
+  //       } else {
+  //         throw new Error("No quiz data received")
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching quiz:", error)
+  //       setError(error instanceof Error ? error.message : "Failed to load quiz")
+  //     } finally {
+  //       setIsLoading(false)
+  //     }
+  //   }
 
-    fetchQuiz()
-  }, [quizId])
+  //   fetchQuiz()
+  // }, [quizId])
 
   useEffect(() => {
     let isMounted = true
@@ -319,19 +319,19 @@ export default function QuizPage() {
     )
   }
 
-  if (!quiz) {
-    return (
-      <div className="p-6">
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Quiz not found</AlertTitle>
-          <AlertDescription>
-            The requested quiz could not be found. Please go back and select another quiz.
-          </AlertDescription>
-        </Alert>
-      </div>
-    )
-  }
+  // if (!quiz) {
+  //   return (
+  //     <div className="p-6">
+  //       <Alert>
+  //         <AlertCircle className="h-4 w-4" />
+  //         <AlertTitle>Quiz not found</AlertTitle>
+  //         <AlertDescription>
+  //           The requested quiz could not be found. Please go back and select another quiz.
+  //         </AlertDescription>
+  //       </Alert>
+  //     </div>
+  //   )
+  // }
 
   return (
     <div>

@@ -257,7 +257,7 @@ export function QuizInterface({
         question_id: currentQuestionId,
         attempt_id: attemptId || 1,
         answer_text: "",
-        answer_choice_id: selectedOptionData?.id,
+        answer_choice_id: selectedOptionData?.option_index,
         is_correct: selectedOptionData?.is_correct || false,
       }
 
