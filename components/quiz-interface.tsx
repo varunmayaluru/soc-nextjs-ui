@@ -456,10 +456,10 @@ export function QuizInterface({
 
       // Load existing answer for the new question after question is fetched
       // Use a timeout to ensure the question fetch completes first
-      setTimeout(() => {
-        console.log("Loading existing answer for question:", newQuestionId)
-        loadExistingAnswer(newQuestionId)
-      }, 500)
+      // setTimeout(() => {
+      //   console.log("Loading existing answer for question:", newQuestionId)
+      loadExistingAnswer(newQuestionId)
+      // }, 500)
     } catch (error) {
       console.error("Error navigating to question:", error)
     }
