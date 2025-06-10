@@ -203,21 +203,21 @@ export function QuizInterface({
   //   }
   // }
 
-  useEffect(() => {
-    const initializeQuizData = async () => {
-      // await quizData()
+  // useEffect(() => {
+  //   const initializeQuizData = async () => {
+  //     // await quizData()
 
-      if (isQuizExists) {
-        await loadQuizProgress()
-      }
-      if (currentQuestionId) {
-        console.log("Loading existing answer for question:", currentQuestionId)
-        await loadExistingAnswer(currentQuestionId)
-      }
-    }
+  //     if (isQuizExists) {
+  //       await loadQuizProgress()
+  //       if (currentQuestionId) {
+  //         console.log("Loading existing answer for question:", currentQuestionId)
+  //         await loadExistingAnswer(currentQuestionId)
+  //       }
+  //     }
+  //   }
 
-    initializeQuizData()
-  }, [currentQuestionId])
+  //   initializeQuizData()
+  // }, [currentQuestionId])
 
   const handleOptionSelect = (optionId: number) => {
     if (isAnswerChecked) return // Prevent changing answer if already submitted
