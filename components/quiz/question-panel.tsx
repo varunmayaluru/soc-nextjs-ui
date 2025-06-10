@@ -43,6 +43,7 @@ interface QuizProgress {
 }
 
 interface QuestionPanelProps {
+  isTyping: boolean
   topicSlug: string
   subjectSlug: string
   subjectName: string
@@ -71,6 +72,7 @@ interface QuestionPanelProps {
 }
 
 export function QuestionPanel({
+  isTyping,
   topicSlug,
   subjectSlug,
   subjectName,
@@ -160,7 +162,7 @@ export function QuestionPanel({
             size="icon"
             className="rounded-full bg-[#1E74BB] hover:bg-gray-400 disabled:bg-gray-400 border-none h-12 w-12 flex items-center justify-center"
             onClick={() => onNavigate("prev")}
-            disabled={currentQuestionId === 1}
+            disabled={currentQuestionId === 1 || isTyping}
           >
             <ChevronLeft className="h-6 w-6 text-white" />
           </Button>
@@ -174,7 +176,7 @@ export function QuestionPanel({
             size="icon"
             className="rounded-full bg-[#1E74BB] hover:bg-[#1E74BB84] disabled:bg-gray-400 border-none h-12 w-12 flex items-center justify-center"
             onClick={() => onNavigate("next")}
-            disabled={currentQuestionId === totalQuestions}
+            disabled={currentQuestionId === totalQuestions || isTyping}
           >
             <ChevronRight className="h-6 w-6 text-white" />
           </Button>

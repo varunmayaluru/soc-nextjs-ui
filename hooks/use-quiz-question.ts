@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api-client";
 
 interface Option {
@@ -45,7 +45,6 @@ export function useQuizQuestion({
   const [lastFetchedQuestionId, setLastFetchedQuestionId] = useState<
     number | null
   >(null);
-  const hasFetchedRef = useRef<Set<number>>(new Set());
 
   // Safely access localStorage on client side only
   const organizationId =
@@ -55,11 +54,10 @@ export function useQuizQuestion({
 
   const fetchQuestion = useCallback(
     async (targetQuestionId: number) => {
-      if (!targetQuestionId || hasFetchedRef.current.has(targetQuestionId)) {
+      if (!targetQuestionId || !organizationId) {
         return;
       }
 
-      hasFetchedRef.current.add(targetQuestionId);
       setLoading(true);
       setError(null);
 
@@ -77,19 +75,9 @@ export function useQuizQuestion({
           throw new Error("No data received");
         }
 
-        if (response.data.question_id !== targetQuestionId) {
-          // Retry if mismatch
-          const retryResponse = await api.get<Question>(endpoint);
-          if (retryResponse.ok && retryResponse.data) {
-            setQuestion(retryResponse.data);
-            setLastFetchedQuestionId(targetQuestionId);
-          } else {
-            throw new Error("Retry failed to fetch question");
-          }
-        } else {
-          setQuestion(response.data);
-          setLastFetchedQuestionId(targetQuestionId);
-        }
+        console.log("Question fetched successfully:", response.data);
+        setQuestion(response.data);
+        setLastFetchedQuestionId(targetQuestionId);
       } catch (err) {
         console.error("Fetch error:", err);
         setError(
@@ -106,6 +94,7 @@ export function useQuizQuestion({
 
   useEffect(() => {
     if (currentQuestionId && currentQuestionId !== lastFetchedQuestionId) {
+      console.log("Fetching question for ID:", currentQuestionId);
       fetchQuestion(currentQuestionId);
     }
   }, [currentQuestionId, fetchQuestion, lastFetchedQuestionId]);

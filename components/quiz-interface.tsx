@@ -162,6 +162,7 @@ export function QuizInterface({
     try {
       const endpoint = `/quizzes/quizzes/answers/${userId}?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}&question_id=${targetQuestionId}&attempt_id=${attemptId || 1}`
 
+      console.log("Loading existing answer from:", endpoint)
       const response = await api.get<ExistingAnswer>(endpoint)
 
       if (response.ok && response.data && response.data.answer_choice_id) {
@@ -257,7 +258,7 @@ export function QuizInterface({
         question_id: currentQuestionId,
         attempt_id: attemptId || 1,
         answer_text: "",
-        answer_choice_id: selectedOptionData?.option_index,
+        answer_choice_id: selectedOptionData?.id,
         is_correct: selectedOptionData?.is_correct || false,
       }
 
@@ -414,6 +415,8 @@ export function QuizInterface({
     if (newQuestionId < 1 || newQuestionId > totalQuizQuestions) return
 
     try {
+      console.log(`Navigating ${direction} to question ${newQuestionId}`)
+
       // Reset chat and UI state immediately
       resetChat()
       setSelectedOption(null)
@@ -423,7 +426,7 @@ export function QuizInterface({
       // Reset timer for new question
       setQuestionStartTime(Date.now())
 
-      // Update the current question ID first
+      // Update the current question ID first - this will trigger question fetch
       setCurrentQuestionId(newQuestionId)
 
       // Create a new quiz attempt for this question if it doesn't exist
@@ -441,26 +444,30 @@ export function QuizInterface({
         completion_time_seconds: 0,
       }
 
-      console.log("################# navigate to next question post############")
+      console.log("Creating quiz attempt for question:", newQuestionId)
 
       const response = await api.post<any>(`user-quiz-attempts/quiz-attempts/`, quizAttemptPayload)
 
       if (response.ok) {
         console.log("Quiz attempt created successfully for question:", newQuestionId)
       } else {
-        console.error("Failed to create quiz attempt:", response.status)
+        console.log("Quiz attempt may already exist for question:", newQuestionId)
       }
 
-      // Load existing answer for the new question after a short delay to ensure question is loaded
+      // Load existing answer for the new question after question is fetched
+      // Use a timeout to ensure the question fetch completes first
       setTimeout(() => {
+        console.log("Loading existing answer for question:", newQuestionId)
         loadExistingAnswer(newQuestionId)
-      }, 100)
+      }, 500)
     } catch (error) {
       console.error("Error navigating to question:", error)
     }
   }
 
   const handleQuestionSelect = async (questionId: number) => {
+    console.log("Selecting question:", questionId)
+
     resetChat()
     setSelectedOption(null)
     setIsAnswerChecked(false)
@@ -469,13 +476,14 @@ export function QuizInterface({
     // Reset timer for selected question
     setQuestionStartTime(Date.now())
 
-    // Update the current question ID
+    // Update the current question ID - this will trigger question fetch
     setCurrentQuestionId(questionId)
 
-    // Load existing answer for the selected question after a short delay
+    // Load existing answer for the selected question after question is fetched
     setTimeout(() => {
+      console.log("Loading existing answer for selected question:", questionId)
       loadExistingAnswer(questionId)
-    }, 100)
+    }, 500)
   }
 
   // Generate pagination numbers
@@ -509,7 +517,7 @@ export function QuizInterface({
 
   return (
     <>
-      {quizCompleted &&
+      {quizCompleted && (
         <QuizCompletion
           score={0}
           totalQuestions={totalQuizQuestions}
@@ -521,11 +529,12 @@ export function QuizInterface({
           noAnswers={0}
           skippedAnswers={0}
         />
-      }
-      {!quizCompleted &&
+      )}
+      {!quizCompleted && (
         <div className="mx-auto bg-white">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
             <QuestionPanel
+              isTyping={isTyping}
               topicSlug={topicSlug || ""}
               subjectSlug={subjectSlug || ""}
               subjectName={subjectName}
@@ -569,8 +578,8 @@ export function QuizInterface({
               <DialogHeader>
                 <DialogTitle>Retake Quiz</DialogTitle>
                 <DialogDescription>
-                  Are you sure you want to retake this quiz? This will start a new attempt and your current progress will be
-                  saved as attempt {quizProgress?.attempts_count || 1}.
+                  Are you sure you want to retake this quiz? This will start a new attempt and your current progress
+                  will be saved as attempt {quizProgress?.attempts_count || 1}.
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
@@ -594,8 +603,7 @@ export function QuizInterface({
             </DialogContent>
           </Dialog>
         </div>
-      }
-
+      )}
     </>
   )
 }
