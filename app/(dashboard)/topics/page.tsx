@@ -6,7 +6,7 @@ import { useEffect, useState } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -21,6 +21,7 @@ import { number } from "framer-motion"
 interface TopicProgress {
   topic_id: number
   subject_id: number
+  slug: string
   organization_id: number
   user_id: number
   total_quizzes: number
@@ -45,31 +46,18 @@ export default function SubjectPage() {
   const [progressData, setProgressData] = useState<TopicProgress[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [subjectName, setSubjectName] = useState<string>("")
 
-  const params = useParams()
-  const subjectId = params?.subject as string
+  const searchParams = useSearchParams() // query params
+  const subjectId = searchParams.get("subjectId")
+  const subjectSlug = searchParams.get("subjectSlug")
+  const subjectName = searchParams.get("subjectName")
+  console.log("subjectSlug", subjectSlug)
   let subject = null as unknown as Subject;
 
-  // Get subject name from the API based on subject ID
-  useEffect(() => {
-    const fetchSubjectName = async () => {
-      try {
-        const response = await api.get<Subject>(`/subjects/subjects/${subjectId}`)
+  const userId = localStorage.getItem("userId")
+  const organizationId = localStorage.getItem("organizationId")
 
-        if (response.ok) {
-          subject = response.data
-          setSubjectName(subject.subject_name)
-        } else {
-          throw new Error("Failed to fetch subject name")
-        }
-      } catch (error) {
-        console.error("Error fetching subject name:", error)
-      }
-    }
 
-    fetchSubjectName()
-  }, [subjectId])
 
   // Fetch progress data
   useEffect(() => {
@@ -79,10 +67,10 @@ export default function SubjectPage() {
         setError(null)
 
         // Get user ID from localStorage or use a default
-        const userId = localStorage.getItem("userId")
+
 
         const response = await api.get<TopicProgress[]>(
-          `user-topic-progress/topic-progress/${userId}?subject_id=${subjectId}`,
+          `user-topic-progress/topic-progress/progress?user_id=${userId}&subject_slug=${subjectSlug}&organization_id=${organizationId}&subject_id=${subjectId}`,
         )
 
         if (!response.ok) {
@@ -132,9 +120,7 @@ export default function SubjectPage() {
     }
 
     // Create a path using the topic_id
-    const path = `/subjects/${subjectId}/${topic_id}`
-
-    return { icon, color, path }
+    return { icon, color }
   }
 
   // Map color names to Tailwind classes
@@ -164,11 +150,11 @@ export default function SubjectPage() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+              <BreadcrumbLink href="/" className="text-md font-semibold">Home</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>{subjectName}</BreadcrumbPage>
+              <BreadcrumbPage className="text-md font-semibold">{subjectName}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -224,7 +210,7 @@ export default function SubjectPage() {
             </div>
           ) : (
             progressData.map((topic) => {
-              const { icon, color, path } = getTopicVisuals(topic.topic_name, topic.topic_id)
+              const { icon, color } = getTopicVisuals(topic.topic_name, topic.topic_id)
               const { bg, text } = getColorClasses(color)
 
               return (
@@ -264,7 +250,7 @@ export default function SubjectPage() {
                       </span>
                     </p>
                     <Link
-                      href={path}
+                      href={`/quizzes?topicId=${topic.topic_id}&subjectId=${topic.subject_id}&topicSlug=${topic.slug}&subjectSlug=${subjectSlug}&subjectName=${subjectName}&topicName=${topic.topic_name}`}
                       className="bg-[#1e74bb] text-white py-2 px-4 rounded-md text-sm flex items-center group-hover:bg-[#1a67a7] transition-all duration-300"
                     >
                       Select a Quiz

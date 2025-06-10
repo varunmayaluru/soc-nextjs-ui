@@ -1,7 +1,9 @@
 "use client"
 
-import { User, Bot, SquarePen } from "lucide-react"
+import { User, Bot, SquarePen, Brain } from "lucide-react"
 import { MathRenderer } from "@/components/math-renderer"
+import { Avatar, AvatarFallback } from "@radix-ui/react-avatar"
+import { useAuth } from "../auth-provider"
 
 interface Message {
   id: number
@@ -18,6 +20,15 @@ interface ChatMessageProps {
 export function ChatMessage({ message }: ChatMessageProps) {
   const isUser = message.sender === "user"
   const isBot = message.sender === "response"
+  const { userInfo, logout } = useAuth()
+
+  // Get the user's name, fallback to "User" if not available
+  const userName = userInfo?.first_name + " " + userInfo?.last_name || "User"
+  const userInitials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
 
   // Get message styling based on type
   const getMessageStyling = () => {
@@ -66,9 +77,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
       {isUser ? (
         <div className="mb-2">
           <div className="flex items-center mb-2 relative top-4 left-[-6px]">
-            <div className="w-8 h-8 rounded-sm bg-amber-100 flex items-center justify-center overflow-hidden mr-2">
-              <User className="w-5 h-5" />
-            </div>
+            {/* <div className="w-8 h-8 rounded-sm bg-amber-100 flex items-center justify-center overflow-hidden mr-2"> */}
+            {/* <User className="w-5 h-5" /> */}
+            <Avatar className="h-7 w-7 bg-[#1e74bb] flex items-center justify-center rounded-sm mr-2">
+              <AvatarFallback className=" text-white font-bold text-xs">{userInitials}</AvatarFallback>
+            </Avatar>
+            {/* </div> */}
             <div className="font-medium">You</div>
             <div className="text-xs text-gray-500 ml-2">{message.timestamp}</div>
             <button className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity">

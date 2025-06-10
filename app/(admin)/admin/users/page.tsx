@@ -1,16 +1,6 @@
 "use client"
-import { useState, useCallback } from "react"
-import {
-  Search,
-  Filter,
-  MoreHorizontal,
-  ArrowUpDown,
-  UserPlus,
-  Layers,
-  ChevronRight,
-  Users,
-  AlertCircle,
-} from "lucide-react"
+import { useState } from "react"
+import { Search, Filter, MoreHorizontal, ArrowUpDown, UserPlus, Layers, ChevronRight, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -63,8 +53,8 @@ export default function UsersPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [selectedOrganization, setSelectedOrganization] = useState<string>("")
   const [users, setUsers] = useState<UserForm[]>([])
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<UserForm | null>(null)
 
   // call ngonInit to fetch organizations
 
@@ -72,7 +62,7 @@ export default function UsersPage() {
     const fetchOrganizations = async () => {
       try {
         setOrganizations([]) // Reset organizations before fetching
-        const response = await api.get<Organization[]>("/organizations/organizations/organizations")
+        const response = await api.get<Organization[]>("/organizations/organizations")
         console.log("Organizations fetched:", response.data)
         // Handle the fetched organizations as needed
         if (response.status === 200) {
@@ -99,13 +89,20 @@ export default function UsersPage() {
     setSelectedOrganization(organizationName)
     setUsers([])
     console.log("Selected organization:", organizationName)
-    const orgId = organizations.find((org) => org.organization_name === organizationName)?.organization_id
+    const orgId = organizations.find((org) => org.organization_name === organizationName)?.id
     const response = await api
       .get(`/users/organizations/${orgId}/users`)
       .then((response) => {
         if (response.status === 200 && Array.isArray(response.data)) {
-          // If you want to update the users grid, you need a users state
-          setUsers(response.data)
+         
+            const mappedUsers = response.data.map((user: any) => {
+              const { id, ...rest } = user
+              return {
+                ...rest,
+                user_id: id,
+              }
+            })
+            setUsers(mappedUsers)
         } else {
           toast.error("Failed to fetch users for organization")
         }
@@ -129,15 +126,6 @@ export default function UsersPage() {
     update_date_time: string
     status: string
     user_id?: string
-  }
-
-  interface FormErrors {
-    first_name?: string
-    last_name?: string
-    email?: string
-    password?: string
-    organization_id?: string
-    role?: string
   }
 
   const [form, setForm] = useState<UserForm>({
@@ -192,120 +180,81 @@ export default function UsersPage() {
     setEmailVerifiedError({ show: false, message: "" })
   }
 
-  const validateForm = useCallback((): boolean => {
-    const newErrors: FormErrors = {}
-    let isValid = true
-
-    // First name validation
-    if (!form.first_name || !form.first_name.trim()) {
-      newErrors.first_name = "First name is required"
-      isValid = false
-    } else if (form.first_name.trim().length < 2) {
-      newErrors.first_name = "First name must be at least 2 characters"
-      isValid = false
+  const validateForm = () => {
+    clearErrors()
+    if (form.first_name === "") {
+      setNameError({ show: true, message: "First Name Required" })
+      return false
     }
-
-    // Last name validation
-    if (!form.last_name || !form.last_name.trim()) {
-      newErrors.last_name = "Last name is required"
-      isValid = false
-    } else if (form.last_name.trim().length < 2) {
-      newErrors.last_name = "Last name must be at least 2 characters"
-      isValid = false
+    if (form.last_name === "") {
+      setLastNameError({ show: true, message: "Last Name are Required" })
+      return false
     }
-
-    // Email validation
-    if (!form.email || !form.email.trim()) {
-      newErrors.email = "Email is required"
-      isValid = false
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-      newErrors.email = "Please enter a valid email address"
-      isValid = false
+    if (form.email === "") {
+      setEmailError({ show: true, message: "Email is Required" })
+      return false
     }
-
-    // Password validation
-    if (!form.password || !form.password.trim()) {
-      newErrors.password = "Password is required"
-      isValid = false
-    } else if (form.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters"
-      isValid = false
+    // Only require password for new users
+    if (form.password === "" && !isEditMode) {
+      setPasswordError({ show: true, message: "Password is Required" })
+      return false
     }
-
-    // Organization validation
-    if (!form.organization_id || form.organization_id.trim() === "") {
-      newErrors.organization_id = "Organization is required"
-      isValid = false
+    if (form.organization_id === "") {
+      setOrganizationError({ show: true, message: "Organization is Required" })
+      return false
     }
-
-    // Role validation
-    if (!form.role || form.role.trim() === "") {
-      newErrors.role = "Role is required"
-      isValid = false
+    if (form.role === "") {
+      setRoleError({ show: true, message: "Role is Required" })
+      return false
     }
+    if (!form.is_active) {
+      setIsActiveError({ show: true, message: "User must be active" })
+      return false
+    }
+    if (form.first_name.length < 2) {
+      setNameError({ show: true, message: "First and Last Name must be at least 2 characters" })
+      return false
+    }
+    if (form.last_name.length < 2) {
+      setLastNameError({ show: true, message: "First and Last Name must be at least 2 characters" })
+      return false
+    }
+    if (!/\S+@\S+\.\S+/.test(form.email)) {
+      setEmailError({ show: true, message: "Email is not valid" })
+      return false
+    }
+    // Only validate password length if it's provided (for edit mode)
+    if (form.password.length > 0 && form.password.length < 6) {
+      setPasswordError({ show: true, message: "Password must be at least 6 characters" })
+      return false
+    }
+    if (form.organization_id === "") {
+      setOrganizationError({ show: true, message: "Organization is required" })
+      return false
+    }
+    if (form.role === "") {
+      setRoleError({ show: true, message: "Role is required" })
+      return false
+    }
+    clearErrors()
+    return true
+  }
 
-    console.log("Validation errors:", newErrors)
-    console.log("Form data:", form)
-    console.log("Is valid:", isValid)
-
-    setErrors(newErrors)
-    return isValid
-  }, [form])
-
-  const handleSubmit = async () => {
-    console.log("Form submission started")
-    console.log("Current form state:", form)
-
-    // Clear previous errors
-    setErrors({})
-
-    // Validate form
-    const isValid = validateForm()
-    console.log("Validation result:", isValid)
-
-    if (!isValid) {
-      console.log("Form validation failed, showing errors")
-      toast.error("Please fix the errors in the form")
+  const handleSubmit = () => {
+    console.log("Form submitted:", form)
+    if (!validateForm()) {
       return
     }
 
-    try {
-      setIsSubmitting(true)
-      const newUser = {
-        ...form,
-        create_date_time: new Date().toISOString(),
-        update_date_time: new Date().toISOString(),
-      }
-
-      console.log("Submitting user data:", newUser)
-      const response = await api.post<UserForm>("/users/register", newUser)
-
-      if (response.status === 201 || response.status === 200) {
-        toast.success("User created successfully")
-        setShowAddUserDialog(false)
-        resetForm()
-        bindUsersToOrganization(selectedOrganization)
-      } else {
-        toast.error(`Failed to create user. Server responded with status ${response.status}`)
-      }
-    } catch (error) {
-      console.error("Error creating user:", error)
-      toast.error("Error creating user. Please try again.")
-    } finally {
-      setIsSubmitting(false)
+    if (isEditMode && selectedUser) {
+      editUser({ ...form, user_id: selectedUser.user_id })
+    } else {
+      createUser(form)
     }
+
+    ResetForm()
   }
-
-  const handleInputChange = (field: keyof UserForm, value: string | boolean) => {
-    setForm((prev) => ({ ...prev, [field]: value }))
-
-    // Clear error for this field when user starts typing
-    if (errors[field as keyof FormErrors]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }))
-    }
-  }
-
-  function resetForm() {
+  function ResetForm() {
     setForm({
       first_name: "",
       last_name: "",
@@ -350,6 +299,58 @@ export default function UsersPage() {
     }
   }
 
+  const editUser = async (updatedUser: UserForm) => {
+    try {
+      console.log("Updating user:", updatedUser)
+      const payload = {
+        first_name: updatedUser.first_name,
+        last_name: updatedUser.last_name,
+        organization_id: updatedUser.organization_id,
+        role: updatedUser.role,
+        is_active: updatedUser.is_active,
+        last_login: new Date().toISOString(),
+        email_verified: updatedUser.email_verified,
+        update_date_time: new Date().toISOString(),
+      }
+      console.log("Payload for update:", payload)
+      const response = await api.patch(
+        `/users/users/${updatedUser.user_id}?organization_id=${updatedUser.organization_id}`,
+        payload
+      )
+
+      console.log("User updated response:", response)
+
+      if (response.status !== 200) {
+        toast.error(`Failed to update user. Server responded with status ${response.status}`)
+        return
+      }
+
+      toast.success("User updated successfully")
+      setShowAddUserDialog(false)
+      bindUsersToOrganization(selectedOrganization)
+    } catch (error) {
+      console.error("Error updating user:", error)
+      toast.error("Error updating user. Please try again.")
+    }
+  }
+
+  const openEditDialog = (user: UserForm) => {
+    setIsEditMode(true)
+    setSelectedUser(user)
+    setForm({
+      ...user,
+      password: "", // Don't populate password for security
+    })
+    setShowAddUserDialog(true)
+  }
+
+  const openAddDialog = () => {
+    setIsEditMode(false)
+    setSelectedUser(null)
+    ResetForm()
+    setShowAddUserDialog(true)
+  }
+
   return (
     <div className="space-y-6 mx-auto">
       {/* Page Header */}
@@ -363,17 +364,31 @@ export default function UsersPage() {
             <h1 className="text-2xl font-bold mb-1">Users</h1>
             <p className="text-gray-100">Manage your platform users</p>
           </div>
-          <Dialog open={showAddUserDialog} onOpenChange={setShowAddUserDialog}>
+          <Dialog
+            open={showAddUserDialog}
+            onOpenChange={(open) => {
+              setShowAddUserDialog(open)
+              if (!open) {
+                setIsEditMode(false)
+                setSelectedUser(null)
+                ResetForm()
+              }
+            }}
+          >
             <DialogTrigger asChild>
-              <Button className="bg-white text-[#1e74bb] hover:bg-gray-100">
+              <Button className="bg-white text-[#1e74bb] hover:bg-gray-100" onClick={openAddDialog}>
                 <UserPlus className="h-4 w-4 mr-2" />
                 Add User
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[550px]">
               <DialogHeader>
-                <DialogTitle>Add New User</DialogTitle>
-                <DialogDescription>Create a new user account for your learning platform.</DialogDescription>
+                <DialogTitle>{isEditMode ? "Edit User" : "Add New User"}</DialogTitle>
+                <DialogDescription>
+                  {isEditMode
+                    ? "Update user account information."
+                    : "Create a new user account for your learning platform."}
+                </DialogDescription>
               </DialogHeader>
 
               <Tabs defaultValue="details" className="mt-4">
@@ -390,15 +405,12 @@ export default function UsersPage() {
                         <Input
                           id="first-name"
                           value={form.first_name}
-                          onChange={(e) => handleInputChange("first_name", e.target.value)}
+                          onChange={(e) => setForm({ ...form, first_name: e.target.value })}
                           placeholder="Enter first name"
-                          className={errors.first_name ? "border-red-500" : ""}
+                          className={nameError.show ? "border-red-500" : ""}
                         />
-                        {errors.first_name && (
-                          <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
-                            <AlertCircle className="h-3 w-3 flex-shrink-0" />
-                            {errors.first_name}
-                          </p>
+                        {nameError.show && form.first_name === "" && (
+                          <p className="text-red-500 text-sm">{nameError.message || "First name is required"}</p>
                         )}
                       </div>
                       <div className="space-y-2">
@@ -406,15 +418,12 @@ export default function UsersPage() {
                         <Input
                           id="last-name"
                           value={form.last_name}
-                          onChange={(e) => handleInputChange("last_name", e.target.value)}
+                          onChange={(e) => setForm({ ...form, last_name: e.target.value })}
                           placeholder="Last name"
-                          className={errors.last_name ? "border-red-500" : ""}
+                          className={lastNameError.show ? "border-red-500" : ""}
                         />
-                        {errors.last_name && (
-                          <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
-                            <AlertCircle className="h-3 w-3 flex-shrink-0" />
-                            {errors.last_name}
-                          </p>
+                        {lastNameError.show && form.last_name === "" && (
+                          <p className="text-red-500 text-sm">{lastNameError.message || "Last name is required"}</p>
                         )}
                       </div>
                     </div>
@@ -426,68 +435,63 @@ export default function UsersPage() {
                         placeholder="john.doe@example.com"
                         type="email"
                         value={form.email}
-                        onChange={(e) => handleInputChange("email", e.target.value)}
-                        className={errors.email ? "border-red-500" : ""}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        className={emailError.show ? "border-red-500" : ""}
+                        disabled={isEditMode} 
                       />
-                      {errors.email && (
-                        <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
-                          <AlertCircle className="h-3 w-3 flex-shrink-0" />
-                          {errors.email}
-                        </p>
+                      {emailError.show && form.email === "" && (
+                        <p className="text-red-500 text-sm">{emailError.message || "Email is required"}</p>
                       )}
                     </div>
 
+                    {!isEditMode && (
                     <div className="space-y-2">
                       <Label htmlFor="password">Password</Label>
                       <Input
                         id="password"
                         type="password"
                         value={form.password}
-                        onChange={(e) => handleInputChange("password", e.target.value)}
-                        placeholder="Enter password"
-                        className={errors.password ? "border-red-500" : ""}
+                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        placeholder={"Enter password"}
+                        className={passwordError.show && form.password === "" && !isEditMode ? "border-red-500" : ""}
                       />
-                      {errors.password && (
-                        <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
-                          <AlertCircle className="h-3 w-3 flex-shrink-0" />
-                          {errors.password}
-                        </p>
+                      {passwordError.show && form.password === "" && !isEditMode && (
+                        <p className="text-red-500 text-sm">{passwordError.message || "Password is required"}</p>
                       )}
                     </div>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="organization_id">Organization</Label>
+                      <Label htmlFor="id">Organization</Label>
                       <Select
-                        value={form.organization_id}
-                        onValueChange={(value) => handleInputChange("organization_id", value)}
+                        value={form.organization_id.toString()}
+                        onValueChange={(value) => setForm({ ...form, organization_id: value })}
                       >
-                        <SelectTrigger className={errors.organization_id ? "border-red-500" : ""}>
+                        <SelectTrigger
+                          className={organizationError.show && form.organization_id === "" ? "border-red-500" : ""}
+                        >
                           <SelectValue placeholder="Select organization" />
                         </SelectTrigger>
                         <SelectContent>
                           {organizations.map((organization) => (
-                            <SelectItem
-                              key={organization.organization_id}
-                              value={organization.organization_id.toString()}
-                            >
+                            <SelectItem key={organization.id} value={organization.id.toString()}>
                               {organization.organization_name}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
 
-                      {errors.organization_id && (
-                        <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
-                          <AlertCircle className="h-3 w-3 flex-shrink-0" />
-                          {errors.organization_id}
+                      {organizationError.show && form.organization_id === "" && (
+                        <p className="text-red-500 text-sm">
+                          {organizationError.message || "Organization is required"}
                         </p>
                       )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="role-dropdown">Role</Label>
-                      <Select value={form.role} onValueChange={(value) => handleInputChange("role", value)}>
-                        <SelectTrigger className={errors.role ? "border-red-500" : ""}>
+                      <Select value={form.role} onValueChange={(value) => setForm({ ...form, role: value })}>
+                        <SelectTrigger className={roleError.show && form.role === "" ? "border-red-500" : ""}>
                           <SelectValue placeholder="Select role" />
                         </SelectTrigger>
                         <SelectContent>
@@ -495,11 +499,8 @@ export default function UsersPage() {
                           <SelectItem value="user">user</SelectItem>
                         </SelectContent>
                       </Select>
-                      {errors.role && (
-                        <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
-                          <AlertCircle className="h-3 w-3 flex-shrink-0" />
-                          {errors.role}
-                        </p>
+                      {roleError.show && form.role === "" && (
+                        <p className="text-red-500 text-sm">{roleError.message || "Role is required"}</p>
                       )}
                     </div>
                   </div>
@@ -510,7 +511,7 @@ export default function UsersPage() {
                         id="is-active"
                         className="accent-[#1e74bb] w-4 h-4"
                         checked={form.is_active}
-                        onChange={(e) => handleInputChange("is_active", e.target.checked)}
+                        onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
                       />
                       <Label htmlFor="is-active">Is Active</Label>
                     </div>
@@ -523,7 +524,7 @@ export default function UsersPage() {
                         id="email-verified"
                         className="accent-[#1e74bb] w-4 h-4"
                         checked={form.email_verified}
-                        onChange={(e) => handleInputChange("email_verified", e.target.checked)}
+                        onChange={(e) => setForm({ ...form, email_verified: e.target.checked })}
                       />
                       <Label htmlFor="email-verified">Email Verified</Label>
                     </div>
@@ -569,8 +570,8 @@ export default function UsersPage() {
                 <Button variant="outline" onClick={() => setShowAddUserDialog(false)}>
                   Cancel
                 </Button>
-                <Button className="bg-[#1e74bb] hover:bg-[#1a65a3]" onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? "Creating..." : "Create User"}
+                <Button className="bg-[#1e74bb] hover:bg-[#1a65a3]" onClick={handleSubmit}>
+                  {isEditMode ? "Update User" : "Create User"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -617,7 +618,7 @@ export default function UsersPage() {
               <div className="flex items-center gap-4 pb-2">
                 <Select
                   value={selectedOrganization}
-                  // onValueChange={(value) => setForm({ ...form, organization_id: value })}
+                  // onValueChange={(value) => setForm({ ...form, id: value })}
                   onValueChange={(value) => {
                     bindUsersToOrganization(value)
                   }}
@@ -629,7 +630,7 @@ export default function UsersPage() {
                     {/* Render organizations dynamically, first value is default */}
                     {/* <SelectItem value="Select organization">Select organization</SelectItem> */}
                     {(Array.isArray(organizations) ? organizations : []).map((org) => (
-                      <SelectItem key={org.organization_id} value={org.organization_name}>
+                      <SelectItem key={org.id} value={org.organization_name}>
                         {org.organization_name}
                       </SelectItem>
                     ))}
@@ -780,13 +781,13 @@ export default function UsersPage() {
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="bg-white">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem>Edit user</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => openEditDialog(user)}>Edit user</DropdownMenuItem>
                                 <DropdownMenuItem>Reset password</DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   className="text-red-600"
                                   onClick={async () => {
-                                    if (window.confirm(`Are you sure you want to delete user "${user.user_id}"?`)) {
+                                    if (window.confirm(`Are you sure you want to delete user "${user.first_name}"?`)) {
                                       try {
                                         const response = await api.delete(
                                           `/users/users/${user.user_id}?organization_id=${user.organization_id}`,
@@ -837,4 +838,3 @@ export default function UsersPage() {
     </div>
   )
 }
- 

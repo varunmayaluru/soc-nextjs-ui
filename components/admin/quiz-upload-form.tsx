@@ -11,14 +11,16 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import * as XLSX from "xlsx"
 
 interface QuizUploadFormProps {
-    subjectId: number
-    topicId: number
-    quizId: number
+    subjectName: string
+    topicName: string
+    subjectId: string
+    topicId: string
+    quizId: string
     quizTitle: string
     onSuccess: () => void
 }
 
-const QuizUploadForm = ({ subjectId, topicId, quizId, quizTitle, onSuccess }: QuizUploadFormProps) => {
+const QuizUploadForm = ({ subjectName, topicName, subjectId, topicId, quizId, quizTitle, onSuccess }: QuizUploadFormProps) => {
     const [file, setFile] = useState<File | null>(null)
     const [fileName, setFileName] = useState<string>("")
     const [fileSize, setFileSize] = useState<string>("")
@@ -195,20 +197,20 @@ const QuizUploadForm = ({ subjectId, topicId, quizId, quizTitle, onSuccess }: Qu
                     <div className="bg-white p-3 rounded-md border border-[#e6f0f9]">
                         <span className="text-gray-600 block">Quiz:</span>
                         <span className="font-medium text-[#1e74bb]">
-                            "{quizTitle}" (ID: {quizId})
+                            "{quizTitle}"
                         </span>
                     </div>
                     <div className="bg-white p-3 rounded-md border border-[#e6f0f9]">
-                        <span className="text-gray-600 block">Subject ID:</span>
-                        <span className="font-medium text-[#1e74bb]">{subjectId}</span>
+                        <span className="text-gray-600 block">Subject</span>
+                        <span className="font-medium text-[#1e74bb]">{subjectName}</span>
                     </div>
                     <div className="bg-white p-3 rounded-md border border-[#e6f0f9]">
-                        <span className="text-gray-600 block">Topic ID:</span>
-                        <span className="font-medium text-[#1e74bb]">{topicId}</span>
+                        <span className="text-gray-600 block">Topic</span>
+                        <span className="font-medium text-[#1e74bb]">{topicName}</span>
                     </div>
                     <div className="bg-white p-3 rounded-md border border-[#e6f0f9]">
-                        <span className="text-gray-600 block">Organization:</span>
-                        <span className="font-medium text-[#1e74bb]">{localStorage.getItem("organizationId") || "1"}</span>
+                        <span className="text-gray-600 block">Organization </span>
+                        <span className="font-medium text-[#1e74bb]">{localStorage.getItem("organization_name")}</span>
                     </div>
                 </div>
             </div>

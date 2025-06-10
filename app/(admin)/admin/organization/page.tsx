@@ -1,7 +1,6 @@
 "use client"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { toast } from "@/components/ui/use-toast"
 import { api } from "@/lib/api-client"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -17,8 +16,10 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
 import { Layers, ChevronRight, Building } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
 export default function OrganizationsPage() {
+  const { toast } = useToast()
   const [orgs, setOrgs] = useState<Organization[]>([])
   const [loading, setLoading] = useState(true)
   const [editingOrg, setEditingOrg] = useState<Organization | null>(null)
@@ -35,6 +36,7 @@ export default function OrganizationsPage() {
   const [form, setForm] = useState<Omit<Organization, "organization_id" | "create_date_time" | "update_date_time">>({
     organization_name: "",
     slug: "",
+    id: 0,
     description: "",
     timezone: "",
     is_active: true,
@@ -62,7 +64,7 @@ export default function OrganizationsPage() {
   const fetchOrganizations = async () => {
     try {
       setLoading(true)
-      const response = await api.get<Organization[]>(`/organizations/organizations/organizations`)
+      const response = await api.get<Organization[]>(`/organizations/organizations`)
 
       if (response.ok) {
         setOrgs(response.data)
@@ -85,12 +87,13 @@ export default function OrganizationsPage() {
     newOrg: Omit<Organization, "organization_id" | "create_date_time" | "update_date_time">,
   ) => {
     try {
-      const response = await api.post<Organization>("/organizations/organizations/organizations", newOrg)
+      const response = await api.post<Organization>("/organizations/organizations", newOrg)
 
       if (response.ok) {
         toast({
           title: "Success",
           description: "Organization created successfully.",
+          variant: "success",
         })
         fetchOrganizations() // Refresh the list
         setShowModal(false) // Ensure dialog closes
@@ -111,7 +114,7 @@ export default function OrganizationsPage() {
   const updateOrganization = async (updatedOrg: Organization) => {
     try {
       const response = await api.put<Organization>(
-        `/organizations/organizations/organizations/${updatedOrg.organization_id}`,
+        `/organizations/organizations/${updatedOrg.id}`,
         updatedOrg,
       )
 
@@ -119,6 +122,7 @@ export default function OrganizationsPage() {
         toast({
           title: "Success",
           description: "Organization updated successfully.",
+          variant: "success",
         })
         fetchOrganizations() // Refresh the list
         setShowModal(false) // Ensure dialog closes
@@ -142,6 +146,7 @@ export default function OrganizationsPage() {
       setForm({
         organization_name: org.organization_name,
         slug: org.slug,
+        id: org.id,
         description: org.description,
         timezone: org.timezone,
         is_active: org.is_active,
@@ -152,6 +157,7 @@ export default function OrganizationsPage() {
       setForm({
         organization_name: "",
         slug: "",
+        id: 0,
         description: "",
         timezone: "",
         is_active: true,
@@ -468,8 +474,8 @@ export default function OrganizationsPage() {
                     </TableRow>
                   ) : (
                     filteredAndSortedOrgs.map((org) => (
-                      <TableRow key={org.organization_id} className="group hover:bg-gray-50">
-                        <TableCell>{org.organization_id}</TableCell>
+                      <TableRow key={org.id} className="group hover:bg-gray-50">
+                        <TableCell>{org.id}</TableCell>
                         <TableCell className="font-medium">{org.organization_name}</TableCell>
                         <TableCell>{org.slug}</TableCell>
                         <TableCell className="max-w-xs truncate">{org.description}</TableCell>
