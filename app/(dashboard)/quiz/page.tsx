@@ -273,32 +273,38 @@ export default function QuizPage() {
     }
   }
 
+
   if (isLoading || !isInitialized) {
     return (
-      <div className="p-6">
-        <Skeleton className="h-10 w-3/4 max-w-md mb-4" />
-        <Skeleton className="h-6 w-1/2 max-w-sm mb-8" />
-
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <Skeleton className="h-8 w-full max-w-2xl mb-6" />
-
+      <div className="mx-auto bg-white ">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+        <div className="bg-white p-6">
           <div className="space-y-4">
-            {Array(4)
-              .fill(0)
-              .map((_, i) => (
-                <div key={i} className="flex items-center space-x-3">
-                  <Skeleton className="h-6 w-6 rounded-full" />
-                  <Skeleton className="h-6 w-full" />
-                </div>
-              ))}
+            <Skeleton className="h-8 w-3/4 bg-gray-200" />
+            <Skeleton className="h-4 w-1/4 bg-gray-200" />
+            <Skeleton className="h-24 w-full bg-gray-200" />
+            <div className="space-y-2 mt-4">
+              {Array(4)
+                .fill(0)
+                .map((_, i) => (
+                  <Skeleton key={i} className="h-12 w-full" />
+                ))}
+            </div>
+            <div className="flex justify-between mt-6">
+              <Skeleton className="h-10 w-24" />
+              <Skeleton className="h-10 w-24" />
+            </div>
           </div>
-
-          <div className="flex justify-between mt-8">
-            <Skeleton className="h-10 w-24" />
-            <Skeleton className="h-10 w-24" />
+        </div>
+        <div className="bg-white border-l border-gray-200 p-6">
+          <div className="space-y-4">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <Skeleton className="h-4 w-2/3" />
           </div>
         </div>
       </div>
+    </div>
     )
   }
 

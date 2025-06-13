@@ -511,7 +511,7 @@ export function QuizInterface({
   }
 
   if (!question) {
-    return <QuizNotFound />
+    return <QuizSkeleton />
   }
 
   // Verify we have the correct question
