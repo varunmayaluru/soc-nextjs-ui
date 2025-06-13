@@ -291,6 +291,12 @@ export function useQuizChat({
           content: feedback,
         });
 
+        addMessage({
+          sender: "response",
+          content: feedback,
+          type: "feedback",
+        });
+
         // Get follow-up question using secure API with encryption
         const followUpPayload = {
           complex_question: question.quiz_question_text,
@@ -312,12 +318,17 @@ export function useQuizChat({
         );
 
         if (followUpResponse.ok && followUpResponse.data) {
-          feedback += `\n\n${followUpResponse.data.sub_question}`;
+          let question = followUpResponse.data.sub_question;
+
+          addConversationMessage({
+            role: "assistant",
+            content: question,
+          });
 
           addMessage({
             sender: "response",
-            content: feedback,
-            type: "feedback",
+            content: question,
+            type: "question",
           });
         }
 
