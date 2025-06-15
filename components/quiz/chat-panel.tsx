@@ -12,6 +12,7 @@ import { DrawingCanvas } from "./drawing-canvas"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { SpeechButton } from "./speech-button"
+import { SpeechProvider } from "../SpeechProvider"
 
 interface Message {
   id: number
@@ -177,16 +178,19 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
             <p className="text-sm mt-2">Answer the question incorrectly to start our conversation!</p>
           </div>
         )}
+        <SpeechProvider>
+          {messages.map((message, index) => (
+            <div
+              key={message.id}
+              className="animate-in slide-in-from-bottom-2 duration-300"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <ChatMessage message={message} index={index} />
+            </div>
+          ))}
+        </SpeechProvider>
 
-        {messages.map((message, index) => (
-          <div
-            key={message.id}
-            className="animate-in slide-in-from-bottom-2 duration-300"
-            style={{ animationDelay: `${index * 50}ms` }}
-          >
-            <ChatMessage message={message} />
-          </div>
-        ))}
+        {/* Typing indicator */}
 
         {isTyping && (
           <div className="animate-in slide-in-from-bottom-2 duration-300">

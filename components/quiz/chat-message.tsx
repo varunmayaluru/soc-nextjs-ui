@@ -4,6 +4,7 @@ import { User, Bot, SquarePen, Brain } from "lucide-react"
 import { MathRenderer } from "@/components/math-renderer"
 import { Avatar, AvatarFallback } from "@radix-ui/react-avatar"
 import { useAuth } from "../auth-provider"
+import TextToSpeech from "../TextToSpeech"
 
 interface Message {
   id: number
@@ -15,9 +16,10 @@ interface Message {
 
 interface ChatMessageProps {
   message: Message
+  index: number
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, index }: ChatMessageProps) {
   const isUser = message.sender === "user"
   const isBot = message.sender === "response"
   const { userInfo, logout } = useAuth()
@@ -108,6 +110,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
           <div className={`rounded-lg text-sm whitespace-pre-wrap pl-10 py-4 pr-4 border ${getMessageStyling()}`}>
             <MathRenderer content={message.content} />
           </div>
+          <div key={index}>
+                <TextToSpeech
+                  id={index.toString()}
+                  message={message.content}
+                />
+            </div>
         </div>
       )}
     </div>
