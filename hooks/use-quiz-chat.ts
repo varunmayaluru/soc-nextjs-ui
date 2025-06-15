@@ -9,7 +9,7 @@ interface Message {
   sender: "user" | "response";
   content: string;
   timestamp: string;
-  type?: "feedback" | "question" | "summary";
+  type?: "feedback" | "question" | "summary" | "knowledge-gap";
 }
 
 interface ConvoMessage {
@@ -384,12 +384,17 @@ export function useQuizChat({
         ]);
 
         let finalContent = `**Summary**\n\n${summaryResponse.data.summary}`;
-        finalContent += `\n\n**Knowledge Gap Analysis**\n\n${knowledgeGapResponse.data.knowledge_gap}`;
-
         addMessage({
           sender: "response",
           content: finalContent,
           type: "summary",
+        });
+
+       let knowledge_gapContent = `\n\n**Knowledge Gap Analysis**\n\n${knowledgeGapResponse.data.knowledge_gap}`;
+        addMessage({
+          sender: "response",
+          content: knowledge_gapContent,
+          type: "knowledge-gap",
         });
       }
     } catch (error) {
