@@ -12,16 +12,18 @@ interface Option {
 }
 
 interface Question {
-  question_id: number;
-  quiz_id: number;
-  quiz_question_text: string;
-  difficulty_level: string;
-  is_active: boolean;
-  is_maths: boolean;
-  created_by: number;
-  create_date_time: string;
-  update_date_time: string | null;
-  options: Option[];
+  question_id: number
+  quiz_id: number
+  quiz_question_text: string
+  difficulty_level: string
+  is_active: boolean
+  is_maths: boolean
+  question_type: "mcq" | "fib" | "tf" | "match" | "sa"
+  correct_answer?: string // For fill in the blank questions
+  created_by: number
+  create_date_time: string
+  update_date_time: string | null
+  options: Option[]
 }
 
 interface UseQuizQuestionProps {
@@ -76,7 +78,9 @@ export function useQuizQuestion({
         }
 
         console.log("Question fetched successfully:", response.data);
+        //response.data.question_type =  "multiple_choice";
         setQuestion(response.data);
+        
         setLastFetchedQuestionId(targetQuestionId);
       } catch (err) {
         console.error("Fetch error:", err);
