@@ -18,6 +18,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import QuizCompletion from "./quiz/quiz-completion"
+import { text } from "stream/consumers"
+import { secureApi } from "@/lib/secure-api-client"
+import { te } from "date-fns/locale"
 
 interface Option {
   id: number
@@ -28,16 +31,19 @@ interface Option {
 }
 
 interface Question {
-  question_id: number
+  question_number: number
   quiz_id: number
   quiz_question_text: string
   difficulty_level: string
   is_active: boolean
   is_maths: boolean
+  question_type: "mcq" | "fib" | "tf" | "match" | "sa"
+  correct_answer?: string // For fill in the blank questions
   created_by: number
   create_date_time: string
   update_date_time: string | null
   options: Option[]
+  short_answer_text?: string // For short answer questions
 }
 
 interface ExistingAnswer {
@@ -104,6 +110,7 @@ export function QuizInterface({
   const [selectedOptionData, setSelectedOptionData] = useState<Option | undefined>(undefined)
 
   const [quizCompleted, setQuizCompleted] = useState(false)
+  const [textAnswer, setTextAnswer] = useState<string>("")
 
   const { question, loading, error, fetchQuestion } = useQuizQuestion({
     quizId,
@@ -161,28 +168,44 @@ export function QuizInterface({
   const loadExistingAnswer = async (questionIdToLoad?: number) => {
     const targetQuestionId = questionIdToLoad || currentQuestionId
     if (!targetQuestionId || !userId || !organizationId) return
-
+     setIsAnswerChecked(false)
     setIsLoadingAnswer(true)
     try {
-      const endpoint = `/quizzes/quizzes/answers/${userId}?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}&question_id=${targetQuestionId}&attempt_id=${attemptId || 1}`
+      const endpoint = `/quizzes/quizzes/answers/${userId}?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}&question_number=${targetQuestionId}&attempt_id=${attemptId || 1}`
 
       console.log("Loading existing answer from:", endpoint)
       const response = await api.get<ExistingAnswer>(endpoint)
 
-      if (response.ok && response.data && response.data.answer_choice_id) {
-        // If an answer exists, set the question as submitted
-        setSelectedOption(response.data.answer_choice_id)
-        setIsAnswerChecked(true)
-        setIsCorrect(response.data.is_correct)
+        if (response.ok && response.data && (response.data?.answer_text || response.data?.answer_choice_id)) {
+          // If an answer exists, set the question as submitted
 
-        console.log("Loaded existing answer for question", targetQuestionId, ":", response.data)
-      } else {
-        // No existing answer found, reset state
-        setSelectedOption(null)
-        setIsAnswerChecked(false)
-        setIsCorrect(false)
-        console.log("No existing answer found for question", targetQuestionId)
-      }
+          console.log(response.data)
+
+          if (!response.data?.answer_text) {
+            console.log("Answer text is empty, checking answer_choice_id")
+            setSelectedOption(response.data.answer_choice_id)
+            setIsAnswerChecked(true)
+            setIsCorrect(response.data.is_correct)
+          }
+          if( response.data?.answer_text) {
+            console.log("Answer text exists, setting text answer")
+            setTextAnswer(response.data.answer_text)
+            setIsAnswerChecked(true)
+            setIsCorrect(response.data.is_correct)
+          }
+         
+
+          console.log("Loaded existing answer for question", targetQuestionId, ":", response.data)
+        } else {
+          // No existing answer found, reset state
+          setSelectedOption(null)
+          setIsAnswerChecked(false)
+          setIsCorrect(false)
+          console.log("No existing answer found for question", targetQuestionId)
+        }
+      
+
+      
     } catch (error) {
       console.error("Error loading existing answer:", error)
       // Reset state on error
@@ -231,12 +254,41 @@ export function QuizInterface({
   }
 
   const checkAnswer = async () => {
-    if (selectedOption === null || !question || isAnswerChecked) return
+    let selectedOptionArray: Option | undefined;
+    let isUserAnswer = true;
+    if (question?.question_type === "sa") {
 
-    const selectedOptionArray = question.options.find((option) => option.id === selectedOption)
+      const payload = {
+          question_text: question?.quiz_question_text || "",
+          actual_answer: question?.short_answer_text || "",
+          user_answer: textAnswer,
+          model: "gpt-4o"
+        }
 
-    console.log("Selected option data:", selectedOptionArray)
-    setSelectedOptionData(selectedOptionArray)
+      const result = await secureApi.post<any>('/genai/answer-evaluation/answer/evaluate', payload);
+      if (result.ok) {
+        const evaluation = result.data;
+        console.log("Evaluation result:", evaluation);
+        // setIsAnswerChecked(true)
+        setIsCorrect(evaluation.is_correct);
+        isUserAnswer = evaluation.is_correct;
+       
+        
+      } else {
+        console.error("Failed to evaluate answer:", result.status);
+        return;
+      }     
+    }
+    else{
+
+      if (selectedOption === null || !question || isAnswerChecked) return
+  
+       selectedOptionArray = question.options.find((option) => option.id === selectedOption)
+      console.log("Selected option data:", selectedOptionArray)
+      setSelectedOptionData(selectedOptionArray)
+      setIsCorrect(selectedOptionArray?.is_correct || false)
+    }
+
 
     // Calculate time spent on this question
     const questionCompletionTime = Math.floor((Date.now() - questionStartTime) / 1000)
@@ -250,7 +302,7 @@ export function QuizInterface({
     // Update total quiz time
     setTotalQuizTime((prev) => prev + questionCompletionTime)
 
-    setIsCorrect(selectedOptionArray?.is_correct || false)
+    
 
     try {
       // First, save the answer
@@ -260,10 +312,10 @@ export function QuizInterface({
         subject_id: subjectId,
         topic_id: topicId,
         quiz_id: quizId,
-        question_id: currentQuestionId,
+        question_number: currentQuestionId,
         attempt_id: attemptId || 1,
-        answer_text: "",
-        answer_choice_id: selectedOptionArray?.id,
+        answer_text: question?.question_type === "sa" ? textAnswer : "",
+        answer_choice_id: selectedOptionArray?.id || null,
         is_correct: selectedOptionArray?.is_correct || false,
       }
 
@@ -278,7 +330,7 @@ export function QuizInterface({
           subject_id: subjectId,
           topic_id: topicId,
           quiz_id: quizId,
-          question_id: currentQuestionId,
+          question_number: currentQuestionId,
           attempt_id: attemptId || 1,
           is_complete: true,
           is_correct: selectedOptionArray?.is_correct || false,
@@ -333,10 +385,21 @@ export function QuizInterface({
     }
 
     setIsAnswerChecked(true)
+    console.log("Answer checked:", isUserAnswer)
 
-    if (!selectedOptionArray?.is_correct) {
-      await initializeChat(selectedOptionArray)
+    if(question.question_type === "sa"){
+
+      if (!isUserAnswer) {
+        // If the answer is correct, initialize chat with the correct answer
+        await initializeChat(textAnswer)
+      } 
+    }else{
+
+      if (!selectedOptionArray?.is_correct) {
+        await initializeChat(selectedOptionArray?.option_text || "")
+      }
     }
+    
   }
 
   const handleRetakeQuiz = async () => {
@@ -352,7 +415,7 @@ export function QuizInterface({
         subject_id: subjectId,
         topic_id: topicId,
         quiz_id: quizId,
-        question_id: 1,
+        question_number: 1,
         attempt_id: newAttemptId,
         is_complete: false,
         is_correct: false,
@@ -441,7 +504,7 @@ export function QuizInterface({
         subject_id: subjectId,
         topic_id: topicId,
         quiz_id: quizId,
-        question_id: newQuestionId,
+        question_number: newQuestionId,
         attempt_id: attemptId,
         is_complete: false,
         is_correct: false,
@@ -483,6 +546,30 @@ export function QuizInterface({
 
     // Update the current question ID - this will trigger question fetch
     setCurrentQuestionId(questionId)
+
+      const quizAttemptPayload = {
+        organization_id: organizationId,
+        user_id: userId,
+        subject_id: subjectId,
+        topic_id: topicId,
+        quiz_id: quizId,
+        question_number: questionId,
+        attempt_id: attemptId,
+        is_complete: false,
+        is_correct: false,
+        is_ai_assisted: false,
+        completion_time_seconds: 0,
+      }
+
+      console.log("Creating quiz attempt for question:", questionId)
+
+      const response = await api.post<any>(`user-quiz-attempts/quiz-attempts/`, quizAttemptPayload)
+
+      if (response.ok) {
+        console.log("Quiz attempt created successfully for question:", questionId)
+      } else {
+        console.log("Quiz attempt may already exist for question:", questionId)
+      }
 
     // Load existing answer for the selected question after question is fetched
     setTimeout(() => {
@@ -565,6 +652,8 @@ export function QuizInterface({
               setShowRetakeDialog={setShowRetakeDialog}
               isRetaking={isRetaking}
               quizProgress={quizProgress}
+              textAnswer={textAnswer}
+              onTextAnswerChange={setTextAnswer}
             />
 
             <ChatPanel

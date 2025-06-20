@@ -12,7 +12,7 @@ import QuizCompletion from "@/components/quiz/quiz-completion"
 
 // Define the Question interface
 interface Question {
-  question_id: number
+  question_number: number
   question_text: string
   options: {
     option_id: number
@@ -53,7 +53,7 @@ interface Topic {
 
 interface quizSummary {
   attempt_id: number
-  question_id: number
+  question_number: number
   question_is_complete: boolean
   quiz_status: string
 }
@@ -64,7 +64,7 @@ interface answers {
   subject_id: number
   topic_id: number
   quiz_id: number
-  question_id: number
+  question_number: number
   attempt_id: number
   answer_text: string
   answer_choice_id: number
@@ -161,7 +161,7 @@ export default function QuizPage() {
               subject_id: subjectId,
               topic_id: topicId,
               quiz_id: quizId,
-              question_id: 1,
+              question_number: 1,
               attempt_id: 1,
               is_complete: false,
               is_correct: false,
@@ -213,14 +213,19 @@ export default function QuizPage() {
                   setQuizStatus(false)
                   // If the question is complete, move to the next question
                   if (quizResponse.data.question_is_complete) {
-                    const nextQuestionId = quizResponse.data.question_id + 1
-                    setCurrentquestionId(nextQuestionId)
-                    console.log("Moving to next question:", nextQuestionId)
+                    console.log(totalQuizQuestions)
+                    if(totalQuizQuestions && quizResponse.data.question_number >= Number(totalQuizQuestions)) {
+                      setCurrentquestionId(1)
+                    }else{
+                      const nextQuestionId = quizResponse.data.question_number + 1
+                      setCurrentquestionId(nextQuestionId)
+                      console.log("Moving to next question:", nextQuestionId)
+                    }
                   } else {
-                    setCurrentquestionId(quizResponse.data.question_id)
-                    console.log("Continuing with current question:", quizResponse.data.question_id)
+                    setCurrentquestionId(quizResponse.data.question_number)
+                    console.log("Continuing with current question:", quizResponse.data.question_number)
                   }
-                  if (!quizResponse.data.question_id) {
+                  if (!quizResponse.data.question_number) {
                     setCurrentquestionId(1)
                   }
                 }

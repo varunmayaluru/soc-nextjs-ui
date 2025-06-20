@@ -26,16 +26,19 @@ interface Option {
 }
 
 interface Question {
-  question_id: number;
-  quiz_id: number;
-  quiz_question_text: string;
-  difficulty_level: string;
-  is_active: boolean;
-  is_maths: boolean;
-  created_by: number;
-  create_date_time: string;
-  update_date_time: string | null;
-  options: Option[];
+  question_number: number
+  quiz_id: number
+  quiz_question_text: string
+  difficulty_level: string
+  is_active: boolean
+  is_maths: boolean
+  question_type: "mcq" | "fib" | "tf" | "match" | "sa"
+  correct_answer?: string // For fill in the blank questions
+  created_by: number
+  create_date_time: string
+  update_date_time: string | null
+  options: Option[]
+  short_answer_text?: string // For short answer questions
 }
 
 interface UseQuizChatProps {
@@ -104,8 +107,9 @@ export function useQuizChat({
     setActualAnswer("");
   }, []);
 
-  const initializeChat = async (selectedOptionData: Option | undefined) => {
-    if (!question || !selectedOptionData) return;
+  const initializeChat = async (userAnswer: string) => {
+  
+    if (!question) return;
 
     console.log(
       "🚀 Initializing chat with encryption for question:",
@@ -126,7 +130,7 @@ export function useQuizChat({
         {
           id: 2,
           sender: "user",
-          content: selectedOptionData.option_text,
+          content: userAnswer,
           timestamp: "Just now",
         },
       ];
@@ -151,7 +155,7 @@ export function useQuizChat({
 
       const conversationObj = [
         { role: "assistant", content: question.quiz_question_text },
-        { role: "user", content: selectedOptionData.option_text },
+        { role: "user", content: userAnswer },
         {
           role: "assistant",
           content: "I'll help you understand this question better.",
@@ -182,13 +186,14 @@ export function useQuizChat({
         console.log("✅ Contextual answer received:", response.data);
         setContextAnswer(response.data.assistant_response);
 
+      let correct_answer =  question.question_type === "sa" ? question.short_answer_text : question.options.find((option) => option.is_correct)?.option_text
+
         // Get initial Socratic question using secure API with encryption
         const socraticPayload = {
           model: "gpt-4o",
           complex_question: question.quiz_question_text,
           actual_answer: response.data.assistant_response,
-          correct_answer: question.options.find((option) => option.is_correct)
-            ?.option_text,
+          correct_answer: correct_answer,
           student_answer: selectedOption?.toString(),
         };
 
@@ -341,7 +346,7 @@ export function useQuizChat({
             subject_id: subjectId,
             topic_id: topicId,
             quiz_id: quizId,
-            question_id: currentQuestionId,
+            question_number: currentQuestionId,
             attempt_id: attemptId || 1,
             is_complete: true,
             is_correct: selectedOptionData?.is_correct || false,
