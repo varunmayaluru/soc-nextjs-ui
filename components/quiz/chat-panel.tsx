@@ -15,11 +15,11 @@ import { SpeechButton } from "./speech-button"
 import { SpeechProvider } from "../SpeechProvider"
 
 interface Message {
-  id: number
-  sender: "user" | "response"
-  content: string
-  timestamp: string
-  type?: "feedback" | "question" | "summary"
+  id: number;
+  sender: "user" | "response";
+  content: string;
+  timestamp: string;
+  type?: "feedback" | "question" | "summary" | "knowledge-gap";
 }
 
 interface ChatPanelProps {

@@ -23,7 +23,8 @@ interface Question {
   created_by: number
   create_date_time: string
   update_date_time: string | null
-  options: Option[]
+  options: Option[] 
+  short_answer_text?: string // For short answer questions
 }
 
 interface UseQuizQuestionProps {

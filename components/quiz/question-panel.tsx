@@ -29,6 +29,7 @@ interface Question {
   create_date_time: string
   update_date_time: string | null
   options: Option[]
+  short_answer_text?: string // For short answer questions
 }
 
 interface QuizProgress {
@@ -185,7 +186,10 @@ export function QuestionPanel({
               <Textarea
                 placeholder="Type your answer here..."
                 value={textAnswer}
-                onChange={(e) => onTextAnswerChange(e.target.value)}
+                onChange={(e) => {
+                  onTextAnswerChange(e.target.value)
+                  //textAnswer = e.target.value
+                }}
                 className={`w-full min-h-[120px] text-lg px-4 py-3 border-2 rounded-lg transition-all duration-200 resize-y ${
                   isAnswerChecked
                     ? isCorrect
@@ -359,7 +363,7 @@ export function QuestionPanel({
             Skip
           </Button>
 
-          {!isAnswerChecked && !isCorrect && !quizStatus && (
+          {!isAnswerChecked && !isCorrect && (
             <Button
               className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 disabled:opacity-50"
               onClick={onSubmit}
@@ -369,7 +373,7 @@ export function QuestionPanel({
             </Button>
           )}
 
-          {quizStatus && (
+          {/* {quizStatus && (
             <Button
               className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 flex items-center gap-2"
               onClick={() => setShowRetakeDialog(true)}
@@ -377,8 +381,9 @@ export function QuestionPanel({
               <RotateCcw className="h-4 w-4" />
               Re Take
             </Button>
-          )}
+          )} */}
         </div>
+        
       </div>
     </div>
   )
