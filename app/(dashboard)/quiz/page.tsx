@@ -12,7 +12,7 @@ import QuizCompletion from "@/components/quiz/quiz-completion"
 
 // Define the Question interface
 interface Question {
-  question_id: number
+  question_number: number
   question_text: string
   options: {
     option_id: number
@@ -53,7 +53,7 @@ interface Topic {
 
 interface quizSummary {
   attempt_id: number
-  question_id: number
+  question_number: number
   question_is_complete: boolean
   quiz_status: string
 }
@@ -64,7 +64,7 @@ interface answers {
   subject_id: number
   topic_id: number
   quiz_id: number
-  question_id: number
+  question_number: number
   attempt_id: number
   answer_text: string
   answer_choice_id: number
@@ -161,7 +161,7 @@ export default function QuizPage() {
               subject_id: subjectId,
               topic_id: topicId,
               quiz_id: quizId,
-              question_id: 1,
+              question_number: 1,
               attempt_id: 1,
               is_complete: false,
               is_correct: false,

@@ -28,12 +28,14 @@ interface Option {
 }
 
 interface Question {
-  question_id: number
+  question_number: number
   quiz_id: number
   quiz_question_text: string
   difficulty_level: string
   is_active: boolean
   is_maths: boolean
+  question_type: "mcq" | "fib" | "tf" | "match" | "sa"
+  correct_answer?: string // For fill in the blank questions
   created_by: number
   create_date_time: string
   update_date_time: string | null
@@ -260,7 +262,7 @@ export function QuizInterface({
         subject_id: subjectId,
         topic_id: topicId,
         quiz_id: quizId,
-        question_id: currentQuestionId,
+        question_number: currentQuestionId,
         attempt_id: attemptId || 1,
         answer_text: "",
         answer_choice_id: selectedOptionArray?.id,
@@ -278,7 +280,7 @@ export function QuizInterface({
           subject_id: subjectId,
           topic_id: topicId,
           quiz_id: quizId,
-          question_id: currentQuestionId,
+          question_number: currentQuestionId,
           attempt_id: attemptId || 1,
           is_complete: true,
           is_correct: selectedOptionArray?.is_correct || false,
@@ -352,7 +354,7 @@ export function QuizInterface({
         subject_id: subjectId,
         topic_id: topicId,
         quiz_id: quizId,
-        question_id: 1,
+        question_number: 1,
         attempt_id: newAttemptId,
         is_complete: false,
         is_correct: false,
@@ -441,7 +443,7 @@ export function QuizInterface({
         subject_id: subjectId,
         topic_id: topicId,
         quiz_id: quizId,
-        question_id: newQuestionId,
+        question_number: newQuestionId,
         attempt_id: attemptId,
         is_complete: false,
         is_correct: false,
@@ -564,8 +566,9 @@ export function QuizInterface({
               showRetakeDialog={showRetakeDialog}
               setShowRetakeDialog={setShowRetakeDialog}
               isRetaking={isRetaking}
-              quizProgress={quizProgress}
-            />
+              quizProgress={quizProgress} textAnswer={""} onTextAnswerChange={function (answer: string): void {
+                throw new Error("Function not implemented.")
+              } }            />
 
             <ChatPanel
               messages={messages}

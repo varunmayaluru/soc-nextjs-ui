@@ -17,7 +17,7 @@ interface Option {
 }
 
 interface Question {
-  question_id: number
+  question_number: number
   quiz_id: number
   quiz_question_text: string
   difficulty_level: string

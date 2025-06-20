@@ -26,7 +26,7 @@ interface Option {
 }
 
 interface Question {
-  question_id: number;
+  question_number: number;
   quiz_id: number;
   quiz_question_text: string;
   difficulty_level: string;
@@ -341,7 +341,7 @@ export function useQuizChat({
             subject_id: subjectId,
             topic_id: topicId,
             quiz_id: quizId,
-            question_id: currentQuestionId,
+            question_number: currentQuestionId,
             attempt_id: attemptId || 1,
             is_complete: true,
             is_correct: selectedOptionData?.is_correct || false,
