@@ -32,7 +32,7 @@ type Quiz = {
 }
 
 type Question = {
-  question_id: number
+  question_number: number
   quiz_id: number
   question_text: string
   question_type: string
@@ -45,7 +45,7 @@ type Question = {
 
 type QuestionOption = {
   option_id: number
-  question_id: number
+  option_number: number
   option_text: string
   is_correct: boolean
   created_by: number

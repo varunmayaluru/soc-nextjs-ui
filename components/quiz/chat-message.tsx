@@ -7,11 +7,11 @@ import { useAuth } from "../auth-provider"
 import TextToSpeech from "../TextToSpeech"
 
 interface Message {
-  id: number
-  sender: "user" | "response"
-  content: string
-  timestamp: string
-  type?: "feedback" | "question" | "summary"
+  id: number;
+  sender: "user" | "response";
+  content: string;
+  timestamp: string;
+  type?: "feedback" | "question" | "summary" | "knowledge-gap";
 }
 
 interface ChatMessageProps {
