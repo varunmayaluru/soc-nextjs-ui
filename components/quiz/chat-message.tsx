@@ -11,12 +11,13 @@ interface Message {
   sender: "user" | "response";
   content: string;
   timestamp: string;
-  type?: "feedback" | "question" | "summary" | "knowledge-gap";
+  type?: "feedback" | "question" | "summary" | "knowledge-gap"|"Actual-Answer";
 }
 
 interface ChatMessageProps {
   message: Message
   index: number
+
 }
 
 export function ChatMessage({ message, index }: ChatMessageProps) {
