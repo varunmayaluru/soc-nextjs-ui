@@ -9,7 +9,7 @@ interface Message {
   sender: "user" | "response";
   content: string;
   timestamp: string;
-  type?: "feedback" | "question" | "summary" | "knowledge-gap";
+  type?: "feedback" | "question" | "summary" | "knowledge-gap"| "Actual-Answer";
 }
 
 interface ConvoMessage {
@@ -253,11 +253,12 @@ export function useQuizChat({
 
     try {
       // Check if conversation should continue using secure API with encryption
+      let correct_answer =  question.question_type === "sa" ? question.short_answer_text : question.options.find((option) => option.is_correct)?.option_text
       const isCompletePayload = {
         complex_question: question.quiz_question_text,
         messages: conversationMessages,
         model: "gpt-4o",
-        actual_answer: contextAnswer,
+        actual_answer: correct_answer,
       };
 
       console.log(
@@ -301,13 +302,13 @@ export function useQuizChat({
           content: feedback,
           type: "feedback",
         });
-
+ 
         // Get follow-up question using secure API with encryption
+        let correct_answer =  question.question_type === "sa" ? question.short_answer_text : question.options.find((option) => option.is_correct)?.option_text;
         const followUpPayload = {
           complex_question: question.quiz_question_text,
           student_answer: selectedOption?.toString(),
-          correct_answer: question.options.find((option) => option.is_correct)
-            ?.option_text,
+          correct_answer: correct_answer,
           messages: conversationMessages,
           model: "gpt-4o",
           actual_answer: contextAnswer,
@@ -366,17 +367,18 @@ export function useQuizChat({
         setFeedbackCounter((prev) => prev + 1);
       } else {
         // Generate final summary using secure API with encryption
+        correct_answer = question.question_type === "sa" ? question.short_answer_text : question.options.find((option) => option.is_correct)?.option_text;
         const summaryPayload = {
           complex_question: question.quiz_question_text,
           messages: conversationMessages,
           model: "gpt-4o",
-          actual_answer: contextAnswer,
+          actual_answer: correct_answer,
         };
 
         const knowledgeGapPayload = {
           messages: conversationMessages,
           model: "gpt-4o",
-          actual_answer: contextAnswer,
+          actual_answer: correct_answer,
         };
 
         console.log("🔐 Sending encrypted summary and knowledge gap requests");
@@ -387,6 +389,12 @@ export function useQuizChat({
             knowledgeGapPayload
           ),
         ]);
+        let correctAnswermessge= `The correct answer is : ${question.question_type === "sa" ? question.short_answer_text : question.options.find((option) => option.is_correct)?.option_text}`;
+        addMessage({  
+          sender: "response",
+          content: correctAnswermessge,
+          type: "Actual-Answer",
+        });
 
         let finalContent = `**Summary**\n\n${summaryResponse.data.summary}`;
         addMessage({
