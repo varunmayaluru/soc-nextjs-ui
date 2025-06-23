@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ChevronLeft, ChevronRight, ThumbsDown, ThumbsUp, RotateCcw } from "lucide-react"
+import { ChevronLeft, ChevronRight, ThumbsDown, ThumbsUp, RotateCcw, Loader2 } from "lucide-react"
 import { MathRenderer } from "@/components/math-renderer"
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator } from "../ui/breadcrumb"
 import Link from "next/link"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Option {
   id: number
@@ -69,6 +70,8 @@ interface QuestionPanelProps {
   quizProgress: QuizProgress | null
   onRetakeQuiz?: () => void | Promise<void>
   onFinalSubmit?: () => void | Promise<void>
+  isSubmitting?: boolean
+  isLoading?: boolean
 }
 
 export function QuestionPanel({
@@ -101,10 +104,24 @@ export function QuestionPanel({
   quizProgress,
   onRetakeQuiz,
   onFinalSubmit,
+  isSubmitting = false,
+  isLoading = false,
 }: QuestionPanelProps) {
-  // Guard: if question is undefined, show loading
-  if (!question) {
-    return <div className="p-6 text-center text-gray-500">Loading question...</div>;
+  if (isLoading || !question) {
+    return (
+      <div className="p-6">
+        <div className="flex flex-col gap-4">
+          <Skeleton className=" bg-gray-200 h-8 w-1/2 mb-2" />
+          <Skeleton className=" bg-gray-200 h-6 w-1/3 mb-4" />
+          <Skeleton className=" bg-gray-200 h-16 w-full mb-2" />
+          <Skeleton className=" bg-gray-200 h-16 w-full mb-2" />
+          <div className="flex gap-2">
+            <Skeleton className="bg-gray-200 h-10 w-24" />
+            <Skeleton className="bg-gray-200 h-10 w-24" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Determine question type - if no options or question_type is fill_blank, treat as fill in the blank
@@ -367,9 +384,13 @@ export function QuestionPanel({
             <Button
               className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 disabled:opacity-50"
               onClick={onSubmit}
-              disabled={!canSubmit()}
+              disabled={!canSubmit() || isSubmitting}
             >
-              SUBMIT
+              {isSubmitting ? (
+                <span className="flex items-center"><Loader2 className="animate-spin mr-2 h-4 w-4" />Submitting...</span>
+              ) : (
+                "SUBMIT"
+              )}
             </Button>
           )}
 
