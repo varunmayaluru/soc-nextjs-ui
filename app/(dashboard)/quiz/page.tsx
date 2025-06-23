@@ -591,6 +591,7 @@ export default function QuizPage() {
               onFinalSubmit={handleFinalSubmit}
               isSubmitting={isSubmitting}
               isLoading={isLoading}
+              allSelectedOptions={allSelectedOptions}
             />
             {/* Use ChatPanel for chat UI */}
             <ChatPanel

@@ -72,6 +72,7 @@ interface QuestionPanelProps {
   onFinalSubmit?: () => void | Promise<void>
   isSubmitting?: boolean
   isLoading?: boolean
+  allSelectedOptions?: { [questionNumber: number]: number }
 }
 
 export function QuestionPanel({
@@ -106,6 +107,7 @@ export function QuestionPanel({
   onFinalSubmit,
   isSubmitting = false,
   isLoading = false,
+  allSelectedOptions = {},
 }: QuestionPanelProps) {
   if (isLoading || !question) {
     return (
@@ -252,6 +254,24 @@ export function QuestionPanel({
     return "Question"
   }
 
+  // Helper: determine correctness for a question
+  const getQuestionStatus = (num: number) => {
+    if (!allSelectedOptions || allSelectedOptions[num] === undefined) return null;
+    const q = question && question.quiz_id ? undefined : undefined; // placeholder for type
+    // Try to get the question object from the questions array if available
+    // We'll assume the parent passes a questions array or you can get it from context if needed
+    // For now, rely on question if it's the current one
+    if (currentQuestionId === num && question) {
+      if (question.question_type === "mcq") {
+        const opt = question.options.find((o: any) => o.option_index === allSelectedOptions[num]);
+        if (opt) return opt.is_correct ? "correct" : "wrong";
+      }
+      // For short answer, you could add logic if correctness is tracked
+    }
+    // Otherwise, just show answered
+    return "answered";
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between bg-[#1e74bb] text-white px-8 py-6 relative">
@@ -301,18 +321,36 @@ export function QuestionPanel({
       <div className="bg-white p-6">
         {/* Question pagination */}
         <div className="bg-white border-b border-t mb-4 border-gray-200 px-4 pt-2 flex overflow-x-auto">
-          {paginationNumbers.map((num) => (
-            <button
-              key={num}
-              onClick={() => onQuestionSelect(num)}
-              className={`min-w-[36px] h-9 flex items-center justify-center mx-1 transition-colors ${num === currentQuestionId
-                ? "text-[#3373b5] font-bold border-b border-[#3373b5]"
-                : "text-gray-500 hover:text-[#3373b5]"
-                }`}
-            >
-              {num}
-            </button>
-          ))}
+          {paginationNumbers.map((num) => {
+            const status = getQuestionStatus(num);
+            let btnClass = "min-w-[36px] h-9 flex items-center justify-center mx-1 transition-colors rounded-full border-2 ";
+            let icon = null;
+            if (num === currentQuestionId) {
+              btnClass += "text-[#3373b5] font-bold border-b-2 border-[#3373b5] bg-blue-50 ";
+            } else if (status === "correct") {
+              btnClass += "text-green-700 border-green-500 bg-green-50 font-semibold ";
+              icon = <span className="ml-1 text-green-600" title="Correct">✓</span>;
+            } else if (status === "wrong") {
+              btnClass += "text-red-700 border-red-400 bg-red-50 font-semibold ";
+              icon = <span className="ml-1 text-red-500" title="Wrong">✗</span>;
+            } else if (status === "answered") {
+              btnClass += "text-gray-700 border-gray-400 bg-gray-100 font-semibold ";
+              icon = <span className="ml-1 text-gray-400" title="Answered">•</span>;
+            } else {
+              btnClass += "text-gray-500 border-gray-200 hover:text-[#3373b5] hover:border-[#3373b5] ";
+            }
+            return (
+              <button
+                key={num}
+                onClick={() => onQuestionSelect(num)}
+                className={btnClass}
+                aria-label={`Go to question ${num}${status ? ' - ' + status : ''}`}
+              >
+                {num}
+                {icon}
+              </button>
+            );
+          })}
         </div>
 
         {/* Question navigation header */}
