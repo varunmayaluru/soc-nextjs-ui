@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 // Update the API response type to match the exact structure
 type SubjectApiResponse = {
-  subject_id: number
+  id: number
   organization_id: number
   user_id: number
   slug: string
@@ -83,14 +83,14 @@ export default function Dashboard() {
 
         // Fetch subjects using userId
         const subjectsResponse = await api.get<SubjectApiResponse[]>(
-          `user-subject-progress/subjects/progress?user_id=${userId}&organization_id=${user.organization_id}`,
+          `subjects/subjects?&organization_id=${user.organization_id}`,
         )
         if (!subjectsResponse.ok) {
           throw new Error(`API error: ${subjectsResponse.status}`)
         }
 
         const formattedSubjects = subjectsResponse.data.map((subject: SubjectApiResponse) => ({
-          id: subject.subject_id,
+          id: subject.id,
           name: subject.subject_name,
           category: getSubjectCategory(subject.subject_name),
           slug: subject.slug,

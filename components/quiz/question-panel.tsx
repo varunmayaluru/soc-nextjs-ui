@@ -63,11 +63,12 @@ interface QuestionPanelProps {
   onNavigate: (direction: "prev" | "next") => void
   onSubmit: () => void
   onQuestionSelect: (questionId: number) => void
-  onRetakeQuiz: () => void
   showRetakeDialog: boolean
   setShowRetakeDialog: (show: boolean) => void
   isRetaking: boolean
   quizProgress: QuizProgress | null
+  onRetakeQuiz?: () => void | Promise<void>
+  onFinalSubmit?: () => void | Promise<void>
 }
 
 export function QuestionPanel({
@@ -94,12 +95,18 @@ export function QuestionPanel({
   onNavigate,
   onSubmit,
   onQuestionSelect,
-  onRetakeQuiz,
   showRetakeDialog,
   setShowRetakeDialog,
   isRetaking,
   quizProgress,
+  onRetakeQuiz,
+  onFinalSubmit,
 }: QuestionPanelProps) {
+  // Guard: if question is undefined, show loading
+  if (!question) {
+    return <div className="p-6 text-center text-gray-500">Loading question...</div>;
+  }
+
   // Determine question type - if no options or question_type is fill_blank, treat as fill in the blank
   const isMultipleChoice =
     question.question_type === "mcq" && question.options && question.options.length > 0
@@ -115,58 +122,54 @@ export function QuestionPanel({
           className="space-y-2 gap-1 px-4 py-4 justify-center"
         >
           {question.options.map((option) => {
-            const isSelected = selectedOption === option.id
+            const isSelected = selectedOption === option.option_index
             const isCorrectOption = option.is_correct
 
             return (
               <div
                 key={option.id}
-                className={`border min-w-[600px] max-w-[750px] rounded-full flex items-center transition-all duration-200 ${
-                  isSelected
-                    ? isAnswerChecked
-                      ? isCorrectOption
-                        ? "border-green-500 bg-green-50 border-2"
-                        : "border-red-500 bg-red-50 border-2"
-                      : "border-[#3373b5] bg-white border-2"
-                    : "border-gray-200 bg-[#F1F1F1] hover:border-gray-300 hover:bg-white"
-                }`}
+                className={`border min-w-[600px] max-w-[750px] rounded-full flex items-center transition-all duration-200 ${isSelected
+                  ? isAnswerChecked
+                    ? isCorrectOption
+                      ? "border-green-500 bg-green-50 border-2"
+                      : "border-red-500 bg-red-50 border-2"
+                    : "border-[#3373b5] bg-white border-2"
+                  : "border-gray-200 bg-[#F1F1F1] hover:border-gray-300 hover:bg-white"
+                  }`}
               >
                 <div
-                  className={`rounded-full flex items-center ml-4 mr-4 ${
-                    isSelected
-                      ? isAnswerChecked
-                        ? isCorrectOption
-                          ? "bg-[#C2E6B1]"
-                          : "bg-red-100"
-                        : "bg-[#3373b5]"
-                      : "bg-white"
-                  }`}
+                  className={`rounded-full flex items-center ml-4 mr-4 ${isSelected
+                    ? isAnswerChecked
+                      ? isCorrectOption
+                        ? "bg-[#C2E6B1]"
+                        : "bg-red-100"
+                      : "bg-[#3373b5]"
+                    : "bg-white"
+                    }`}
                 >
                   <RadioGroupItem
-                    value={option.id.toString()}
-                    id={`option-${option.id}`}
-                    className={`h-5 w-5 ${
-                      isSelected
-                        ? isAnswerChecked
-                          ? isCorrectOption
-                            ? "border-green-500 ring-2 text-green-700 bg-green-500 ring-green-200"
-                            : "border-red-500 ring-2 text-red-700 ring-red-200"
-                          : "border-[#3373b5] text-[#3373b5]"
-                        : "border-gray-300"
-                    }`}
+                    value={option.option_index.toString()}
+                    id={`option-${option.option_index}`}
+                    className={`h-5 w-5 ${isSelected
+                      ? isAnswerChecked
+                        ? isCorrectOption
+                          ? "border-green-500 ring-2 text-green-700 bg-green-500 ring-green-200"
+                          : "border-red-500 ring-2 text-red-700 ring-red-200"
+                        : "border-[#3373b5] text-[#3373b5]"
+                      : "border-gray-300"
+                      }`}
                   />
                 </div>
                 <Label
-                  htmlFor={`option-${option.id}`}
-                  className={`flex-grow cursor-pointer h-16 text-md flex items-center transition-colors ${
-                    isSelected
-                      ? isAnswerChecked
-                        ? isCorrectOption
-                          ? "text-green-600 font-medium"
-                          : "text-red-600 font-medium"
-                        : "text-[#3373b5] font-medium"
-                      : "hover:text-[#3373b5]"
-                  }`}
+                  htmlFor={`option-${option.option_index}`}
+                  className={`flex-grow cursor-pointer h-16 text-md flex items-center transition-colors ${isSelected
+                    ? isAnswerChecked
+                      ? isCorrectOption
+                        ? "text-green-600 font-medium"
+                        : "text-red-600 font-medium"
+                      : "text-[#3373b5] font-medium"
+                    : "hover:text-[#3373b5]"
+                    }`}
                 >
                   <MathRenderer content={option.option_text} />
                 </Label>
@@ -190,15 +193,14 @@ export function QuestionPanel({
                   onTextAnswerChange(e.target.value)
                   //textAnswer = e.target.value
                 }}
-                className={`w-full min-h-[120px] text-lg px-4 py-3 border-2 rounded-lg transition-all duration-200 resize-y ${
-                  isAnswerChecked
-                    ? isCorrect
-                      ? "border-green-500 bg-green-50"
-                      : "border-red-500 bg-red-50"
-                    : textAnswer
-                      ? "border-[#3373b5] bg-white"
-                      : "border-gray-200 bg-[#F1F1F1] focus:border-[#3373b5] focus:bg-white"
-                }`}
+                className={`w-full min-h-[120px] text-lg px-4 py-3 border-2 rounded-lg transition-all duration-200 resize-y ${isAnswerChecked
+                  ? isCorrect
+                    ? "border-green-500 bg-green-50"
+                    : "border-red-500 bg-red-50"
+                  : textAnswer
+                    ? "border-[#3373b5] bg-white"
+                    : "border-gray-200 bg-[#F1F1F1] focus:border-[#3373b5] focus:bg-white"
+                  }`}
                 disabled={isAnswerChecked}
               />
 
@@ -286,11 +288,10 @@ export function QuestionPanel({
             <button
               key={num}
               onClick={() => onQuestionSelect(num)}
-              className={`min-w-[36px] h-9 flex items-center justify-center mx-1 transition-colors ${
-                num === currentQuestionId
-                  ? "text-[#3373b5] font-bold border-b border-[#3373b5]"
-                  : "text-gray-500 hover:text-[#3373b5]"
-              }`}
+              className={`min-w-[36px] h-9 flex items-center justify-center mx-1 transition-colors ${num === currentQuestionId
+                ? "text-[#3373b5] font-bold border-b border-[#3373b5]"
+                : "text-gray-500 hover:text-[#3373b5]"
+                }`}
             >
               {num}
             </button>
@@ -334,9 +335,8 @@ export function QuestionPanel({
         {isAnswerChecked && (
           <div className="flex flex-col items-center mt-6">
             <div
-              className={`p-4 w-[300px] text-center inline-block rounded-md transition-all duration-300 ${
-                isCorrect ? "bg-[#C2E6B1] text-black" : "bg-[#E87E7B] text-white"
-              }`}
+              className={`p-4 w-[300px] text-center inline-block rounded-md transition-all duration-300 ${isCorrect ? "bg-[#C2E6B1] text-black" : "bg-[#E87E7B] text-white"
+                }`}
             >
               {isCorrect ? (
                 <div className="flex items-center justify-center">
@@ -363,7 +363,7 @@ export function QuestionPanel({
             Skip
           </Button>
 
-          {!isAnswerChecked && !isCorrect && (
+          {!isAnswerChecked && (
             <Button
               className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 disabled:opacity-50"
               onClick={onSubmit}
@@ -373,17 +373,28 @@ export function QuestionPanel({
             </Button>
           )}
 
-          {/* {quizStatus && (
+          {onRetakeQuiz && (
             <Button
               className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 flex items-center gap-2"
-              onClick={() => setShowRetakeDialog(true)}
+              onClick={onRetakeQuiz}
             >
               <RotateCcw className="h-4 w-4" />
               Re Take
             </Button>
-          )} */}
+          )}
+
+          {/* Final Submit button: show only if all questions are answered and not completed */}
+          {onFinalSubmit && !isAnswerChecked && (
+            <Button
+              className="bg-green-600 hover:bg-green-700 rounded-full px-6 ml-4 text-white"
+              onClick={onFinalSubmit}
+              disabled={false /* You can add logic to disable if not all questions answered */}
+            >
+              Final Submit
+            </Button>
+          )}
         </div>
-        
+
       </div>
     </div>
   )

@@ -19,7 +19,7 @@ import { number } from "framer-motion"
 
 // Updated interface to match the API response
 interface TopicProgress {
-  topic_id: number
+  id: number
   subject_id: number
   slug: string
   organization_id: number
@@ -70,7 +70,7 @@ export default function SubjectPage() {
 
 
         const response = await api.get<TopicProgress[]>(
-          `user-topic-progress/topic-progress/progress?user_id=${userId}&subject_slug=${subjectSlug}&organization_id=${organizationId}&subject_id=${subjectId}`,
+          `topics/topics/by-subject/${subjectId}?organization_id=${organizationId}`,
         )
 
         if (!response.ok) {
@@ -94,7 +94,7 @@ export default function SubjectPage() {
   }, [subjectId])
 
   // Helper function to get icon and color based on topic name
-  const getTopicVisuals = (topicName: string, topic_id: number) => {
+  const getTopicVisuals = (topicName: string, id: number) => {
     const name = topicName.toLowerCase()
     let icon = "📚"
     let color = "purple"
@@ -119,7 +119,7 @@ export default function SubjectPage() {
       color = "yellow"
     }
 
-    // Create a path using the topic_id
+    // Create a path using the id
     return { icon, color }
   }
 
@@ -210,12 +210,12 @@ export default function SubjectPage() {
             </div>
           ) : (
             progressData.map((topic) => {
-              const { icon, color } = getTopicVisuals(topic.topic_name, topic.topic_id)
+              const { icon, color } = getTopicVisuals(topic.topic_name, topic.id)
               const { bg, text } = getColorClasses(color)
 
               return (
                 <div
-                  key={topic.topic_id}
+                  key={topic.id}
                   className="bg-white rounded-lg p-6 shadow-md border border-gray-100 transition-all duration-300 hover:shadow-xl hover:border-gray-200 hover:translate-y-[-4px] relative group"
                 >
                   <div className="flex items-center mb-4 relative">
@@ -250,7 +250,7 @@ export default function SubjectPage() {
                       </span>
                     </p>
                     <Link
-                      href={`/quizzes?topicId=${topic.topic_id}&subjectId=${topic.subject_id}&topicSlug=${topic.slug}&subjectSlug=${subjectSlug}&subjectName=${subjectName}&topicName=${topic.topic_name}`}
+                      href={`/quizzes?topicId=${topic.id}&subjectId=${topic.subject_id}&topicSlug=${topic.slug}&subjectSlug=${subjectSlug}&subjectName=${subjectName}&topicName=${topic.topic_name}`}
                       className="bg-[#1e74bb] text-white py-2 px-4 rounded-md text-sm flex items-center group-hover:bg-[#1a67a7] transition-all duration-300"
                     >
                       Select a Quiz

@@ -5,20 +5,77 @@ import { api } from "@/lib/api-client"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AlertCircle } from "lucide-react"
-import { QuizInterface } from "@/components/quiz-interface"
 import { useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import QuizCompletion from "@/components/quiz/quiz-completion"
+import { MathRenderer } from "@/components/math-renderer"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Button } from "@/components/ui/button"
+import { useQuizChat } from "@/hooks/use-quiz-chat"
+import { secureApi } from "@/lib/secure-api-client"
+import { QuestionPanel } from "@/components/quiz/question-panel"
+import { ChatPanel } from "@/components/quiz/chat-panel"
 
 // Define the Question interface
 interface Question {
   question_number: number
-  question_text: string
+  quiz_question_text: string
   options: {
-    option_id: number
+    id: number
     option_text: string
+    is_correct: boolean
+    option_index: number
+    organization_id: string
   }[]
-  correct_option_id?: number
+  correct_answer?: string
+  quiz_id: string
+  organization_id: string
+  difficulty_level: string
+  question_type: string
+  short_answer_text?: string | null
+  is_active: boolean
+  is_maths: boolean
+  created_by: string
+  create_date_time: string
+  update_date_time: string
+}
+
+interface quizResponseSingle {
+  user_id: string;
+  subject_id: string;
+  topic_id: string;
+  quiz_id: string;
+  attempt_number: number;
+  current_question: number;
+  total_questions: number;
+  answered_questions: number;
+  score: number;
+  time_spent: number;
+  completed: boolean;
+  answers: { [questionId: string]: number };
+  id: number;
+  started_at: string;
+  updated_at: string;
+}
+
+interface SingleQuizProgress {
+  user_id: string
+  subject_id: string
+  topic_id: string
+  quiz_id: string
+  attempt_number: number
+  current_question: number
+  total_questions: number
+  answered_questions: number
+  score: number
+  time_spent: number
+  completed: boolean
+  answers: { [questionId: string]: number }
+  id: number
+  started_at: string
+  updated_at: string
 }
 
 // Define the Quiz interface
@@ -76,12 +133,28 @@ export default function QuizPage() {
   const [quiz, setQuiz] = useState<Quiz | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isQuizExists, setIsQuizExists] = useState(false)
   const [attemptId, setAttemptId] = useState<number | null>(null)
   const [currentquestionId, setCurrentquestionId] = useState<number | null>(1)
   const [quizStatus, setQuizStatus] = useState<boolean>(false)
-  const [isInitialized, setIsInitialized] = useState(false)
   const [quizCompleted, setQuizCompleted] = useState(false)
+  const [questions, setQuestions] = useState<any[]>([])
+
+  // Inline state for question/answer/chat logic
+  const [selectedOption, setSelectedOption] = useState<number | null>(null)
+  const [allSelectedOptions, setAllSelectedOptions] = useState<{ [questionNumber: number]: number }>({})
+  const [isAnswerChecked, setIsAnswerChecked] = useState(false)
+  const [isCorrect, setIsCorrect] = useState(false)
+  const [isLoadingAnswer, setIsLoadingAnswer] = useState(false)
+  const [showRetakeDialog, setShowRetakeDialog] = useState(false)
+  const [isRetaking, setIsRetaking] = useState(false)
+  const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now())
+  const [totalQuizTime, setTotalQuizTime] = useState<number>(0)
+  const [questionTimes, setQuestionTimes] = useState<Record<number, number>>({})
+  const [selectedOptionData, setSelectedOptionData] = useState<any>(undefined)
+  const [textAnswer, setTextAnswer] = useState<string>("")
+
+  // Add a state to store the original progress.answers from progress/single
+  const [progressAnswers, setProgressAnswers] = useState<{ [questionNumber: number]: number }>({})
 
   const searchParams = useSearchParams() // query params
   const subjectId = searchParams.get("subjectId")
@@ -93,223 +166,358 @@ export default function QuizPage() {
   const totalQuizQuestions = searchParams.get("totalQuizQuestions")
   const subjectName = searchParams.get("subjectName")
   const topicName = searchParams.get("topicName")
+  const currentQuestionParam = searchParams.get("currentQuestion")
   let subject = null as unknown as Subject
   let topic = null as unknown as Topic
   const userId = localStorage.getItem("userId")
   const organizationId = localStorage.getItem("organizationId")
 
+  // Get the current question from the questions array
+  const currentQuestion = questions && currentquestionId
+    ? questions.find((q: any) => q.question_number === currentquestionId)
+    : null;
 
-
-
-  // useEffect(() => {
-  //   const fetchQuiz = async () => {
-  //     try {
-  //       setIsLoading(true)
-  //       setError(null)
-
-  //       // Note: This endpoint seems to always return question 1 data
-  //       // We'll use it just to verify the quiz exists, not for question data
-  //       const response = await api.get<Quiz>(
-  //         `questions/questions/quiz-question/1?quiz_id=${quizId}&organization_id=${organizationId}`,
-  //       )
-
-  //       if (!response.ok) {
-  //         throw new Error(`API error: ${response.status}`)
-  //       }
-
-  //       if (response.data) {
-  //         console.log("Quiz verified:", response.data)
-  //         setQuiz(response.data)
-  //       } else {
-  //         throw new Error("No quiz data received")
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching quiz:", error)
-  //       setError(error instanceof Error ? error.message : "Failed to load quiz")
-  //     } finally {
-  //       setIsLoading(false)
-  //     }
-  //   }
-
-  //   fetchQuiz()
-  // }, [quizId])
+  const { messages, isTyping, sendMessage, initializeChat, resetChat } = useQuizChat({
+    currentQuestionId: currentquestionId,
+    attemptId,
+    selectedOptionData,
+    question: currentQuestion,
+    selectedOption,
+    contextAnswer: "",
+    quizId: quizId?.toString() || "",
+    subjectId: subjectId?.toString() || "",
+    topicId: topicId?.toString() || "",
+  })
 
   useEffect(() => {
-    let isMounted = true
-    const fetchQuizProgressExists = async () => {
+    // Fetch all questions for the quiz on mount
+    const fetchAllQuestions = async () => {
       try {
-        if (!isMounted) return
-
         setIsLoading(true)
         setError(null)
-
-        const userId = localStorage.getItem("userId")
-        const response = await api.get<any>(
-          `user-quiz-progress/quiz-progress/${userId}/exists?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
+        const response = await api.get<any[]>(
+          `questions/questions/quiz-questions?quiz_id=${quizId}&organization_id=${organizationId}`
         )
-
-        if (!response.ok) throw new Error(`API error: ${response.status}`)
-
-        if (response.data) {
-          setIsQuizExists(response.data.exists)
-
-          if (!response.data.exists) {
-            // Create new quiz attempt and progress if it doesn't exist
-            const quizAttemptPayload = {
-              organization_id: organizationId,
-              user_id: userId,
-              subject_id: subjectId,
-              topic_id: topicId,
-              quiz_id: quizId,
-              question_number: 1,
-              attempt_id: 1,
-              is_complete: false,
-              is_correct: false,
-              is_ai_assisted: false,
-              completion_time_seconds: 0,
-            }
-
-            const quizProgressPayload = {
-              organization_id: organizationId,
-              user_id: userId,
-              subject_id: subjectId,
-              topic_id: topicId,
-              quiz_id: quizId,
-              is_completed: false,
-              latest_score: 0,
-              best_score: 0,
-              attempts_count: 1,
-              completion_time_seconds: 0,
-            }
-
-            const [attemptResponse, progressResponse] = await Promise.all([
-              api.post<any>(`user-quiz-attempts/quiz-attempts/`, quizAttemptPayload),
-              api.post<any>(`user-quiz-progress/quiz-progress/`, quizProgressPayload),
-            ])
-
-            if (attemptResponse.ok && progressResponse.ok) {
-              console.log("New quiz attempt and progress created")
-              setCurrentquestionId(1)
-              setAttemptId(1)
-              setIsInitialized(true)
-            } else {
-              console.error("Failed to create quiz attempt or progress")
-            }
-          } else {
-            // If quiz exists, fetch the latest question and attempt
-            try {
-              const quizResponse = await api.get<quizSummary>(
-                `user-quiz-attempts/quiz-attempts/${userId}/latest?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
-              )
-
-              if (quizResponse.ok && quizResponse.data) {
-                console.log("Retrieved quiz progress:", quizResponse.data)
-
-                // Set quiz status based on the response
-                if (quizResponse.data.quiz_status === "complete") {
-                  setQuizStatus(true)
-                  setCurrentquestionId(1)
-                } else {
-                  setQuizStatus(false)
-                  // If the question is complete, move to the next question
-                  if (quizResponse.data.question_is_complete) {
-                    console.log(totalQuizQuestions)
-                    if(totalQuizQuestions && quizResponse.data.question_number >= Number(totalQuizQuestions)) {
-                      setCurrentquestionId(1)
-                    }else{
-                      const nextQuestionId = quizResponse.data.question_number + 1
-                      setCurrentquestionId(nextQuestionId)
-                      console.log("Moving to next question:", nextQuestionId)
-                    }
-                  } else {
-                    setCurrentquestionId(quizResponse.data.question_number)
-                    console.log("Continuing with current question:", quizResponse.data.question_number)
-                  }
-                  if (!quizResponse.data.question_number) {
-                    setCurrentquestionId(1)
-                  }
-                }
-
-                setAttemptId(quizResponse.data.attempt_id)
-                setIsInitialized(true)
-              } else {
-                throw new Error("Failed to fetch quiz data")
-              }
-            } catch (error) {
-              console.error("Error fetching quiz summary:", error)
-              setError(error instanceof Error ? error.message : "Failed to load quiz")
-            }
+        if (response.ok && response.data) {
+          setQuestions(response.data)
+          // Set current question from param if present
+          if (currentQuestionParam) {
+            setCurrentquestionId(Number(currentQuestionParam))
           }
         } else {
-          throw new Error("No quiz data received")
+          throw new Error("Failed to fetch questions")
         }
-      } catch (error) {
-        console.error("Error fetching quiz progress:", error)
-        setError(error instanceof Error ? error.message : "Failed to load quiz")
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load questions")
       } finally {
-        if (isMounted) setIsLoading(false)
+        setIsLoading(false)
       }
     }
+    fetchAllQuestions()
+  }, [quizId, organizationId, subjectId, topicId, currentQuestionParam])
 
-    fetchQuizProgressExists()
+  useEffect(() => {
+    const fetchQuizProgress = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const result = await api.get<quizResponseSingle>(`quiz-progress/quiz-progress/single?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`)
+        if (result.ok && result.data) {
+          const progress = result.data;
+          // Find first skipped question
+          const answeredNumbers = Object.keys(progress.answers || {}).map(Number);
+          let targetQuestion = null;
+          for (let i = 1; i <= progress.total_questions; i++) {
+            if (!answeredNumbers.includes(i)) {
+              targetQuestion = i;
+              break;
+            }
+          }
+          // If no skipped, go to current_question
+          if (!targetQuestion) {
+            targetQuestion = progress.current_question || 1;
+          }
+          setCurrentquestionId(targetQuestion);
 
-    return () => {
-      isMounted = false
+          // Store all answers in state
+          if (progress.answers && Object.keys(progress.answers).length > 0) {
+            setAllSelectedOptions(progress.answers);
+            setProgressAnswers(progress.answers);
+            // Set selectedOption for the current question
+            const answerForCurrent = progress.answers[targetQuestion];
+            if (answerForCurrent !== undefined) {
+              setSelectedOption(answerForCurrent);
+            } else {
+              setSelectedOption(null);
+            }
+          } else {
+            setAllSelectedOptions({});
+            setProgressAnswers({});
+            setSelectedOption(null);
+          }
+        }
+      } catch (err) {
+        setError("Failed to load quizzes")
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }, [])
+    if (userId) fetchQuizProgress()
+  }, [userId, quizId, subjectId, topicId])
 
-  const handleRetakeQuiz = async () => {
+  // When currentquestionId changes, update selectedOption from allSelectedOptions
+  useEffect(() => {
+    if (currentquestionId && allSelectedOptions && questions.length > 0) {
+      const answer = allSelectedOptions[currentquestionId];
+      // Find the current question object
+      const q = questions.find((q) => q.question_number === currentquestionId);
+      // Only set isAnswerChecked to true if this question has an answer in the original progress.answers
+      const hasProgressAnswer = progressAnswers && Object.prototype.hasOwnProperty.call(progressAnswers, currentquestionId);
+      if (answer !== undefined) {
+        setSelectedOption(answer);
+        if (hasProgressAnswer) {
+          if (q && q.question_type === "mcq") {
+            const selectedOpt = q.options.find((opt: any) => opt.option_index === answer);
+            setIsAnswerChecked(true);
+            setIsCorrect(selectedOpt ? selectedOpt.is_correct : false);
+          } else {
+            setIsAnswerChecked(true);
+            setIsCorrect(false);
+          }
+        } else {
+          setIsAnswerChecked(false);
+          setIsCorrect(false);
+        }
+      } else {
+        setSelectedOption(null);
+        setIsAnswerChecked(false);
+        setIsCorrect(false);
+      }
+    }
+  }, [currentquestionId, allSelectedOptions, questions, progressAnswers]);
+
+  // When user answers a question, update allSelectedOptions
+  const handleSelectOption = (optionIndex: number) => {
+    setSelectedOption(optionIndex);
+    setAllSelectedOptions((prev) => ({ ...prev, [currentquestionId!]: optionIndex }));
+    setIsAnswerChecked(false); // Do not show feedback until submit
+  };
+
+  // Unified handleSubmit logic (includes chat APIs and quiz progress update)
+  const handleSubmit = async () => {
+    let selectedOptionArray: any = undefined;
+    let isUserAnswer = true;
+    if (currentQuestion?.question_type === "sa") {
+      // Short answer: call chat API for evaluation
+      const payload = {
+        question_text: currentQuestion?.quiz_question_text || "",
+        actual_answer: currentQuestion?.short_answer_text || "",
+        user_answer: textAnswer,
+        model: "gpt-4o"
+      }
+      const result = await secureApi.post<any>('/genai/answer-evaluation/answer/evaluate', payload);
+      if (result.ok) {
+        const evaluation = result.data;
+        setIsCorrect(evaluation.is_correct);
+        isUserAnswer = evaluation.is_correct;
+      } else {
+        return;
+      }
+    } else {
+      if (selectedOption === null || !currentQuestion || isAnswerChecked) return;
+      selectedOptionArray = currentQuestion.options.find((option: any) => option.option_index === selectedOption);
+      setSelectedOptionData(selectedOptionArray);
+      setIsCorrect(selectedOptionArray?.is_correct || false);
+    }
+    // Calculate time spent on this question
+    const questionCompletionTime = Math.floor((Date.now() - questionStartTime) / 1000);
+    setQuestionTimes((prev) => ({ ...prev, [currentquestionId!]: questionCompletionTime }));
+    setTotalQuizTime((prev) => prev + questionCompletionTime);
+
     try {
-      // Fetch the latest quiz progress to get the current attempt count
-      const progressResponse = await api.get<any>(
-        `user-quiz-attempts/quiz-attempts/${userId}/latest?organization_id=${organizationId}&subject_id=${subjectId}&topic_id=${topicId}&quiz_id=${quizId}`,
-      )
+      // Merge previous answers from progressAnswers with the new answer
+      const mergedAnswers = { ...progressAnswers, [currentquestionId!]: selectedOption };
+      // Calculate answered_questions
+      const answeredQuestionsCount = Object.keys(mergedAnswers).length;
+      // Calculate score (number of correct answers)
+      let score = 0;
+      for (const [qNum, ans] of Object.entries(mergedAnswers)) {
+        const q = questions.find((qq) => qq.question_number === Number(qNum));
+        if (q && q.question_type === "mcq") {
+          const opt = q.options.find((o: any) => o.option_index === ans);
+          if (opt && opt.is_correct) score++;
+        } else if (q && q.question_type === "sa") {
+          // For short answer, check if this is the current question and isUserAnswer is true
+          if (Number(qNum) === currentquestionId && isUserAnswer) score++;
+          // Optionally, you could store correctness for each short answer in state for more accuracy
+        }
+      }
+      const payload = {
+        current_question: currentquestionId,
+        total_questions: Number(totalQuizQuestions),
+        answered_questions: answeredQuestionsCount,
+        score: score,
+        time_spent: totalQuizTime,
+        completed: false,
+        answers: mergedAnswers,
+        attempt_number: attemptId || 1
+      };
 
-      if (progressResponse.ok && progressResponse.data) {
-        const newAttemptId = progressResponse.data.attempt_id + 1
-        setAttemptId(newAttemptId)
-        setCurrentquestionId(1)
-        setQuizStatus(false)
-
-        console.log("Quiz retake initialized with attempt ID:", newAttemptId)
+      const result = await api.put<any>(`quiz-progress/quiz-progress/?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`, payload);
+      if (result.ok) {
+        console.log("Quiz progress updated successfully");
+      } else {
+        console.error("Failed to update quiz progress");
       }
     } catch (error) {
-      console.error("Error handling quiz retake:", error)
+      console.error("Error checking answer:", error);
+    }
+
+    setIsAnswerChecked(true);
+    if (currentQuestion?.question_type === "sa") {
+      if (!isUserAnswer) {
+        await initializeChat(textAnswer);
+      }
+    } else {
+      if (!selectedOptionArray?.is_correct) {
+        await initializeChat(selectedOptionArray?.option_text || "");
+      }
+    }
+  };
+
+  const handleNavigate = async (dir: "next" | "prev") => {
+    if (dir === "next" && currentquestionId && currentquestionId < Number(totalQuizQuestions)) setCurrentquestionId(currentquestionId + 1)
+    if (dir === "prev" && currentquestionId && currentquestionId > 1) setCurrentquestionId(currentquestionId - 1)
+    setIsAnswerChecked(false)
+    setIsCorrect(false)
+    setSelectedOption(null)
+    setTextAnswer("")
+    setSelectedOptionData(undefined)
+
+    try {
+
+
+      const result = await api.get<quizResponseSingle>(`quiz-progress/quiz-progress/single?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`)
+      if (result.ok) {
+        const quizProgress = result.data
+        const answer = quizProgress.answers[currentquestionId?.toString() || ""]
+        // if (answer) {
+        //   setSelectedOption(answer)
+        //   setIsAnswerChecked(true)
+        //   setIsCorrect(answer === currentQuestion?.correct_answer)
+        //   setTextAnswer(currentQuestion?.short_answer_text || "")
+        // }
+      }
+
+    } catch (error) {
+      console.error("Error navigating quiz:", error)
     }
   }
 
+  // Chat input state
+  const [chatInput, setChatInput] = useState("")
+  const handleSendChat = () => {
+    if (chatInput.trim() && isAnswerChecked && !isCorrect) {
+      sendMessage(chatInput)
+      setChatInput("")
+    }
+  }
 
-  if (isLoading || !isInitialized) {
+  // Function to start a new quiz attempt (for retake)
+  const handleRetakeQuiz = async () => {
+    try {
+      const payload = {
+        quiz_id: quizId,
+        subject_id: subjectId,
+        topic_id: topicId,
+      };
+      const response = await api.post<any>(`quiz-attempts/quiz-attempts/start?user_id=${userId}`, payload);
+      if (response.ok && response.data && response.data.attempt_number) {
+        setAttemptId(response.data.attempt_number);
+        // Optionally reset progress state for a fresh attempt
+        setAllSelectedOptions({});
+        setProgressAnswers({});
+        setSelectedOption(null);
+        setIsAnswerChecked(false);
+        setIsCorrect(false);
+        setTextAnswer("");
+        setSelectedOptionData(undefined);
+        setCurrentquestionId(1);
+      }
+    } catch (error) {
+      console.error("Failed to start new quiz attempt", error);
+    }
+  };
+
+  // Final submission handler
+  const handleFinalSubmit = async () => {
+    // Merge previous answers from progressAnswers with the latest answer (if not already included)
+    const mergedAnswers = { ...progressAnswers, ...allSelectedOptions };
+    const answeredQuestionsCount = Object.keys(mergedAnswers).length;
+    let score = 0;
+    for (const [qNum, ans] of Object.entries(mergedAnswers)) {
+      const q = questions.find((qq) => qq.question_number === Number(qNum));
+      if (q && q.question_type === "mcq") {
+        const opt = q.options.find((o: any) => o.option_index === ans);
+        if (opt && opt.is_correct) score++;
+      } else if (q && q.question_type === "sa") {
+        // For short answer, you may want to check correctness if you store it
+        // For now, just count as answered
+      }
+    }
+    const payload = {
+      current_question: currentquestionId,
+      total_questions: Number(totalQuizQuestions),
+      answered_questions: answeredQuestionsCount,
+      score: score,
+      time_spent: totalQuizTime,
+      completed: true,
+      answers: mergedAnswers,
+      attempt_number: attemptId || 1
+    };
+    try {
+      const result = await api.put<any>(`quiz-progress/quiz-progress/?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`, payload);
+      if (result.ok) {
+        console.log("Quiz final submission successful");
+      } else {
+        console.error("Quiz final submission failed");
+      }
+    } catch (error) {
+      console.error("Error in final submission:", error);
+    }
+  };
+
+  if (isLoading) {
     return (
       <div className="mx-auto bg-white ">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-        <div className="bg-white p-6">
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-3/4 bg-gray-200" />
-            <Skeleton className="h-4 w-1/4 bg-gray-200" />
-            <Skeleton className="h-24 w-full bg-gray-200" />
-            <div className="space-y-2 mt-4">
-              {Array(4)
-                .fill(0)
-                .map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-            </div>
-            <div className="flex justify-between mt-6">
-              <Skeleton className="h-10 w-24" />
-              <Skeleton className="h-10 w-24" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+          <div className="bg-white p-6">
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-3/4 bg-gray-200" />
+              <Skeleton className="h-4 w-1/4 bg-gray-200" />
+              <Skeleton className="h-24 w-full bg-gray-200" />
+              <div className="space-y-2 mt-4">
+                {Array(4)
+                  .fill(0)
+                  .map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
+              </div>
+              <div className="flex justify-between mt-6">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-24" />
+              </div>
             </div>
           </div>
-        </div>
-        <div className="bg-white border-l border-gray-200 p-6">
-          <div className="space-y-4">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-            <Skeleton className="h-4 w-2/3" />
+          <div className="bg-white border-l border-gray-200 p-6">
+            <div className="space-y-4">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-4 w-2/3" />
+            </div>
           </div>
         </div>
       </div>
-    </div>
     )
   }
 
@@ -330,39 +538,66 @@ export default function QuizPage() {
     )
   }
 
-  // if (!quiz) {
-  //   return (
-  //     <div className="p-6">
-  //       <Alert>
-  //         <AlertCircle className="h-4 w-4" />
-  //         <AlertTitle>Quiz not found</AlertTitle>
-  //         <AlertDescription>
-  //           The requested quiz could not be found. Please go back and select another quiz.
-  //         </AlertDescription>
-  //       </Alert>
-  //     </div>
-  //   )
-  // }
-
   return (
-    <div>
-      <QuizInterface
-        totalQuizQuestions={Number(totalQuizQuestions)}
-        isQuizExists={isQuizExists}
-        topicSlug={topicSlug || ""}
-        subjectSlug={subjectSlug || ""}
-        quizStatus={quizStatus}
-        questionId={currentquestionId?.toString()}
-        attemptId={attemptId}
-        quizId={quizId?.toString() || ""}
-        subjectId={subjectId?.toString() || ""}
-        topicId={topicId?.toString() || ""}
-        subjectName={subjectName || ""}
-        topicName={topicName || ""}
-        quizName={quizName || ""}
-        setQuizStatus={setQuizStatus}
-        onRetakeQuiz={handleRetakeQuiz}
-      />
-    </div>
+    <>
+      {quizCompleted && (
+        <QuizCompletion
+          score={0}
+          totalQuestions={Number(totalQuizQuestions)}
+          timeSpent={"900"}
+          subject={subjectName || ""}
+          quizTitle={quizName || ""}
+          correctAnswers={0}
+          incorrectAnswers={0}
+          noAnswers={0}
+          skippedAnswers={0}
+        />
+      )}
+      {!quizCompleted && (
+        <div className="mx-auto bg-white">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+            {/* Use QuestionPanel for question UI */}
+            <QuestionPanel
+              isTyping={isTyping}
+              topicSlug={topicSlug || ""}
+              subjectSlug={subjectSlug || ""}
+              subjectName={subjectName || ""}
+              topicName={topicName || ""}
+              quizName={quizName || ""}
+              subjectId={subjectId?.toString() || ""}
+              topicId={topicId?.toString() || ""}
+              quizId={quizId?.toString() || ""}
+              quizStatus={quizStatus}
+              question={currentQuestion}
+              currentQuestionId={currentquestionId}
+              totalQuestions={Number(totalQuizQuestions)}
+              paginationNumbers={Array.from({ length: Number(totalQuizQuestions) }, (_, i) => i + 1)}
+              selectedOption={selectedOption}
+              textAnswer={textAnswer}
+              isAnswerChecked={isAnswerChecked}
+              isCorrect={isCorrect}
+              onOptionSelect={handleSelectOption}
+              onTextAnswerChange={setTextAnswer}
+              onNavigate={handleNavigate}
+              onSubmit={handleSubmit}
+              onQuestionSelect={setCurrentquestionId}
+              showRetakeDialog={showRetakeDialog}
+              setShowRetakeDialog={setShowRetakeDialog}
+              isRetaking={isRetaking}
+              quizProgress={null}
+              onRetakeQuiz={handleRetakeQuiz}
+              onFinalSubmit={handleFinalSubmit}
+            />
+            {/* Use ChatPanel for chat UI */}
+            <ChatPanel
+              messages={messages}
+              isTyping={isTyping}
+              onSendMessage={sendMessage}
+              disabled={!isAnswerChecked || isCorrect}
+            />
+          </div>
+        </div>
+      )}
+    </>
   )
 }

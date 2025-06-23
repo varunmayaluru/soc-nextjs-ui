@@ -12,7 +12,7 @@ import {
 import { ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { type Key, useEffect, useState } from "react"
-import { useParams, useSearchParams } from "next/navigation"
+import { useParams, useSearchParams, useRouter } from "next/navigation"
 
 interface Subject {
 
@@ -37,9 +37,33 @@ interface Topic {
   update_date_time: number
 }
 
+interface QuizProgress {
+  [key: string]: {
+    user_id: string
+    subject_id: string
+    topic_id: string
+    quiz_id: string
+    attempt_number: number
+    current_question: number
+    total_questions: number
+    answered_questions: number
+    score: number
+    time_spent: number
+    completed: boolean
+    answers: {
+      [questionId: string]: number
+    }
+    id: number
+    started_at: string
+    updated_at: string
+  }
+}
+
 export default function TopicPage() {
   const [isLoading, setIsLoading] = useState(true)
-  const [quizzes, setQuizzes] = useState<any>([])
+  const [quizzes, setQuizzes] = useState<any[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [quizProgress, setQuizProgress] = useState<QuizProgress>({})
 
   const searchParams = useSearchParams() // query params
   const subjectId = searchParams.get("subjectId")
@@ -48,60 +72,54 @@ export default function TopicPage() {
   const subjectSlug = searchParams.get("subjectSlug")
   const subjectName = searchParams.get("subjectName")
   const topicName = searchParams.get("topicName")
-  let subject = null as unknown as Subject;
-  let topic = null as unknown as Topic;
-
   const organizationId = localStorage.getItem("organizationId")
 
-  // const topic = getTopic(params.subject, params.topic)
-
-  // if (!subject || !topic) {
-  //   notFound()
-  // }
-
-  // const quizzes = getQuizzes(params.topic)
-
+  const userId = localStorage.getItem("userId")
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchProgressData = async () => {
+    const fetchQuizzes = async () => {
+      setIsLoading(true)
+      setError(null)
       try {
-
-        const userId = localStorage.getItem("userId")
-        const response = await api.get<any>(`user-quiz-progress/quiz-progress/progress?user_id=${userId}&organization_id=${organizationId}&topic_slug=${topicSlug}&subject_id=${subjectId}&topic_id=${topicId}`)
-        const data = await response.data
-        setQuizzes(data)
-      } catch (error) {
-        console.error("Error fetching progress data:", error)
+        const response = await api.get<any[]>(
+          `quizzes/quizzes/by-subject-topic/${subjectId}/${topicId}?organization_id=${organizationId}`
+        )
+        setQuizzes(response.ok && response.data ? response.data : [])
+      } catch (err) {
+        setError("Failed to load quizzes")
+        setQuizzes([])
       } finally {
         setIsLoading(false)
       }
     }
+    if (subjectId && topicId && organizationId) fetchQuizzes()
+  }, [subjectId, topicId, organizationId])
 
-    fetchProgressData()
-  }, [])
 
-  // useEffect(() => {
-  //   const fetchProgressData = async () => {
-  //     try {
-
-  //       const userId = localStorage.getItem("userId")
-  //       const response = await api.get<any>(`quizzes/quizzes/by-subject-topic/${subjectId}/${topicId}?organization_id=${organizationId}`)
-  //       const data = await response.data
-  //       setQuizzes(data)
-  //     } catch (error) {
-  //       console.error("Error fetching progress data:", error)
-  //     } finally {
-  //       setIsLoading(false)
-  //     }
-  //   }
-
-  //   fetchProgressData()
-  // }, [])
+  useEffect(() => {
+    const fetchQuizzesProgress = async () => {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const response = await api.get<QuizProgress>(
+          `quiz-progress/quiz-progress/?user_id=${userId}`
+        )
+        if (response.ok && response.data) {
+          setQuizProgress(response.data)
+        }
+      } catch (err) {
+        setError("Failed to load quizzes")
+        setQuizProgress({})
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    if (userId) fetchQuizzesProgress()
+  }, [userId])
 
   // Icons for different quiz types
   const quizIcons = ["📊", "📈", "📏", "🧮", "📚", "🔍", "🧩", "🎯"]
-
-  // Background colors for icons
   const iconBgs = [
     "bg-blue-100",
     "bg-green-100",
@@ -112,8 +130,6 @@ export default function TopicPage() {
     "bg-red-100",
     "bg-orange-100",
   ]
-
-  // Progress bar colors
   const progressColors = [
     "bg-blue-500",
     "bg-green-500",
@@ -124,6 +140,25 @@ export default function TopicPage() {
     "bg-pink-500",
     "bg-orange-500",
   ]
+
+  // Retake handler for quiz card
+  const handleRetake = async (quiz: any) => {
+    try {
+      const payload = {
+        quiz_id: quiz.id || quiz.quiz_id,
+        subject_id: subjectId,
+        topic_id: topicId,
+      };
+      const response = await api.post<any>(`quiz-attempts/quiz-attempts/start?user_id=${userId}`, payload);
+      if (response.ok && response.data && response.data.attempt_number) {
+        // Navigate to quiz page with new attempt_number as a query param
+        const url = `/quiz?quizId=${quiz.id || quiz.quiz_id}&subjectId=${subjectId}&topicId=${topicId}&topicSlug=${topicSlug}&subjectSlug=${subjectSlug}&quizName=${quiz.title}&subjectName=${subjectName}&topicName=${topicName}&totalQuizQuestions=${quiz.total_questions}&attemptNumber=${response.data.attempt_number}`;
+        router.push(url);
+      }
+    } catch (error) {
+      console.error("Failed to start new quiz attempt", error);
+    }
+  };
 
   return (
     <div>
@@ -137,9 +172,7 @@ export default function TopicPage() {
                 </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
-            <BreadcrumbSeparator>
-              {/* <ChevronRight className="h-4 w-4" /> */}
-            </BreadcrumbSeparator>
+            <BreadcrumbSeparator />
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
                 <Link className="text-white text-md font-semibold" href={`/topics?subjectId=${subjectId}&subjectSlug=${subjectSlug}&subjectName=${subjectName}`}>
@@ -147,57 +180,67 @@ export default function TopicPage() {
                 </Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
-            <BreadcrumbSeparator>
-              {/* <ChevronRight className="h-4 w-4" /> */}
-            </BreadcrumbSeparator>
+            <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink className="text-white text-md font-semibold" >{topicName}</BreadcrumbLink>
+              <BreadcrumbLink className="text-white text-md font-semibold">{topicName}</BreadcrumbLink>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
       </div>
-
       <div className="p-6">
         <h1 className="text-2xl font-medium text-gray-600 mb-6">Select a quiz to test your knowledge</h1>
+        {isLoading ? (
+          <div>Loading...</div>
+        ) : error ? (
+          <div className="text-red-500">{error}</div>
+        ) : quizzes.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {quizzes.map((quiz, index) => {
+              const progressArr = Object.values(quizProgress || {})
+              const progress = progressArr.find(
+                (p: any) => p.quiz_id === (quiz.id || quiz.quiz_id)
+              )
+              let progressPercentage = 0
+              let completedQuestions = 0
+              let totalQuestions = quiz.total_questions || 0
+              let quizStatus: 'not_started' | 'in_progress' | 'completed' = 'not_started'
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {quizzes.map(
-            (
-              quiz: {
-                is_completed: any
-                quiz_id: Key | null | undefined
-                title: string
-                description: any
-                total_questions: any
-                time_limit: any
-                level: any
-                icon: any
-                iconBg: any
-                progress_percentage: any
-                progressColor: any
-                completed_questions: any
-              },
-              index: number,
-            ) => (
-              <QuizCard
-                key={quiz.quiz_id}
-                title={quiz.title}
-                description={quiz.description || "Test your knowledge with this quiz on "}
-                questions={quiz.total_questions}
-                time={quiz.time_limit}
-                difficulty={quiz.level || "Beginner"}
-                href={`/quiz?quizId=${quiz.quiz_id}&subjectId=${subjectId}&topicId=${topicId}&topicSlug=${topicSlug}&subjectSlug=${subjectSlug}&quizName=${quiz.title}&subjectName=${subjectName}&topicName=${topicName}&totalQuizQuestions=${quiz.total_questions}`}
-                icon={quiz.icon || quizIcons[index % quizIcons.length]}
-                iconBg={quiz.iconBg || iconBgs[index % iconBgs.length]}
-                progress={quiz.progress_percentage} // Use quiz progress or generate random for demo
-                progressColor={quiz.progressColor || progressColors[index % progressColors.length]}
-                completedQuestions={quiz.completed_questions}
-                totalQuestions={quiz.total_questions}
-                isCompleted={quiz.is_completed}
-              />
-            ),
-          )}
-        </div>
+              if (progress) {
+                completedQuestions = progress.answered_questions
+                totalQuestions = progress.total_questions
+                progressPercentage = totalQuestions > 0 ? Math.round((completedQuestions / totalQuestions) * 100) : 0
+                if (progress.completed) {
+                  quizStatus = 'completed'
+                } else if (completedQuestions > 0) {
+                  quizStatus = 'in_progress'
+                }
+              }
+
+              return (
+                <QuizCard
+                  key={quiz.id || quiz.quiz_id || index}
+                  title={quiz.title}
+                  description={quiz.description || ""}
+                  questions={quiz.total_questions || 0}
+                  time={quiz.time_limit || 0}
+                  difficulty={quiz.level || "Beginner"}
+                  href={`/quiz?quizId=${quiz.id || quiz.quiz_id}&subjectId=${subjectId}&topicId=${topicId}&topicSlug=${topicSlug}&subjectSlug=${subjectSlug}&quizName=${quiz.title}&subjectName=${subjectName}&topicName=${topicName}&totalQuizQuestions=${quiz.total_questions}`}
+                  icon={quiz.icon || quizIcons[index % quizIcons.length]}
+                  iconBg={quiz.iconBg || iconBgs[index % iconBgs.length]}
+                  progress={progressPercentage}
+                  progressColor={quiz.progressColor || progressColors[index % progressColors.length]}
+                  completedQuestions={completedQuestions}
+                  totalQuestions={totalQuestions}
+                  quizStatus={quizStatus}
+                  progressObj={progress}
+                  onRetake={() => handleRetake(quiz)}
+                />
+              )
+            })}
+          </div>
+        ) : (
+          <div className="text-center text-gray-500">No quizzes found</div>
+        )}
       </div>
     </div>
   )
