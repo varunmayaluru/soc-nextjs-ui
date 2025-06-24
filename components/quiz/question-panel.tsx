@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ChevronLeft, ChevronRight, ThumbsDown, ThumbsUp, RotateCcw, Loader2 } from "lucide-react"
+import { ChevronLeft, ChevronRight, ThumbsDown, ThumbsUp, RotateCcw, Loader2, Circle, XCircle, CheckCircle, } from "lucide-react"
 import { MathRenderer } from "@/components/math-renderer"
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator } from "../ui/breadcrumb"
 import Link from "next/link"
@@ -320,37 +320,70 @@ export function QuestionPanel({
 
       <div className="bg-white p-6">
         {/* Question pagination */}
-        <div className="bg-white border-b border-t mb-4 border-gray-200 px-4 pt-2 flex overflow-x-auto">
-          {paginationNumbers.map((num) => {
-            const status = getQuestionStatus(num);
-            let btnClass = "min-w-[36px] h-9 flex items-center justify-center mx-1 transition-colors rounded-full border-2 ";
-            let icon = null;
-            if (num === currentQuestionId) {
-              btnClass += "text-[#3373b5] font-bold border-b-2 border-[#3373b5] bg-blue-50 ";
-            } else if (status === "correct") {
-              btnClass += "text-green-700 border-green-500 bg-green-50 font-semibold ";
-              icon = <span className="ml-1 text-green-600" title="Correct">✓</span>;
-            } else if (status === "wrong") {
-              btnClass += "text-red-700 border-red-400 bg-red-50 font-semibold ";
-              icon = <span className="ml-1 text-red-500" title="Wrong">✗</span>;
-            } else if (status === "answered") {
-              btnClass += "text-gray-700 border-gray-400 bg-gray-100 font-semibold ";
-              icon = <span className="ml-1 text-gray-400" title="Answered">•</span>;
-            } else {
-              btnClass += "text-gray-500 border-gray-200 hover:text-[#3373b5] hover:border-[#3373b5] ";
-            }
-            return (
-              <button
-                key={num}
-                onClick={() => onQuestionSelect(num)}
-                className={btnClass}
-                aria-label={`Go to question ${num}${status ? ' - ' + status : ''}`}
-              >
-                {num}
-                {icon}
-              </button>
-            );
-          })}
+        <div className="bg-white border-b border-t mb-6 border-gray-200 px-6 py-1">
+
+
+          <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
+            {paginationNumbers.map((num) => {
+              const status = getQuestionStatus(num);
+              const isCurrent = num === currentQuestionId;
+              const isAnswered = allSelectedOptions[num] !== undefined;
+
+              let btnClass = "relative min-w-[44px] h-11 flex items-center justify-center transition-all duration-200 rounded-lg border-2 font-medium text-sm ";
+              let icon = null;
+              let tooltip = "";
+
+              if (isCurrent) {
+                btnClass += "text-white bg-[#3373b5] border-[#3373b5] shadow-lg transform scale-105 ";
+                tooltip = "Current question";
+              } else if (isAnswered && isAnswerChecked) {
+                // Only show correct/wrong status after submit
+                if (status === "correct") {
+                  btnClass += "text-green-800 border-green-500 bg-green-100 hover:bg-green-200 ";
+                  icon = <CheckCircle className="w-4 h-4 absolute -top-1 -right-1 text-green-600" />;
+                  tooltip = "Correct answer";
+                } else if (status === "wrong") {
+                  btnClass += "text-red-800 border-red-500 bg-red-100 hover:bg-red-200 ";
+                  icon = <XCircle className="w-4 h-4 absolute -top-1 -right-1 text-red-600" />;
+                  tooltip = "Incorrect answer";
+                } else {
+                  btnClass += "text-blue-800 border-blue-400 bg-blue-100 hover:bg-blue-200 ";
+                  icon = <Circle className="w-3 h-3 absolute -top-1 -right-1 text-blue-600" />;
+                  tooltip = "Answered";
+                }
+              } else if (isAnswered) {
+                // Show answered status before submit
+                btnClass += "text-blue-800 border-blue-400 bg-blue-100 hover:bg-blue-200 ";
+                icon = <Circle className="w-3 h-3 absolute -top-1 -right-1 text-blue-600" />;
+                tooltip = "Answered";
+              } else {
+                btnClass += "text-gray-600 border-gray-300 bg-white hover:bg-gray-50 hover:border-[#3373b5] hover:text-[#3373b5] ";
+                tooltip = "Unanswered";
+              }
+
+              return (
+                <div key={num} className="relative group">
+                  <button
+                    onClick={() => onQuestionSelect(num)}
+                    className={btnClass}
+                    aria-label={`Go to question ${num}${tooltip ? ' - ' + tooltip : ''}`}
+                    title={tooltip}
+                  >
+                    {num}
+                  </button>
+                  {icon}
+
+                  {/* Hover tooltip */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                    {tooltip}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+
         </div>
 
         {/* Question navigation header */}
