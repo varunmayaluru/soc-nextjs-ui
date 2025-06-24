@@ -73,6 +73,7 @@ interface QuestionPanelProps {
   isSubmitting?: boolean
   isLoading?: boolean
   allSelectedOptions?: { [questionNumber: number]: number }
+  attemptNumber?: number | null
 }
 
 export function QuestionPanel({
@@ -108,6 +109,7 @@ export function QuestionPanel({
   isSubmitting = false,
   isLoading = false,
   allSelectedOptions = {},
+  attemptNumber = null,
 }: QuestionPanelProps) {
   if (isLoading || !question) {
     return (

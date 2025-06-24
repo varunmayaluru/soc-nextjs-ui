@@ -9,7 +9,12 @@ interface Message {
   sender: "user" | "response";
   content: string;
   timestamp: string;
-  type?: "feedback" | "question" | "summary" | "knowledge-gap"| "Actual-Answer";
+  type?:
+    | "feedback"
+    | "question"
+    | "summary"
+    | "knowledge-gap"
+    | "Actual-Answer";
 }
 
 interface ConvoMessage {
@@ -26,19 +31,19 @@ interface Option {
 }
 
 interface Question {
-  question_number: number
-  quiz_id: number
-  quiz_question_text: string
-  difficulty_level: string
-  is_active: boolean
-  is_maths: boolean
-  question_type: "mcq" | "fib" | "tf" | "match" | "sa"
-  correct_answer?: string // For fill in the blank questions
-  created_by: number
-  create_date_time: string
-  update_date_time: string | null
-  options: Option[]
-  short_answer_text?: string // For short answer questions
+  question_number: number;
+  quiz_id: number;
+  quiz_question_text: string;
+  difficulty_level: string;
+  is_active: boolean;
+  is_maths: boolean;
+  question_type: "mcq" | "fib" | "tf" | "match" | "sa";
+  correct_answer?: string; // For fill in the blank questions
+  created_by: number;
+  create_date_time: string;
+  update_date_time: string | null;
+  options: Option[];
+  short_answer_text?: string; // For short answer questions
 }
 
 interface UseQuizChatProps {
@@ -108,7 +113,6 @@ export function useQuizChat({
   }, []);
 
   const initializeChat = async (userAnswer: string) => {
-  
     if (!question) return;
 
     console.log(
@@ -186,7 +190,10 @@ export function useQuizChat({
         console.log("✅ Contextual answer received:", response.data);
         setContextAnswer(response.data.assistant_response);
 
-      let correct_answer =  question.question_type === "sa" ? question.short_answer_text : question.options.find((option) => option.is_correct)?.option_text
+        let correct_answer =
+          question.question_type === "sa"
+            ? question.short_answer_text
+            : question.options.find((option) => option.is_correct)?.option_text;
 
         // Get initial Socratic question using secure API with encryption
         const socraticPayload = {
@@ -253,7 +260,10 @@ export function useQuizChat({
 
     try {
       // Check if conversation should continue using secure API with encryption
-      let correct_answer =  question.question_type === "sa" ? question.short_answer_text : question.options.find((option) => option.is_correct)?.option_text
+      let correct_answer =
+        question.question_type === "sa"
+          ? question.short_answer_text
+          : question.options.find((option) => option.is_correct)?.option_text;
       const isCompletePayload = {
         complex_question: question.quiz_question_text,
         messages: conversationMessages,
@@ -290,7 +300,7 @@ export function useQuizChat({
           "/genai/feedback/generate",
           feedbackPayload
         );
-        let feedback = `**Feedback**\n\n${feedbackResponse.data.feedback}`;
+        let feedback = `${feedbackResponse.data.feedback}`;
 
         addConversationMessage({
           role: "assistant",
@@ -302,9 +312,12 @@ export function useQuizChat({
           content: feedback,
           type: "feedback",
         });
- 
+
         // Get follow-up question using secure API with encryption
-        let correct_answer =  question.question_type === "sa" ? question.short_answer_text : question.options.find((option) => option.is_correct)?.option_text;
+        let correct_answer =
+          question.question_type === "sa"
+            ? question.short_answer_text
+            : question.options.find((option) => option.is_correct)?.option_text;
         const followUpPayload = {
           complex_question: question.quiz_question_text,
           student_answer: selectedOption?.toString(),
@@ -367,7 +380,10 @@ export function useQuizChat({
         setFeedbackCounter((prev) => prev + 1);
       } else {
         // Generate final summary using secure API with encryption
-        correct_answer = question.question_type === "sa" ? question.short_answer_text : question.options.find((option) => option.is_correct)?.option_text;
+        correct_answer =
+          question.question_type === "sa"
+            ? question.short_answer_text
+            : question.options.find((option) => option.is_correct)?.option_text;
         const summaryPayload = {
           complex_question: question.quiz_question_text,
           messages: conversationMessages,
@@ -389,21 +405,25 @@ export function useQuizChat({
             knowledgeGapPayload
           ),
         ]);
-        let correctAnswermessge= `The correct answer is : ${question.question_type === "sa" ? question.short_answer_text : question.options.find((option) => option.is_correct)?.option_text}`;
-        addMessage({  
+        let correctAnswermessge = `The correct answer is : ${
+          question.question_type === "sa"
+            ? question.short_answer_text
+            : question.options.find((option) => option.is_correct)?.option_text
+        }`;
+        addMessage({
           sender: "response",
           content: correctAnswermessge,
           type: "Actual-Answer",
         });
 
-        let finalContent = `**Summary**\n\n${summaryResponse.data.summary}`;
+        let finalContent = `${summaryResponse.data.summary}`;
         addMessage({
           sender: "response",
           content: finalContent,
           type: "summary",
         });
 
-       let knowledge_gapContent = `\n\n**Knowledge Gap Analysis**\n\n${knowledgeGapResponse.data.knowledge_gap}`;
+        let knowledge_gapContent = `${knowledgeGapResponse.data.knowledge_gap}`;
         addMessage({
           sender: "response",
           content: knowledge_gapContent,

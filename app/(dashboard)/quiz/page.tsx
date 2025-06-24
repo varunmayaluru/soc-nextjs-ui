@@ -179,6 +179,9 @@ export default function QuizPage() {
   // Add a state to store the original progress.answers from progress/single
   const [progressAnswers, setProgressAnswers] = useState<{ [questionNumber: number]: number }>({})
 
+  // Add state to track short answer correctness
+  const [shortAnswerCorrectness, setShortAnswerCorrectness] = useState<{ [questionNumber: number]: boolean }>({})
+
   const searchParams = useSearchParams() // query params
   const subjectId = searchParams.get("subjectId")
   const topicId = searchParams.get("topicId")
@@ -249,6 +252,12 @@ export default function QuizPage() {
         const result = await api.get<SingleQuizProgress>(`quiz-progress/quiz-progress/single?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`)
         if (result.ok && result.data) {
           const progress = result.data;
+
+          // Extract and store attempt number
+          if (progress.attempt_number) {
+            setAttemptId(progress.attempt_number);
+          }
+
           // Find first skipped question
           const answeredNumbers = Object.keys(progress.answers || {}).map(Number);
           let targetQuestion = null;
@@ -344,6 +353,7 @@ export default function QuizPage() {
     setIsSubmitting(true);
     let selectedOptionArray: any = undefined;
     let isUserAnswer = true;
+
     if (currentQuestion?.question_type === "sa") {
       // Short answer: call chat API for evaluation
       const payload = {
@@ -357,6 +367,8 @@ export default function QuizPage() {
         const evaluation = result.data;
         setIsCorrect(evaluation.is_correct);
         isUserAnswer = evaluation.is_correct;
+        // Store the correctness for this short answer question
+        setShortAnswerCorrectness(prev => ({ ...prev, [currentquestionId!]: evaluation.is_correct }));
       } else {
         setIsSubmitting(false);
         return;
@@ -370,24 +382,37 @@ export default function QuizPage() {
       setSelectedOptionData(selectedOptionArray);
       setIsCorrect(selectedOptionArray?.is_correct || false);
     }
+
     // Calculate time spent on this question
     const questionCompletionTime = Math.floor((Date.now() - questionStartTime) / 1000);
     setQuestionTimes((prev) => ({ ...prev, [currentquestionId!]: questionCompletionTime }));
     setTotalQuizTime((prev) => prev + questionCompletionTime);
 
     try {
-      const mergedAnswers = { ...progressAnswers, [currentquestionId!]: selectedOption };
+      // Properly merge all answers: progressAnswers + allSelectedOptions + current answer
+      const currentAnswer = currentQuestion?.question_type === "sa" ? textAnswer : selectedOption;
+      const mergedAnswers = {
+        ...progressAnswers,
+        ...allSelectedOptions,
+        [currentquestionId!]: currentAnswer
+      };
+
       const answeredQuestionsCount = Object.keys(mergedAnswers).length;
       let score = 0;
+
+      // Calculate score for all answered questions
       for (const [qNum, ans] of Object.entries(mergedAnswers)) {
         const q = questions.find((qq) => qq.question_number === Number(qNum));
         if (q && q.question_type === "mcq") {
           const opt = q.options.find((o: any) => o.option_index === ans);
           if (opt && opt.is_correct) score++;
         } else if (q && q.question_type === "sa") {
-          if (Number(qNum) === currentquestionId && isUserAnswer) score++;
+          // For short answer questions, check stored correctness
+          const isCorrect = shortAnswerCorrectness[Number(qNum)];
+          if (isCorrect) score++;
         }
       }
+
       const payload = {
         current_question: currentquestionId,
         total_questions: Number(totalQuizQuestions),
@@ -398,9 +423,25 @@ export default function QuizPage() {
         answers: mergedAnswers,
         attempt_number: attemptId || 1
       };
+
       const result = await api.put<any>(`quiz-progress/quiz-progress/?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`, payload);
       if (result.ok) {
         console.log("Quiz progress updated successfully");
+        // Update local state to reflect the merged answers
+        // Convert answers to the expected format (numbers for MCQ, keep strings for short answers)
+        const formattedAnswers: { [questionNumber: number]: number } = {};
+        for (const [qNum, ans] of Object.entries(mergedAnswers)) {
+          const q = questions.find((qq) => qq.question_number === Number(qNum));
+          if (q && q.question_type === "mcq" && typeof ans === "number") {
+            formattedAnswers[Number(qNum)] = ans;
+          } else if (q && q.question_type === "sa" && typeof ans === "string") {
+            // For short answers, we might need to store them differently
+            // For now, we'll store a hash or index if needed
+            formattedAnswers[Number(qNum)] = 1; // Placeholder for short answer
+          }
+        }
+        setAllSelectedOptions(formattedAnswers);
+        setProgressAnswers(formattedAnswers);
       } else {
         console.error("Failed to update quiz progress");
       }
@@ -410,13 +451,13 @@ export default function QuizPage() {
 
     setIsAnswerChecked(true);
     if (currentQuestion?.question_type === "sa") {
-      if (!isUserAnswer) {
-        await initializeChat(textAnswer);
-      }
-    } else {
-      if (!selectedOptionArray?.is_correct) {
-        await initializeChat(selectedOptionArray?.option_text || "");
-      }
+      //   if (!isUserAnswer) {
+      //     await initializeChat(textAnswer);
+      //   } 
+      // } else {
+      //   if (!selectedOptionArray?.is_correct) {
+      //     await initializeChat(selectedOptionArray?.option_text || "");
+      //   }
     }
     setIsSubmitting(false);
   };
@@ -487,20 +528,24 @@ export default function QuizPage() {
 
   // Final submission handler
   const handleFinalSubmit = async () => {
-    // Merge previous answers from progressAnswers with the latest answer (if not already included)
+    // Properly merge all answers: progressAnswers + allSelectedOptions
     const mergedAnswers = { ...progressAnswers, ...allSelectedOptions };
     const answeredQuestionsCount = Object.keys(mergedAnswers).length;
     let score = 0;
+
+    // Calculate score for all answered questions
     for (const [qNum, ans] of Object.entries(mergedAnswers)) {
       const q = questions.find((qq) => qq.question_number === Number(qNum));
       if (q && q.question_type === "mcq") {
         const opt = q.options.find((o: any) => o.option_index === ans);
         if (opt && opt.is_correct) score++;
       } else if (q && q.question_type === "sa") {
-        // For short answer, you may want to check correctness if you store it
-        // For now, just count as answered
+        // For short answer questions, check stored correctness
+        const isCorrect = shortAnswerCorrectness[Number(qNum)];
+        if (isCorrect) score++;
       }
     }
+
     const payload = {
       current_question: currentquestionId,
       total_questions: Number(totalQuizQuestions),
@@ -511,10 +556,14 @@ export default function QuizPage() {
       answers: mergedAnswers,
       attempt_number: attemptId || 1
     };
+
     try {
       const result = await api.put<any>(`quiz-progress/quiz-progress/?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`, payload);
       if (result.ok) {
         console.log("Quiz final submission successful");
+        // Update local state to reflect the final answers
+        setAllSelectedOptions(mergedAnswers);
+        setProgressAnswers(mergedAnswers);
       } else {
         console.error("Quiz final submission failed");
       }
@@ -629,6 +678,7 @@ export default function QuizPage() {
               isSubmitting={isSubmitting}
               isLoading={isLoading}
               allSelectedOptions={allSelectedOptions}
+              attemptNumber={attemptId}
             />
             {/* Use ChatPanel for chat UI */}
             <ChatPanel
