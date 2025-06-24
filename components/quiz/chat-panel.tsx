@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { Bot, ImageIcon, PencilIcon, Send, Loader2, Brain } from "lucide-react"
+import { Bot, ImageIcon, PencilIcon, Send, Loader2, Brain, GraduationCap } from "lucide-react"
 import { MathInputHelper } from "@/components/math-input-helper"
 import { ChatMessage } from "./chat-message"
 import { TypingIndicator } from "./typing-indicator"
@@ -155,11 +155,23 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
       style={{ height: "calc(100vh - 224px)" }}
     >
       {/* Chat header */}
-      <div className="p-3 border-b border-gray-200 bg-gray-100">
-        <h3 className="font-semibold text-gray-800">Learning Assistant</h3>
-        <p className="text-sm text-gray-600">
-          {disabled ? "Answer the question to start learning" : "Ask questions to understand the concept better"}
-        </p>
+      <div className="p-3 border-b border-gray-200 bg-gradient-to-r from-blue-100 to-blue-200 text-gray-800">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center shadow-sm border border-blue-300">
+            <GraduationCap className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-lg text-gray-800">Learning Assistant</h3>
+            <p className="text-sm text-gray-600 flex items-center space-x-2">
+              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+              <span>{disabled ? "Answer the question to start learning" : "Ask questions to understand the concept better"}</span>
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            <span className="text-xs text-gray-600 font-medium">AI Active</span>
+          </div>
+        </div>
       </div>
 
       {/* Messages area */}

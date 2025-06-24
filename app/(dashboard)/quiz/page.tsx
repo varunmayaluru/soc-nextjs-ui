@@ -328,6 +328,17 @@ export default function QuizPage() {
     setIsAnswerChecked(false); // Do not show feedback until submit
   };
 
+  // Wrapper function for question selection that also resets chat
+  const handleQuestionSelect = (questionId: number) => {
+    setCurrentquestionId(questionId)
+    setIsAnswerChecked(false)
+    setIsCorrect(false)
+    setSelectedOption(null)
+    setTextAnswer("")
+    setSelectedOptionData(undefined)
+    resetChat()
+  }
+
   // Unified handleSubmit logic (includes chat APIs and quiz progress update)
   const handleSubmit = async () => {
     setIsSubmitting(true);
@@ -419,9 +430,10 @@ export default function QuizPage() {
     setTextAnswer("")
     setSelectedOptionData(undefined)
 
+    // Reset chat when navigating to a new question
+    resetChat()
+
     try {
-
-
       const result = await api.get<SingleQuizProgress>(`quiz-progress/quiz-progress/single?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`)
       if (result.ok) {
         const quizProgress = result.data
@@ -433,7 +445,6 @@ export default function QuizPage() {
         //   setTextAnswer(currentQuestion?.short_answer_text || "")
         // }
       }
-
     } catch (error) {
       console.error("Error navigating quiz:", error)
     }
@@ -608,7 +619,7 @@ export default function QuizPage() {
               onTextAnswerChange={setTextAnswer}
               onNavigate={handleNavigate}
               onSubmit={handleSubmit}
-              onQuestionSelect={setCurrentquestionId}
+              onQuestionSelect={handleQuestionSelect}
               showRetakeDialog={showRetakeDialog}
               setShowRetakeDialog={setShowRetakeDialog}
               isRetaking={isRetaking}
@@ -624,7 +635,7 @@ export default function QuizPage() {
               messages={messages}
               isTyping={isTyping}
               onSendMessage={sendMessage}
-              disabled={!isAnswerChecked || isCorrect}
+              disabled={!isAnswerChecked}
             />
           </div>
         </div>

@@ -29,30 +29,28 @@ export default function TextToSpeech({ id, message }: Props) {
   };
 
   return (
-    <div className="flex gap-2 ml-2 ">
+    <div className="flex gap-1">
       <button
         onClick={handlePlayPause}
-        className={`p-1.5 rounded-full transition-colors ${
-          isCurrent
-            ? "bg-green-600 hover:bg-green-700"
-            : "bg-yellow-100  hover:bg-yellow-200"
-        }`}
+        className={`p-1.5 rounded-full transition-colors ${isCurrent
+            ? "bg-green-500 hover:bg-green-600 text-white"
+            : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+          }`}
         title={isPlaying ? "Pause" : "Play"}
       >
-        {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+        {isPlaying ? <Pause size={14} /> : <Play size={14} />}
       </button>
 
       <button
         onClick={handleReset}
-        className={`p-1.5 rounded-full transition-colors ${
-          isCurrent
-            ? "bg-red-600 hover:bg-red-700"
-            : "bg-gray-600 opacity-50 cursor-not-allowed"
-        }`}
+        className={`p-1.5 rounded-full transition-colors ${isCurrent
+            ? "bg-red-500 hover:bg-red-600 text-white"
+            : "bg-gray-100 hover:bg-gray-200 text-gray-500"
+          }`}
         disabled={!isCurrent}
         title="Reset"
       >
-        <RotateCcw size={16} />
+        <RotateCcw size={14} />
       </button>
     </div>
   );
