@@ -127,7 +127,7 @@ export function ChatMessage({ message, index }: ChatMessageProps) {
               </div>
 
               {/* User message content */}
-              <div className={`rounded-lg text-sm whitespace-pre-wrap py-4 pl-4 pr-20  border ${getMessageStyling()} hover:shadow-lg transition-all duration-200 relative`}>
+              <div className={`rounded-lg text-sm whitespace-pre-wrap py-4 pl-4 pr-24  border ${getMessageStyling()} hover:shadow-lg transition-all duration-200 relative`}>
                 <MathRenderer content={message.content} />
 
                 {/* Text-to-speech for user messages */}
@@ -173,7 +173,7 @@ export function ChatMessage({ message, index }: ChatMessageProps) {
               </div>
 
               {/* Bot message content */}
-              <div className={`rounded-lg text-sm whitespace-pre-wrap py-4 pl-4 pr-20 border ${getMessageStyling()} hover:shadow-md transition-all duration-200 relative`}>
+              <div className={`rounded-lg text-sm whitespace-pre-wrap py-4 pl-4 pr-24 border ${getMessageStyling()} hover:shadow-md transition-all duration-200 relative`}>
                 {/* Message type indicator */}
                 {/* {message.type && (
                   // <div className="absolute -top-2 left-4 bg-white px-2 py-1 rounded-full border border-gray-200 shadow-sm">
