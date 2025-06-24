@@ -417,7 +417,7 @@ export default function QuizPage() {
         [currentquestionId!]: currentAnswer
       };
 
-      const answeredQuestionsCount = Object.keys(mergedAnswers).length;
+      const answeredQuestionsCountAfter = Object.keys(mergedAnswers).length;
       let score = 0;
 
       // Calculate score for all answered questions
@@ -433,13 +433,16 @@ export default function QuizPage() {
         }
       }
 
+      const isLastAnswer =
+        totalQuestionsCount > 0 && answeredQuestionsCountAfter === totalQuestionsCount;
+
       const payload = {
         current_question: currentquestionId,
         total_questions: Number(totalQuizQuestions),
-        answered_questions: answeredQuestionsCount,
+        answered_questions: answeredQuestionsCountAfter,
         score: score,
         time_spent: totalQuizTime,
-        completed: false,
+        completed: isLastAnswer,
         answers: mergedAnswers,
         attempt_number: attemptId || 1
       };
@@ -472,13 +475,13 @@ export default function QuizPage() {
 
     setIsAnswerChecked(true);
     if (currentQuestion?.question_type === "sa") {
-      //   if (!isUserAnswer) {
-      //     await initializeChat(textAnswer);
-      //   } 
-      // } else {
-      //   if (!selectedOptionArray?.is_correct) {
-      //     await initializeChat(selectedOptionArray?.option_text || "");
-      //   }
+      if (!isUserAnswer) {
+        await initializeChat(textAnswer);
+      }
+    } else {
+      if (!selectedOptionArray?.is_correct) {
+        await initializeChat(selectedOptionArray?.option_text || "");
+      }
     }
     setIsSubmitting(false);
   };
@@ -532,7 +535,6 @@ export default function QuizPage() {
       const response = await api.post<any>(`quiz-attempts/quiz-attempts/start?user_id=${userId}`, payload);
       if (response.ok && response.data && response.data.attempt_number) {
         setAttemptId(response.data.attempt_number);
-        // Optionally reset progress state for a fresh attempt
         setAllSelectedOptions({});
         setProgressAnswers({});
         setSelectedOption(null);
@@ -541,6 +543,9 @@ export default function QuizPage() {
         setTextAnswer("");
         setSelectedOptionData(undefined);
         setCurrentquestionId(1);
+        setAnsweredQuestionsCount(0);
+        // Re-fetch progress for the new attempt to update counts
+        await fetchAndSetQuizProgressCounts();
       }
     } catch (error) {
       console.error("Failed to start new quiz attempt", error);

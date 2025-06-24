@@ -473,23 +473,21 @@ export function QuestionPanel({
             </Button>
           )}
 
-          {onRetakeQuiz && (
+          {/* Only show Retake and Final Submit when all questions are answered */}
+          {enableRetakeAndFinalSubmit && onRetakeQuiz && (
             <Button
               className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 flex items-center gap-2"
               onClick={onRetakeQuiz}
-              disabled={!enableRetakeAndFinalSubmit}
             >
               <RotateCcw className="h-4 w-4" />
               Re Take
             </Button>
           )}
 
-          {/* Final Submit button: show only if all questions are answered and not completed */}
-          {onFinalSubmit && (
+          {enableRetakeAndFinalSubmit && onFinalSubmit && (
             <Button
               className="bg-green-600 hover:bg-green-700 rounded-full px-6 ml-4 text-white"
               onClick={onFinalSubmit}
-              disabled={!enableRetakeAndFinalSubmit}
             >
               Final Submit
             </Button>

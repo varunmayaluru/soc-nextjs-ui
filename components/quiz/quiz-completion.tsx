@@ -236,7 +236,7 @@ export default function QuizCompletion({
         </Card> */}
 
         {/* Action Buttons */}
-        <div className="flex justify-center space-x-4 mt-8 mb-8">
+        {/* <div className="flex justify-center space-x-4 mt-8 mb-8">
           <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 h-auto flex items-center" onClick={handleSubmit}>
             Submit
           </Button>
@@ -244,7 +244,7 @@ export default function QuizCompletion({
             <RotateCcw className="w-4 h-4 mr-2" />
             Retake Quiz
           </Button>
-        </div>
+        </div> */}
       </div>
     </div>
   )
