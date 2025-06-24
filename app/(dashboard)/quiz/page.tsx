@@ -42,7 +42,7 @@ interface Question {
   update_date_time: string
 }
 
-interface quizResponseSingle {
+interface SingleQuizProgress {
   user_id: string;
   subject_id: string;
   topic_id: string;
@@ -60,32 +60,55 @@ interface quizResponseSingle {
   updated_at: string;
 }
 
-interface SingleQuizProgress {
-  user_id: string
-  subject_id: string
-  topic_id: string
-  quiz_id: string
-  attempt_number: number
-  current_question: number
-  total_questions: number
-  answered_questions: number
-  score: number
-  time_spent: number
-  completed: boolean
-  answers: { [questionId: string]: number }
-  id: number
-  started_at: string
-  updated_at: string
+type Quiz = {
+  id: number;
+  title: string;
+  description: string;
+  totalQuestions: number;
+  timeLimit: number;
+  difficulty: "Beginner" | "Intermediate" | "Advanced";
+  icon: string;
+  iconBg: string;
+  progressColor: string;
+  progress: number;
+  completedQuestions: number;
+  totalQuestionsForProgress: number;
+  quizStatus: "not_started" | "in_progress" | "completed";
+  progressObj?: QuizProgressResponse[string];
+};
+
+type QuizProgressResponse = {
+  [key: string]: {
+    user_id: string;
+    subject_id: string;
+    topic_id: string;
+    quiz_id: string;
+    attempt_number: number;
+    current_question: number;
+    total_questions: number;
+    answered_questions: number;
+    score: number;
+    time_spent: number;
+    completed: boolean;
+    answers: {
+      [questionId: string]: number;
+    };
+    id: number;
+    started_at: string;
+    updated_at: string;
+  };
 }
 
+
+
 // Define the Quiz interface
-interface Quiz {
-  quizId: number
-  title: string
-  description: string
-  total_questions: number
-  questions: Question[]
-}
+// interface Quiz {
+//   quizId: number
+//   title: string
+//   description: string
+//   total_questions: number
+//   questions: Question[]
+// }
 
 interface Subject {
   organization_id: number
@@ -223,7 +246,7 @@ export default function QuizPage() {
       setIsLoading(true)
       setError(null)
       try {
-        const result = await api.get<quizResponseSingle>(`quiz-progress/quiz-progress/single?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`)
+        const result = await api.get<SingleQuizProgress>(`quiz-progress/quiz-progress/single?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`)
         if (result.ok && result.data) {
           const progress = result.data;
           // Find first skipped question
@@ -399,7 +422,7 @@ export default function QuizPage() {
     try {
 
 
-      const result = await api.get<quizResponseSingle>(`quiz-progress/quiz-progress/single?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`)
+      const result = await api.get<SingleQuizProgress>(`quiz-progress/quiz-progress/single?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`)
       if (result.ok) {
         const quizProgress = result.data
         const answer = quizProgress.answers[currentquestionId?.toString() || ""]
@@ -491,8 +514,8 @@ export default function QuizPage() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto bg-white ">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
+      <div className="mx-auto bg-white " style={{ height: "calc(100vh - 200px)" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 h-full">
           <div className="bg-white p-6">
             <div className="space-y-4">
               <Skeleton className="h-8 w-3/4 bg-gray-200" />
@@ -520,8 +543,11 @@ export default function QuizPage() {
           </div>
         </div>
       </div>
+
     )
   }
+
+
 
   if (error) {
     return (
