@@ -99,7 +99,20 @@ type QuizProgressResponse = {
   };
 }
 
-
+// Add type for final submission response
+interface FinalSubmissionResponse {
+  quiz_id: string;
+  subject_id: string;
+  topic_id: string;
+  answers: { [key: string]: number };
+  score: number;
+  total_questions: number;
+  time_spent: number;
+  attempt_number: number;
+  id: number;
+  user_id: string;
+  submitted_at: string;
+}
 
 // Define the Quiz interface
 // interface Quiz {
@@ -181,6 +194,8 @@ export default function QuizPage() {
 
   // Add state to track short answer correctness
   const [shortAnswerCorrectness, setShortAnswerCorrectness] = useState<{ [questionNumber: number]: boolean }>({})
+
+  const [finalSubmissionData, setFinalSubmissionData] = useState<FinalSubmissionResponse | null>(null)
 
   const searchParams = useSearchParams() // query params
   const subjectId = searchParams.get("subjectId")
@@ -528,25 +543,21 @@ export default function QuizPage() {
 
   // Final submission handler
   const handleFinalSubmit = async () => {
-    // Properly merge all answers: progressAnswers + allSelectedOptions
     const mergedAnswers = { ...progressAnswers, ...allSelectedOptions };
     const answeredQuestionsCount = Object.keys(mergedAnswers).length;
     let score = 0;
-
-    // Calculate score for all answered questions
     for (const [qNum, ans] of Object.entries(mergedAnswers)) {
       const q = questions.find((qq) => qq.question_number === Number(qNum));
       if (q && q.question_type === "mcq") {
         const opt = q.options.find((o: any) => o.option_index === ans);
         if (opt && opt.is_correct) score++;
       } else if (q && q.question_type === "sa") {
-        // For short answer questions, check stored correctness
         const isCorrect = shortAnswerCorrectness[Number(qNum)];
         if (isCorrect) score++;
       }
     }
 
-    const payload = {
+    const QuizCompletePayload = {
       current_question: currentquestionId,
       total_questions: Number(totalQuizQuestions),
       answered_questions: answeredQuestionsCount,
@@ -558,12 +569,37 @@ export default function QuizPage() {
     };
 
     try {
-      const result = await api.put<any>(`quiz-progress/quiz-progress/?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`, payload);
+      const result = await api.put<any>(`quiz-progress/quiz-progress/?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`, QuizCompletePayload);
       if (result.ok) {
         console.log("Quiz final submission successful");
         // Update local state to reflect the final answers
         setAllSelectedOptions(mergedAnswers);
         setProgressAnswers(mergedAnswers);
+      } else {
+        console.error("Quiz final submission failed");
+      }
+    } catch (error) {
+      console.error("Error in final submission:", error);
+    }
+    const payload = {
+      subject_id: subjectId,
+      topic_id: topicId,
+      quiz_id: quizId,
+      attempt_number: attemptId || 1,
+      total_questions: Number(totalQuizQuestions),
+      answered_questions: answeredQuestionsCount,
+      score: score,
+      time_spent: totalQuizTime,
+      answers: mergedAnswers,
+      id: undefined,
+      started_at: undefined,
+      updated_at: undefined,
+    };
+    try {
+      const result = await api.post<any>(`quiz-submissions/quiz-submissions/?user_id=${userId}`, payload);
+      if (result.ok && result.data) {
+        setFinalSubmissionData(result.data);
+        setQuizCompleted(true);
       } else {
         console.error("Quiz final submission failed");
       }
@@ -628,17 +664,17 @@ export default function QuizPage() {
 
   return (
     <>
-      {quizCompleted && (
+      {quizCompleted && finalSubmissionData && (
         <QuizCompletion
-          score={0}
-          totalQuestions={Number(totalQuizQuestions)}
-          timeSpent={"900"}
+          score={finalSubmissionData.score}
+          totalQuestions={finalSubmissionData.total_questions}
+          timeSpent={String(finalSubmissionData.time_spent)}
           subject={subjectName || ""}
           quizTitle={quizName || ""}
-          correctAnswers={0}
-          incorrectAnswers={0}
-          noAnswers={0}
-          skippedAnswers={0}
+          attemptNumber={finalSubmissionData.attempt_number}
+          submittedAt={finalSubmissionData.submitted_at}
+          answers={finalSubmissionData.answers}
+          questions={questions}
         />
       )}
       {!quizCompleted && (
