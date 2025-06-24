@@ -232,6 +232,9 @@ export default function QuizPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const [answeredQuestionsCount, setAnsweredQuestionsCount] = useState(0);
+  const [totalQuestionsCount, setTotalQuestionsCount] = useState(0);
+
   useEffect(() => {
     // Fetch all questions for the quiz on mount
     const fetchAllQuestions = async () => {
@@ -267,6 +270,8 @@ export default function QuizPage() {
         const result = await api.get<SingleQuizProgress>(`quiz-progress/quiz-progress/single?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`)
         if (result.ok && result.data) {
           const progress = result.data;
+          setAnsweredQuestionsCount(progress.answered_questions || 0);
+          setTotalQuestionsCount(progress.total_questions || 0);
 
           // Extract and store attempt number
           if (progress.attempt_number) {
@@ -457,6 +462,7 @@ export default function QuizPage() {
         }
         setAllSelectedOptions(formattedAnswers);
         setProgressAnswers(formattedAnswers);
+        await fetchAndSetQuizProgressCounts();
       } else {
         console.error("Failed to update quiz progress");
       }
@@ -608,6 +614,18 @@ export default function QuizPage() {
     }
   };
 
+  const fetchAndSetQuizProgressCounts = async () => {
+    try {
+      const result = await api.get<SingleQuizProgress>(`quiz-progress/quiz-progress/single?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`)
+      if (result.ok && result.data) {
+        setAnsweredQuestionsCount(result.data.answered_questions || 0);
+        setTotalQuestionsCount(result.data.total_questions || 0);
+      }
+    } catch (err) {
+      // Optionally handle error
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="mx-auto bg-white " style={{ height: "calc(100vh - 200px)" }}>
@@ -715,6 +733,9 @@ export default function QuizPage() {
               isLoading={isLoading}
               allSelectedOptions={allSelectedOptions}
               attemptNumber={attemptId}
+              answeredQuestionsCount={answeredQuestionsCount}
+              totalQuestionsCount={totalQuestionsCount}
+              enableRetakeAndFinalSubmit={answeredQuestionsCount === totalQuestionsCount && totalQuestionsCount > 0}
             />
             {/* Use ChatPanel for chat UI */}
             <ChatPanel

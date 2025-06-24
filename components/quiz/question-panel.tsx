@@ -74,6 +74,9 @@ interface QuestionPanelProps {
   isLoading?: boolean
   allSelectedOptions?: { [questionNumber: number]: number }
   attemptNumber?: number | null
+  answeredQuestionsCount?: number
+  totalQuestionsCount?: number
+  enableRetakeAndFinalSubmit?: boolean
 }
 
 export function QuestionPanel({
@@ -110,6 +113,9 @@ export function QuestionPanel({
   isLoading = false,
   allSelectedOptions = {},
   attemptNumber = null,
+  answeredQuestionsCount = 0,
+  totalQuestionsCount = 0,
+  enableRetakeAndFinalSubmit = false,
 }: QuestionPanelProps) {
   if (isLoading || !question) {
     return (
@@ -471,6 +477,7 @@ export function QuestionPanel({
             <Button
               className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 flex items-center gap-2"
               onClick={onRetakeQuiz}
+              disabled={!enableRetakeAndFinalSubmit}
             >
               <RotateCcw className="h-4 w-4" />
               Re Take
@@ -478,11 +485,11 @@ export function QuestionPanel({
           )}
 
           {/* Final Submit button: show only if all questions are answered and not completed */}
-          {onFinalSubmit && !isAnswerChecked && (
+          {onFinalSubmit && (
             <Button
               className="bg-green-600 hover:bg-green-700 rounded-full px-6 ml-4 text-white"
               onClick={onFinalSubmit}
-              disabled={false /* You can add logic to disable if not all questions answered */}
+              disabled={!enableRetakeAndFinalSubmit}
             >
               Final Submit
             </Button>
