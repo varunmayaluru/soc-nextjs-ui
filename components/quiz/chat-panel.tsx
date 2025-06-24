@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { SpeechButton } from "./speech-button"
 import { SpeechProvider } from "../SpeechProvider"
+import { convertMathInText } from "@/lib/math-converter"
 
 interface Message {
   id: number;
@@ -134,7 +135,8 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
 
     // Ensure we scroll when user sends message
     setShouldAutoScroll(true)
-    onSendMessage(newMessage)
+    var Message=convertMathInText(newMessage)
+    onSendMessage(Message)
     setNewMessage("")
   }
 
