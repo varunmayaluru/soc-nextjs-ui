@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { SpeechButton } from "./speech-button"
 import { SpeechProvider } from "../SpeechProvider"
-import { convertMathInText } from "@/lib/math-converter"
+import { secureApi } from "@/lib/secure-api-client"
 
 interface Message {
   id: number;
@@ -125,7 +125,7 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
     scrollToBottom(false)
   }, [])
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim() || disabled) return
 
     // Stop listening if currently active
@@ -134,9 +134,29 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
     }
 
     // Ensure we scroll when user sends message
+    let latex_string : string = "";
+    try
+    {
+
+    const Payload={ 
+            input_statement: newMessage,
+             model: "gpt-4o"
+    }
+       const Response =
+        await secureApi.post<any>(
+                "/latex/latex/convert",
+                Payload
+              );
+      if(Response.ok && Response.data) {
+        const latex = Response.data.latex_string || "";
+        latex_string= latex;
+      }
+      
+    }catch (error) {
+      console.error("Error checking if user is near bottom:", error)
+    }
     setShouldAutoScroll(true)
-    var Message=convertMathInText(newMessage)
-    onSendMessage(Message)
+    onSendMessage(latex_string ? latex_string : newMessage.trim())
     setNewMessage("")
   }
 
