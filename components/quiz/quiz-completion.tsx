@@ -14,7 +14,7 @@ interface QuizCompletionProps {
   quizTitle: string
   attemptNumber?: number
   submittedAt?: string
-  answers?: { [key: string]: number }
+  answers?: { [key: string]: { selected: string; is_correct: boolean } }
   questions?: any[]
   onRetake?: () => void
   quizzesListUrl?: string

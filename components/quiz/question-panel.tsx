@@ -72,7 +72,7 @@ interface QuestionPanelProps {
   onFinalSubmit?: () => void | Promise<void>
   isSubmitting?: boolean
   isLoading?: boolean
-  allSelectedOptions?: { [questionNumber: number]: number }
+  allSelectedOptions?: {  [questionNumber: string]: { selected: string; is_correct: boolean } }
   attemptNumber?: number | null
   answeredQuestionsCount?: number
   totalQuestionsCount?: number
