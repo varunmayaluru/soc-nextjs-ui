@@ -8,6 +8,7 @@ import { MathRenderer } from "@/components/math-renderer"
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator } from "../ui/breadcrumb"
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useSearchParams } from "next/navigation"
 
 interface Option {
   id: number
@@ -117,6 +118,10 @@ export function QuestionPanel({
   totalQuestionsCount = 0,
   enableRetakeAndFinalSubmit = false,
 }: QuestionPanelProps) {
+
+   const searchParams = useSearchParams()
+   const mode: string | null = searchParams.get("mode")
+   const isReviewMode = mode === "review"
   if (isLoading || !question) {
     return (
       <div className="p-6">
@@ -474,7 +479,7 @@ export function QuestionPanel({
           )}
 
           {/* Only show Retake and Final Submit when all questions are answered */}
-          {enableRetakeAndFinalSubmit && onRetakeQuiz && (
+          {enableRetakeAndFinalSubmit && onRetakeQuiz &&  (
             <Button
               className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 flex items-center gap-2"
               onClick={onRetakeQuiz}
@@ -484,13 +489,25 @@ export function QuestionPanel({
             </Button>
           )}
 
-          {enableRetakeAndFinalSubmit && onFinalSubmit && (
+          {enableRetakeAndFinalSubmit && onFinalSubmit && !isReviewMode && (
             <Button
               className="bg-green-600 hover:bg-green-700 rounded-full px-6 ml-4 text-white"
               onClick={onFinalSubmit}
             >
               Final Submit
             </Button>
+          )}
+           {/* Show review-specific actions if in review mode */}
+          {isReviewMode && (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="border-blue-300 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md"
+                onClick={() => window.history.back()}
+              >
+                Back to Quizzes
+              </Button>
+            </div>
           )}
         </div>
 

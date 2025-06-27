@@ -1,6 +1,8 @@
+"use client"
+
 import type React from "react"
 import Link from "next/link"
-import { FileText, Clock, ArrowRight, RefreshCw, Trophy } from "lucide-react"
+import { FileText, Clock, ArrowRight, RefreshCw, Trophy, Eye } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 type QuizCardProps = {
@@ -16,9 +18,10 @@ type QuizCardProps = {
   progressColor?: string
   completedQuestions?: number
   totalQuestions?: number
-  quizStatus?: 'not_started' | 'in_progress' | 'completed'
+  quizStatus?: "not_started" | "in_progress" | "completed"
   progressObj?: any
   onRetake?: () => void | Promise<void>
+  onReview?: () => void | Promise<void>
 }
 
 export default function QuizCard({
@@ -34,11 +37,12 @@ export default function QuizCard({
   progressColor = "bg-blue-500",
   completedQuestions = 0,
   totalQuestions = 0,
-  quizStatus = 'not_started',
+  quizStatus = "not_started",
   progressObj,
   onRetake,
+  onReview,
 }: QuizCardProps) {
-  const router = useRouter();
+  const router = useRouter()
 
   // Determine the difficulty badge color
   const difficultyColor =
@@ -64,34 +68,55 @@ export default function QuizCard({
 
   // Navigation handler for Continue
   const handleContinue = (e: React.MouseEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!progressObj || !progressObj.answers) {
-      router.push(href);
-      return;
+      router.push(href)
+      return
     }
     // Find first skipped question
-    const answeredNumbers = Object.keys(progressObj.answers).map(Number);
-    let targetQuestion = null;
+    const answeredNumbers = Object.keys(progressObj.answers).map(Number)
+    let targetQuestion = null
     for (let i = 1; i <= progressObj.total_questions; i++) {
       if (!answeredNumbers.includes(i)) {
-        targetQuestion = i;
-        break;
+        targetQuestion = i
+        break
       }
     }
     // If no skipped, go to current_question
     if (!targetQuestion) {
-      targetQuestion = progressObj.current_question || 1;
+      targetQuestion = progressObj.current_question || 1
     }
     // Build new href with currentQuestion param
-    const url = new URL(href, window.location.origin);
-    url.searchParams.set("currentQuestion", String(targetQuestion));
-    router.push(url.pathname + url.search);
-  };
+    const url = new URL(href, window.location.origin)
+    url.searchParams.set("currentQuestion", String(targetQuestion))
+    router.push(url.pathname + url.search)
+  }
+
+  // Review handler with handleContinue functionality
+  const handleReview = (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (!progressObj || !progressObj.answers) {
+      // If no progress data, start from beginning in review mode
+      const url = new URL(href, window.location.origin)
+      url.searchParams.set("mode", "review")
+      url.searchParams.set("currentQuestion", "1")
+      router.push(url.pathname + url.search)
+      return
+    }
+
+    // Start review from first question with all answers available
+    const url = new URL(href, window.location.origin)
+    url.searchParams.set("mode", "review")
+    url.searchParams.set("currentQuestion", "1")
+    url.searchParams.set("attemptId", String(progressObj.id))
+    router.push(url.pathname + url.search)
+  }
 
   return (
     <div
-      className={`bg-white rounded-2xl p-5 shadow-md border border-gray-100 h-full flex flex-col hover:shadow-xl hover:border-blue-300 hover:scale-[1.02] transition-all duration-200 min-h-[260px] group ${quizStatus === "completed" ? "bg-gradient-to-br from-green-50 to-white" : ""
-        }`}
+      className={`bg-white rounded-2xl p-5 shadow-md border border-gray-100 h-full flex flex-col hover:shadow-xl hover:border-blue-300 hover:scale-[1.02] transition-all duration-200 min-h-[260px] group ${
+        quizStatus === "completed" ? "bg-gradient-to-br from-green-50 to-white" : ""
+      }`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
@@ -118,10 +143,11 @@ export default function QuizCard({
         <div>
           <Trophy className="w-6 h-6 text-yellow-500 inline-block mr-1 align-middle" />
           <span className="text-gray-800 text-base font-bold align-middle">
-            Score: {progressObj && typeof progressObj.score === "number" && typeof progressObj.total_questions === "number"
+            Score:{" "}
+            {progressObj && typeof progressObj.score === "number" && typeof progressObj.total_questions === "number"
               ? `${progressObj.score}/${progressObj.total_questions} (${Math.round(
-                (progressObj.score / progressObj.total_questions) * 100
-              )}%)`
+                  (progressObj.score / progressObj.total_questions) * 100,
+                )}%)`
               : `0/${totalQuestions} (0%)`}
           </span>
         </div>
@@ -178,14 +204,27 @@ export default function QuizCard({
             Continue Quiz
             <ArrowRight className="ml-2 w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" />
           </button>
-        ) : quizStatus === "completed" && onRetake ? (
-          <button
-            onClick={onRetake}
-            className="w-full py-2 px-3 rounded-lg flex items-center justify-center transition-colors bg-violet-500 hover:bg-violet-600 text-white font-semibold text-base shadow"
-          >
-            Re-Take Quiz
-            <RefreshCw className="ml-2 w-4 h-4 transform group-hover:rotate-90 transition-transform duration-200" />
-          </button>
+        ) : quizStatus === "completed" && (onRetake || onReview) ? (
+          <div className="flex gap-2">
+            {onRetake && (
+              <button
+                onClick={onRetake}
+                className="flex-1 py-2 px-3 rounded-lg flex items-center justify-center transition-colors bg-violet-500 hover:bg-violet-600 text-white font-semibold text-sm shadow"
+              >
+                Re-Take
+                <RefreshCw className="ml-1 w-3 h-3 transform group-hover:rotate-90 transition-transform duration-200" />
+              </button>
+            )}
+            {onReview && (
+              <button
+                onClick={handleReview}
+                className="flex-1 py-2 px-3 rounded-lg flex items-center justify-center transition-colors bg-blue-500 hover:bg-blue-600 text-white font-semibold text-sm shadow"
+              >
+                Review
+                <Eye className="ml-1 w-3 h-3" />
+              </button>
+            )}
+          </div>
         ) : (
           <Link
             href={href}

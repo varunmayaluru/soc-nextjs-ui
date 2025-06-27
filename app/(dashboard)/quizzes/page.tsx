@@ -10,7 +10,6 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
@@ -71,7 +70,7 @@ interface Quiz {
   progress: number
   completedQuestions: number
   totalQuestionsForProgress: number
-  quizStatus: 'not_started' | 'in_progress' | 'completed'
+  quizStatus: "not_started" | "in_progress" | "completed"
   progressObj?: QuizProgressResponse[string]
 }
 
@@ -97,14 +96,14 @@ const QUIZ_VISUALS = {
     "bg-indigo-500",
     "bg-pink-500",
     "bg-orange-500",
-  ]
+  ],
 } as const
 
 // Helper functions
 const getQuizVisuals = (index: number) => ({
   icon: QUIZ_VISUALS.icons[index % QUIZ_VISUALS.icons.length],
   iconBg: QUIZ_VISUALS.iconBgs[index % QUIZ_VISUALS.iconBgs.length],
-  progressColor: QUIZ_VISUALS.progressColors[index % QUIZ_VISUALS.progressColors.length]
+  progressColor: QUIZ_VISUALS.progressColors[index % QUIZ_VISUALS.progressColors.length],
 })
 
 const mapDifficulty = (level: string): "Beginner" | "Intermediate" | "Advanced" => {
@@ -119,24 +118,23 @@ const mapDifficulty = (level: string): "Beginner" | "Intermediate" | "Advanced" 
 
 const calculateQuizProgress = (quiz: QuizApiResponse, progressData: QuizProgressResponse): Quiz => {
   const progressArr = Object.values(progressData || {})
-  const progress = progressArr.find(p => p.quiz_id === quiz.id)
+  const progress = progressArr.find((p) => p.quiz_id === quiz.id)
 
   let progressPercentage = 0
   let completedQuestions = 0
   let totalQuestionsForProgress = quiz.total_questions
-  let quizStatus: 'not_started' | 'in_progress' | 'completed' = 'not_started'
+  let quizStatus: "not_started" | "in_progress" | "completed" = "not_started"
 
   if (progress) {
     completedQuestions = progress.answered_questions
     totalQuestionsForProgress = progress.total_questions
-    progressPercentage = totalQuestionsForProgress > 0
-      ? Math.round((completedQuestions / totalQuestionsForProgress) * 100)
-      : 0
+    progressPercentage =
+      totalQuestionsForProgress > 0 ? Math.round((completedQuestions / totalQuestionsForProgress) * 100) : 0
 
     if (progress.completed) {
-      quizStatus = 'completed'
+      quizStatus = "completed"
     } else if (completedQuestions > 0) {
-      quizStatus = 'in_progress'
+      quizStatus = "in_progress"
     }
   }
 
@@ -154,7 +152,7 @@ const calculateQuizProgress = (quiz: QuizApiResponse, progressData: QuizProgress
     completedQuestions,
     totalQuestionsForProgress,
     quizStatus,
-    progressObj: progress
+    progressObj: progress,
   }
 }
 
@@ -166,7 +164,7 @@ const formatQuiz = (quiz: QuizApiResponse, index: number, progressData: QuizProg
     ...quizWithProgress,
     icon: quizWithProgress.icon || visuals.icon,
     iconBg: quizWithProgress.iconBg || visuals.iconBg,
-    progressColor: quizWithProgress.progressColor || visuals.progressColor
+    progressColor: quizWithProgress.progressColor || visuals.progressColor,
   }
 }
 
@@ -202,7 +200,7 @@ export default function QuizzesPage() {
 
       try {
         const response = await api.get<QuizApiResponse[]>(
-          `quizzes/quizzes/by-subject-topic/${subjectId}/${topicId}?organization_id=${organizationId}`
+          `quizzes/quizzes/by-subject-topic/${subjectId}/${topicId}?organization_id=${organizationId}`,
         )
 
         if (!response.ok) {
@@ -234,9 +232,7 @@ export default function QuizzesPage() {
       }
 
       try {
-        const response = await api.get<QuizProgressResponse>(
-          `quiz-progress/quiz-progress/?user_id=${userId}`
-        )
+        const response = await api.get<QuizProgressResponse>(`quiz-progress/quiz-progress/?user_id=${userId}`)
 
         if (response.ok && response.data) {
           setQuizProgress(response.data)
@@ -255,9 +251,7 @@ export default function QuizzesPage() {
   // Format quizzes with progress data when both are loaded
   useEffect(() => {
     if (quizzesLoaded && progressLoaded) {
-      const formatted = quizzes.map((quiz, index) =>
-        formatQuiz(quiz, index, quizProgress)
-      )
+      const formatted = quizzes.map((quiz, index) => formatQuiz(quiz, index, quizProgress))
       setFormattedQuizzes(formatted)
     }
   }, [quizzesLoaded, progressLoaded, quizProgress, quizzes])
@@ -270,16 +264,22 @@ export default function QuizzesPage() {
     if (!userId) return
 
     try {
+
+        const deleteQuizProgress = await api.delete<any>(
+          `quiz-progress/quiz-progress/?quiz_id=${quiz.id}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`,
+        )
+        if (deleteQuizProgress.ok) {
+          console.log("Quiz progress deleted successfully")
+        } else {
+          console.error("Failed to delete quiz progress")
+        }
       const payload = {
         quiz_id: quiz.id,
         subject_id: subjectId,
         topic_id: topicId,
       }
 
-      const response = await api.post<any>(
-        `quiz-attempts/quiz-attempts/start?user_id=${userId}`,
-        payload
-      )
+      const response = await api.post<any>(`quiz-attempts/quiz-attempts/start?user_id=${userId}`, payload)
 
       if (response.ok && response.data?.attempt_number) {
         const url = `/quiz?quizId=${quiz.id}&subjectId=${subjectId}&topicId=${topicId}&topicSlug=${topicSlug}&subjectSlug=${subjectSlug}&quizName=${quiz.title}&subjectName=${subjectName}&topicName=${topicName}&totalQuizQuestions=${quiz.totalQuestions}&attemptNumber=${response.data.attempt_number}`
@@ -287,6 +287,29 @@ export default function QuizzesPage() {
       }
     } catch (error) {
       console.error("Failed to start new quiz attempt", error)
+    }
+  }
+
+  // Review handler with handleContinue functionality
+  const handleReview = async (quiz: Quiz) => {
+    if (!userId || !quiz.progressObj) return
+
+    try {
+      // Build URL with review mode and navigation parameters
+      const url = new URL(
+        `/quiz?quizId=${quiz.id}&subjectId=${subjectId}&topicId=${topicId}&topicSlug=${topicSlug}&subjectSlug=${subjectSlug}&quizName=${quiz.title}&subjectName=${subjectName}&topicName=${topicName}&totalQuizQuestions=${quiz.totalQuestions}`,
+        window.location.origin,
+      )
+
+      // Add review mode parameters
+      url.searchParams.set("mode", "review")
+      url.searchParams.set("currentQuestion", "1")
+      url.searchParams.set("attemptId", String(quiz.progressObj.id))
+      url.searchParams.set("attemptNumber", String(quiz.progressObj.attempt_number))
+
+      router.push(url.pathname + url.search)
+    } catch (error) {
+      console.error("Failed to navigate to review mode", error)
     }
   }
 
@@ -314,9 +337,7 @@ export default function QuizzesPage() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink className="text-white text-md font-semibold">
-              {topicName}
-            </BreadcrumbLink>
+            <BreadcrumbLink className="text-white text-md font-semibold">{topicName}</BreadcrumbLink>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
@@ -341,35 +362,38 @@ export default function QuizzesPage() {
       quizStatus={quiz.quizStatus}
       progressObj={quiz.progressObj}
       onRetake={() => handleRetake(quiz)}
+      onReview={() => handleReview(quiz)}
     />
   )
 
   const renderLoadingState = () => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-      {Array(6).fill(0).map((_, index) => (
-        <div key={index} className="bg-white rounded-lg p-6 shadow-md border border-gray-100">
-          <div className="flex items-center mb-4">
-            <Skeleton className="bg-gray-200 w-10 h-10 rounded-md mr-4" />
-            <div className="flex-1">
-              <Skeleton className="bg-gray-200 h-6 w-32 mb-2" />
-              <Skeleton className="bg-gray-200 h-4 w-24" />
+      {Array(6)
+        .fill(0)
+        .map((_, index) => (
+          <div key={index} className="bg-white rounded-lg p-6 shadow-md border border-gray-100">
+            <div className="flex items-center mb-4">
+              <Skeleton className="bg-gray-200 w-10 h-10 rounded-md mr-4" />
+              <div className="flex-1">
+                <Skeleton className="bg-gray-200 h-6 w-32 mb-2" />
+                <Skeleton className="bg-gray-200 h-4 w-24" />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <div className="flex justify-between text-sm mb-2">
+                <Skeleton className="bg-gray-200 h-4 w-16" />
+                <Skeleton className="bg-gray-200 h-4 w-12" />
+              </div>
+              <Skeleton className="bg-gray-200 h-2.5 w-full rounded-full" />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Skeleton className="bg-gray-200 h-6 w-20 rounded-full" />
+              <Skeleton className="bg-gray-200 h-10 w-32 rounded-md" />
             </div>
           </div>
-
-          <div className="mb-4">
-            <div className="flex justify-between text-sm mb-2">
-              <Skeleton className="bg-gray-200 h-4 w-16" />
-              <Skeleton className="bg-gray-200 h-4 w-12" />
-            </div>
-            <Skeleton className="bg-gray-200 h-2.5 w-full rounded-full" />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <Skeleton className="bg-gray-200 h-6 w-20 rounded-full" />
-            <Skeleton className="bg-gray-200 h-10 w-32 rounded-md" />
-          </div>
-        </div>
-      ))}
+        ))}
     </div>
   )
 
@@ -377,10 +401,7 @@ export default function QuizzesPage() {
     <div className="text-center py-8">
       <div className="text-red-500 mb-2">⚠️</div>
       <p className="text-red-500 mb-2">{error}</p>
-      <button
-        onClick={() => window.location.reload()}
-        className="text-[#1e74bb] underline hover:no-underline"
-      >
+      <button onClick={() => window.location.reload()} className="text-[#1e74bb] underline hover:no-underline">
         Try again
       </button>
     </div>
@@ -398,9 +419,7 @@ export default function QuizzesPage() {
       {renderBreadcrumb()}
 
       <div className="p-6">
-        <h1 className="text-2xl font-medium text-gray-600 mb-6">
-          Select a quiz to test your knowledge
-        </h1>
+        <h1 className="text-2xl font-medium text-gray-600 mb-6">Select a quiz to test your knowledge</h1>
 
         {isLoading || !isDataLoaded ? (
           renderLoadingState()
