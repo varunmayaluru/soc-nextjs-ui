@@ -279,14 +279,24 @@ export default function QuizPage() {
             // Set selectedOption for the current question
             const answerForCurrent = progress.answers[targetQuestion.toString()]
             if (answerForCurrent !== undefined) {
-              setSelectedOption(Number.parseInt(answerForCurrent.selected))
+              // Find the current question to check its type
+              const currentQ = questions.find((q: any) => q.question_number === targetQuestion)
+              if (currentQ?.question_type === "sa") {
+                setTextAnswer(answerForCurrent.selected)
+                setSelectedOption(null) // Not applicable for short answers
+              } else {
+                setSelectedOption(Number.parseInt(answerForCurrent.selected))
+                setTextAnswer("")
+              }
             } else {
               setSelectedOption(null)
+              setTextAnswer("")
             }
           } else {
             setAllSelectedOptions({})
             setProgressAnswers({})
             setSelectedOption(null)
+            setTextAnswer("")
           }
         }
       } catch (err) {
@@ -296,7 +306,7 @@ export default function QuizPage() {
       }
     }
     if (userId) fetchQuizProgress()
-  }, [userId, quizId, subjectId, topicId])
+  }, [userId, quizId, subjectId, topicId, questions])
 
   useEffect(() => {
     if (currentquestionId && allSelectedOptions && questions.length > 0) {
@@ -306,21 +316,24 @@ export default function QuizPage() {
         progressAnswers && Object.prototype.hasOwnProperty.call(progressAnswers, currentquestionId.toString())
 
       if (answer !== undefined) {
-        setSelectedOption(Number.parseInt(answer.selected))
+        if (q && q.question_type === "sa") {
+          setTextAnswer(answer.selected)
+          setSelectedOption(null)
+        } else {
+          setSelectedOption(Number.parseInt(answer.selected))
+          setTextAnswer("")
+        }
+
         if (hasProgressAnswer) {
-          if (q && q.question_type === "mcq") {
-            setIsAnswerChecked(true)
-            setIsCorrect(answer.is_correct)
-          } else {
-            setIsAnswerChecked(true)
-            setIsCorrect(answer.is_correct)
-          }
+          setIsAnswerChecked(true)
+          setIsCorrect(answer.is_correct)
         } else {
           setIsAnswerChecked(false)
           setIsCorrect(false)
         }
       } else {
         setSelectedOption(null)
+        setTextAnswer("")
         setIsAnswerChecked(false)
         setIsCorrect(false)
       }
@@ -347,6 +360,25 @@ export default function QuizPage() {
     setTextAnswer("")
     setSelectedOptionData(undefined)
     resetChat()
+
+    // Load the answer for the selected question if it exists
+    const answer = allSelectedOptions[questionId.toString()]
+    if (answer) {
+      const q = questions.find((q) => q.question_number === questionId)
+      if (q && q.question_type === "sa") {
+        setTextAnswer(answer.selected)
+      } else {
+        setSelectedOption(Number.parseInt(answer.selected))
+      }
+
+      // Check if this answer was from original progress
+      const hasProgressAnswer =
+        progressAnswers && Object.prototype.hasOwnProperty.call(progressAnswers, questionId.toString())
+      if (hasProgressAnswer) {
+        setIsAnswerChecked(true)
+        setIsCorrect(answer.is_correct)
+      }
+    }
   }
 
   // Unified handleSubmit logic (includes chat APIs and quiz progress update)
@@ -389,7 +421,7 @@ export default function QuizPage() {
     try {
       // Create the current answer object with new format
       const currentAnswerObj = {
-        selected: currentQuestion?.question_type === "sa" ? "1" : selectedOption!.toString(),
+        selected: currentQuestion?.question_type === "sa" ? textAnswer : selectedOption!.toString(),
         is_correct: currentQuestion?.question_type === "sa" ? isUserAnswer : selectedOptionArray?.is_correct || false,
       }
 
@@ -450,9 +482,16 @@ export default function QuizPage() {
   }
 
   const handleNavigate = async (dir: "next" | "prev") => {
-    if (dir === "next" && currentquestionId && currentquestionId < Number(totalQuizQuestions))
-      setCurrentquestionId(currentquestionId + 1)
-    if (dir === "prev" && currentquestionId && currentquestionId > 1) setCurrentquestionId(currentquestionId - 1)
+    let newQuestionId = currentquestionId
+    if (dir === "next" && currentquestionId && currentquestionId < Number(totalQuizQuestions)) {
+      newQuestionId = currentquestionId + 1
+      setCurrentquestionId(newQuestionId)
+    }
+    if (dir === "prev" && currentquestionId && currentquestionId > 1) {
+      newQuestionId = currentquestionId - 1
+      setCurrentquestionId(newQuestionId)
+    }
+
     setIsAnswerChecked(false)
     setIsCorrect(false)
     setSelectedOption(null)
@@ -462,22 +501,25 @@ export default function QuizPage() {
     // Reset chat when navigating to a new question
     resetChat()
 
-    try {
-      const result = await api.get<SingleQuizProgress>(
-        `quiz-progress/quiz-progress/single?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`,
-      )
-      if (result.ok) {
-        const quizProgress = result.data
-        const answer = quizProgress.answers[currentquestionId?.toString() || ""]
-        // if (answer) {
-        //   setSelectedOption(answer)
-        //   setIsAnswerChecked(true)
-        //   setIsCorrect(answer === currentQuestion?.correct_answer)
-        //   setTextAnswer(currentQuestion?.short_answer_text || "")
-        // }
+    // Load the answer for the new question if it exists
+    if (newQuestionId !== null) {
+      const answer = allSelectedOptions[newQuestionId.toString()]
+      if (answer) {
+        const q = questions.find((q) => q.question_number === newQuestionId)
+        if (q && q.question_type === "sa") {
+          setTextAnswer(answer.selected)
+        } else {
+          setSelectedOption(Number.parseInt(answer.selected))
+        }
+
+        // Check if this answer was from original progress
+        const hasProgressAnswer =
+          progressAnswers && Object.prototype.hasOwnProperty.call(progressAnswers, newQuestionId.toString())
+        if (hasProgressAnswer) {
+          setIsAnswerChecked(true)
+          setIsCorrect(answer.is_correct)
+        }
       }
-    } catch (error) {
-      console.error("Error navigating quiz:", error)
     }
   }
 
@@ -575,6 +617,14 @@ export default function QuizPage() {
       if (result.ok && result.data) {
         setFinalSubmissionData(result.data)
         setQuizCompleted(true)
+        const deleteQuizProgress = await api.delete<any>(
+          `quiz-progress/quiz-progress/?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`,
+        )
+        if (deleteQuizProgress.ok) {
+          console.log("Quiz progress deleted successfully")
+        } else {
+          console.error("Failed to delete quiz progress")
+        }
       } else {
         console.error("Quiz final submission failed")
       }
@@ -595,6 +645,18 @@ export default function QuizPage() {
     } catch (err) {
       // Optionally handle error
     }
+  }
+
+  const handleTextAnswerChange = (value: string) => {
+    setTextAnswer(value)
+    // Update allSelectedOptions for short answer questions
+    if (currentQuestion?.question_type === "sa") {
+      setAllSelectedOptions((prev) => ({
+        ...prev,
+        [currentquestionId!.toString()]: { selected: value, is_correct: false },
+      }))
+    }
+    setIsAnswerChecked(false)
   }
 
   if (isLoading) {
@@ -687,7 +749,7 @@ export default function QuizPage() {
               isAnswerChecked={isAnswerChecked}
               isCorrect={isCorrect}
               onOptionSelect={handleSelectOption}
-              onTextAnswerChange={setTextAnswer}
+              onTextAnswerChange={handleTextAnswerChange}
               onNavigate={handleNavigate}
               onSubmit={handleSubmit}
               onQuestionSelect={handleQuestionSelect}
