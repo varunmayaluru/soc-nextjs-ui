@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSpeech } from "./SpeechProvider";
 import { Play, Pause, RotateCcw } from "lucide-react";
+import { secureApi } from "@/lib/secure-api-client";
 
 interface Props {
   id: string;
@@ -9,6 +10,40 @@ interface Props {
 
 export default function TextToSpeech({ id, message }: Props) {
   const { currentId, isPaused, speak, pause, resume, reset } = useSpeech();
+
+  const [processedMessage, setProcessedMessage] = useState(message);
+
+  useEffect(() => {
+    const processMessage = async () => {
+      if (/\$.*?\$|\$\$.*?\$\$/.test(message)) {
+        // Contains LaTeX
+        try {
+          const payload = {
+            input_statement: message,
+            model: "gpt-4o",
+          };
+
+          const response = await secureApi.post<any>(
+            "/genai/latex-to-speech/convert",
+            payload
+          );
+
+          if (response.ok && response.data) {
+            setProcessedMessage(response.data.spoken_string || message);
+          } else {
+            setProcessedMessage(message); // fallback
+          }
+        } catch (error) {
+          console.error("Error converting LaTeX to speech:", error);
+          setProcessedMessage(message); // fallback
+        }
+      } else {
+        setProcessedMessage(message);
+      }
+    };
+
+    processMessage();
+  }, [message]);
 
   const isCurrent = currentId === id;
   const isPlaying = isCurrent && !isPaused;
@@ -20,7 +55,7 @@ export default function TextToSpeech({ id, message }: Props) {
     } else if (isPausedCurrent) {
       resume();
     } else {
-      speak(id, message); // this will cancel previous automatically
+      speak(id, processedMessage); // Speak processed message
     }
   };
 
@@ -29,30 +64,30 @@ export default function TextToSpeech({ id, message }: Props) {
   };
 
   return (
-    <div className="flex gap-2 ml-2 ">
+    <div className="flex gap-1">
       <button
         onClick={handlePlayPause}
         className={`p-1.5 rounded-full transition-colors ${
           isCurrent
-            ? "bg-green-600 hover:bg-green-700"
-            : "bg-yellow-100  hover:bg-yellow-200"
+            ? "bg-green-500 hover:bg-green-600 text-white"
+            : "bg-gray-100 hover:bg-gray-200 text-gray-700"
         }`}
         title={isPlaying ? "Pause" : "Play"}
       >
-        {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+        {isPlaying ? <Pause size={14} /> : <Play size={14} />}
       </button>
 
       <button
         onClick={handleReset}
         className={`p-1.5 rounded-full transition-colors ${
           isCurrent
-            ? "bg-red-600 hover:bg-red-700"
-            : "bg-gray-600 opacity-50 cursor-not-allowed"
+            ? "bg-red-500 hover:bg-red-600 text-white"
+            : "bg-gray-100 hover:bg-gray-200 text-gray-500"
         }`}
         disabled={!isCurrent}
         title="Reset"
       >
-        <RotateCcw size={16} />
+        <RotateCcw size={14} />
       </button>
     </div>
   );

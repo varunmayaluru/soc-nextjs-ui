@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { CheckCircle, XCircle, HelpCircle, SkipForward, RotateCcw, Trophy, Sparkles } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface QuizCompletionProps {
   score: number
@@ -11,11 +12,12 @@ interface QuizCompletionProps {
   timeSpent: string
   subject: string
   quizTitle: string
-  previousBest?: number
-  correctAnswers: number
-  incorrectAnswers: number
-  noAnswers: number
-  skippedAnswers: number
+  attemptNumber?: number
+  submittedAt?: string
+  answers?: { [key: string]: { selected: string; is_correct: boolean } }
+  questions?: any[]
+  onRetake?: () => void
+  quizzesListUrl?: string
 }
 
 export default function QuizCompletion({
@@ -24,14 +26,36 @@ export default function QuizCompletion({
   timeSpent = "12:34",
   subject = "Mathematics",
   quizTitle = "Algebra Fundamentals",
-  previousBest = 14,
-  correctAnswers = 13,
-  incorrectAnswers = 5,
-  noAnswers = 2,
-  skippedAnswers = 2,
+  attemptNumber,
+  submittedAt,
+  answers = {},
+  questions = [],
+  onRetake,
+  quizzesListUrl = "/quizzes",
 }: QuizCompletionProps) {
   const [animateScore, setAnimateScore] = useState(false)
   const [showConfetti, setShowConfetti] = useState(true)
+  const router = useRouter()
+
+  // Calculate breakdown
+  let correctAnswers = 0, incorrectAnswers = 0, noAnswers = 0, skippedAnswers = 0;
+  if (questions.length > 0) {
+    questions.forEach((q) => {
+      const ans = answers[q.question_number];
+      if (ans === undefined) {
+        noAnswers++;
+      } else if (q.question_type === "mcq") {
+        const opt = q.options.find((o: any) => o.option_index === ans);
+        if (opt && opt.is_correct) correctAnswers++;
+        else incorrectAnswers++;
+      } else if (q.question_type === "sa") {
+        // For short answer, treat as correct if not empty (customize as needed)
+        if (ans) correctAnswers++;
+        else incorrectAnswers++;
+      }
+    });
+    skippedAnswers = totalQuestions - (correctAnswers + incorrectAnswers + noAnswers);
+  }
 
   const percentage = Math.round((score / totalQuestions) * 100)
   const grade = getGrade(percentage)
@@ -48,6 +72,18 @@ export default function QuizCompletion({
     if (percentage >= 70) return { letter: "B", color: "text-blue-600", bg: "bg-blue-100" }
     if (percentage >= 60) return { letter: "C", color: "text-yellow-600", bg: "bg-yellow-100" }
     return { letter: "D", color: "text-red-600", bg: "bg-red-100" }
+  }
+
+  const handleSubmit = () => {
+    router.push(quizzesListUrl)
+  }
+
+  const handleRetake = () => {
+    if (onRetake) {
+      onRetake()
+    } else {
+      window.location.reload()
+    }
   }
 
   return (
@@ -80,6 +116,12 @@ export default function QuizCompletion({
           </div>
           <h1 className="text-4xl font-bold text-gray-800 mb-2">🎉 Quiz Completed! 🎉</h1>
           <p className="text-xl text-gray-600">You've finished the {quizTitle} quiz!</p>
+          {attemptNumber && (
+            <div className="mt-2 text-sm text-gray-500">Attempt: {attemptNumber}</div>
+          )}
+          {submittedAt && (
+            <div className="text-xs text-gray-400">Submitted at: {new Date(submittedAt).toLocaleString()}</div>
+          )}
         </div>
 
         {/* Score Display */}
@@ -87,17 +129,15 @@ export default function QuizCompletion({
           <CardContent className="p-8">
             <div className="grid md:grid-cols-3 gap-6 text-center">
               <div>
-                <div className={`text-6xl font-bold mb-2 ${grade.color} ${animateScore ? "animate-bounce" : ""}`}>
+                <div className={`text-6xl font-bold mb-2 text-green-600`}>
                   {score}/{totalQuestions}
                 </div>
                 <p className="text-gray-600">Questions Correct</p>
               </div>
               <div>
-                <div className={`text-6xl font-bold mb-2 ${grade.color}`}>{percentage}%</div>
-                <div
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${grade.bg} ${grade.color}`}
-                >
-                  Grade: {grade.letter}
+                <div className={`text-6xl font-bold mb-2 text-blue-600`}>{Math.round((score / totalQuestions) * 100)}%</div>
+                <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-600">
+                  Attempt: {attemptNumber || 1}
                 </div>
               </div>
               <div>
@@ -196,16 +236,15 @@ export default function QuizCompletion({
         </Card> */}
 
         {/* Action Buttons */}
-        <div className="flex justify-center space-x-4 mt-8 mb-8">
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 h-auto flex items-center">
+        {/* <div className="flex justify-center space-x-4 mt-8 mb-8">
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 h-auto flex items-center" onClick={handleSubmit}>
             Submit
           </Button>
-
-          <Button variant="outline" className="px-8 py-2 h-auto flex items-center">
+          <Button variant="outline" className="px-8 py-2 h-auto flex items-center" onClick={handleRetake}>
             <RotateCcw className="w-4 h-4 mr-2" />
             Retake Quiz
           </Button>
-        </div>
+        </div> */}
       </div>
     </div>
   )

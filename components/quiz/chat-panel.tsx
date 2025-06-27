@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { Bot, ImageIcon, PencilIcon, Send, Loader2, Brain } from "lucide-react"
+import { Bot, ImageIcon, PencilIcon, Send, Loader2, Brain, GraduationCap } from "lucide-react"
 import { MathInputHelper } from "@/components/math-input-helper"
 import { ChatMessage } from "./chat-message"
 import { TypingIndicator } from "./typing-indicator"
@@ -13,13 +13,14 @@ import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { SpeechButton } from "./speech-button"
 import { SpeechProvider } from "../SpeechProvider"
+import { secureApi } from "@/lib/secure-api-client"
 
 interface Message {
   id: number;
   sender: "user" | "response";
   content: string;
   timestamp: string;
-  type?: "feedback" | "question" | "summary" | "knowledge-gap"| "Actual-Answer";
+  type?: "feedback" | "question" | "summary" | "knowledge-gap" | "Actual-Answer";
 }
 
 interface ChatPanelProps {
@@ -124,7 +125,7 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
     scrollToBottom(false)
   }, [])
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!newMessage.trim() || disabled) return
 
     // Stop listening if currently active
@@ -133,8 +134,29 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
     }
 
     // Ensure we scroll when user sends message
+    let latex_string : string = "";
+    try
+    {
+
+    const Payload={ 
+            input_statement: newMessage,
+             model: "gpt-4o"
+    }
+       const Response =
+        await secureApi.post<any>(
+                "/latex/latex/convert",
+                Payload
+              );
+      if(Response.ok && Response.data) {
+        const latex = Response.data.latex_string || "";
+        latex_string= latex;
+      }
+      
+    }catch (error) {
+      console.error("Error checking if user is near bottom:", error)
+    }
     setShouldAutoScroll(true)
-    onSendMessage(newMessage)
+    onSendMessage(latex_string ? latex_string : newMessage.trim())
     setNewMessage("")
   }
 
@@ -155,11 +177,23 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
       style={{ height: "calc(100vh - 224px)" }}
     >
       {/* Chat header */}
-      <div className="p-3 border-b border-gray-200 bg-gray-100">
-        <h3 className="font-semibold text-gray-800">Learning Assistant</h3>
-        <p className="text-sm text-gray-600">
-          {disabled ? "Answer the question to start learning" : "Ask questions to understand the concept better"}
-        </p>
+      <div className="p-3 border-b border-gray-200 bg-gradient-to-r from-blue-100 to-blue-200 text-gray-800">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center shadow-sm border border-blue-300">
+            <GraduationCap className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-lg text-gray-800">Learning Assistant</h3>
+            <p className="text-sm text-gray-600 flex items-center space-x-2">
+              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+              <span>{disabled ? "Answer the question to start learning" : "Ask questions to understand the concept better"}</span>
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            <span className="text-xs text-gray-600 font-medium">AI Active</span>
+          </div>
+        </div>
       </div>
 
       {/* Messages area */}
@@ -171,13 +205,57 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
         {messages.length === 0 && !disabled && (
           <div className="text-center text-gray-500 py-8">
             <Bot className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            {/* <Brain className="h-12 w-12 mx-auto mb-4 text-gray-300" /> */}
-
-
             <p>I'm here to help you understand the concepts better.</p>
             <p className="text-sm mt-2">Answer the question incorrectly to start our conversation!</p>
           </div>
         )}
+
+        {disabled && (
+          <div className="text-center py-6 px-4 h-full flex items-cente">
+            {/* Simplified disabled state UI */}
+            <div className="max-w-sm mx-auto">
+              {/* Icon and visual elements */}
+              <div className="relative mb-4">
+                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mb-3">
+                  <Brain className="h-8 w-8 text-blue-600" />
+                </div>
+                <div className="absolute -top-1 -right-1 w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <span className="text-yellow-600 text-xs">🔒</span>
+                </div>
+              </div>
+
+              {/* Main message */}
+              <h3 className="text-base font-semibold text-gray-800 mb-2">
+                Unlock Your Learning Assistant
+              </h3>
+
+              <p className="text-sm text-gray-600 mb-4">
+                Your AI tutor is ready to help you understand concepts better!
+              </p>
+
+              {/* Simplified feature highlights */}
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center space-x-2 p-2 bg-blue-50 rounded-lg">
+                  <span className="text-blue-600 text-sm">💬</span>
+                  <p className="text-xs text-blue-800">Ask questions & get explanations</p>
+                </div>
+
+                <div className="flex items-center space-x-2 p-2 bg-green-50 rounded-lg">
+                  <span className="text-green-600 text-sm">📝</span>
+                  <p className="text-xs text-green-800">Step-by-step guidance</p>
+                </div>
+              </div>
+
+              {/* Call to action */}
+              <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-3 text-white">
+                <p className="text-xs text-blue-100 text-center">
+                  Answer the quiz question to unlock your AI tutor!
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <SpeechProvider>
           {messages.map((message, index) => (
             <div
@@ -191,7 +269,6 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
         </SpeechProvider>
 
         {/* Typing indicator */}
-
         {isTyping && (
           <div className="animate-in slide-in-from-bottom-2 duration-300">
             <TypingIndicator />

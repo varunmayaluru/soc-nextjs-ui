@@ -48,18 +48,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
-import type { Subject } from "@/app/types/types"
-
-type Topic = {
-  organization_id: number
-  subject_id: number
-  slug: string
-  id: number
-  topic_name: string
-  is_active: boolean
-  created_by: string
-  create_date_time: string
-}
+import type { Subject, Topic } from "@/app/types/types"
 
 export default function TopicsPage() {
   const params = useParams()
@@ -616,8 +605,8 @@ export default function TopicsPage() {
                           <td className="px-4 py-3 text-right">
                             <div className="flex justify-end gap-2">
                               <Link
-                      href={`/admin/subjects/${subjectId}/topics/${topic.id}/quizzes?organization_id=${organizationId}&organization_name=${organizationName}&subject_slug=${subjectSlug}&topic_slug=${topic.slug}`}
-                    >
+                                href={`/admin/subjects/${subjectId}/topics/${topic.id}/quizzes?organization_id=${organizationId}&organization_name=${organizationName}&subject_slug=${subjectSlug}&topic_slug=${topic.slug}`}
+                              >
                                 <Button
                                   variant="outline"
                                   size="sm"

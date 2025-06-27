@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { ChevronLeft, ChevronRight, ThumbsDown, ThumbsUp, RotateCcw } from "lucide-react"
+import { ChevronLeft, ChevronRight, ThumbsDown, ThumbsUp, RotateCcw, Loader2, Circle, XCircle, CheckCircle, } from "lucide-react"
 import { MathRenderer } from "@/components/math-renderer"
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator } from "../ui/breadcrumb"
 import Link from "next/link"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useSearchParams } from "next/navigation"
 
 interface Option {
   id: number
@@ -63,11 +65,19 @@ interface QuestionPanelProps {
   onNavigate: (direction: "prev" | "next") => void
   onSubmit: () => void
   onQuestionSelect: (questionId: number) => void
-  onRetakeQuiz: () => void
   showRetakeDialog: boolean
   setShowRetakeDialog: (show: boolean) => void
   isRetaking: boolean
   quizProgress: QuizProgress | null
+  onRetakeQuiz?: () => void | Promise<void>
+  onFinalSubmit?: () => void | Promise<void>
+  isSubmitting?: boolean
+  isLoading?: boolean
+  allSelectedOptions?: {  [questionNumber: string]: { selected: string; is_correct: boolean } }
+  attemptNumber?: number | null
+  answeredQuestionsCount?: number
+  totalQuestionsCount?: number
+  enableRetakeAndFinalSubmit?: boolean
 }
 
 export function QuestionPanel({
@@ -94,12 +104,41 @@ export function QuestionPanel({
   onNavigate,
   onSubmit,
   onQuestionSelect,
-  onRetakeQuiz,
   showRetakeDialog,
   setShowRetakeDialog,
   isRetaking,
   quizProgress,
+  onRetakeQuiz,
+  onFinalSubmit,
+  isSubmitting = false,
+  isLoading = false,
+  allSelectedOptions = {},
+  attemptNumber = null,
+  answeredQuestionsCount = 0,
+  totalQuestionsCount = 0,
+  enableRetakeAndFinalSubmit = false,
 }: QuestionPanelProps) {
+
+   const searchParams = useSearchParams()
+   const mode: string | null = searchParams.get("mode")
+   const isReviewMode = mode === "review"
+  if (isLoading || !question) {
+    return (
+      <div className="p-6">
+        <div className="flex flex-col gap-4">
+          <Skeleton className=" bg-gray-200 h-8 w-1/2 mb-2" />
+          <Skeleton className=" bg-gray-200 h-6 w-1/3 mb-4" />
+          <Skeleton className=" bg-gray-200 h-16 w-full mb-2" />
+          <Skeleton className=" bg-gray-200 h-16 w-full mb-2" />
+          <div className="flex gap-2">
+            <Skeleton className="bg-gray-200 h-10 w-24" />
+            <Skeleton className="bg-gray-200 h-10 w-24" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Determine question type - if no options or question_type is fill_blank, treat as fill in the blank
   const isMultipleChoice =
     question.question_type === "mcq" && question.options && question.options.length > 0
@@ -115,58 +154,54 @@ export function QuestionPanel({
           className="space-y-2 gap-1 px-4 py-4 justify-center"
         >
           {question.options.map((option) => {
-            const isSelected = selectedOption === option.id
+            const isSelected = selectedOption === option.option_index
             const isCorrectOption = option.is_correct
 
             return (
               <div
                 key={option.id}
-                className={`border min-w-[600px] max-w-[750px] rounded-full flex items-center transition-all duration-200 ${
-                  isSelected
-                    ? isAnswerChecked
-                      ? isCorrectOption
-                        ? "border-green-500 bg-green-50 border-2"
-                        : "border-red-500 bg-red-50 border-2"
-                      : "border-[#3373b5] bg-white border-2"
-                    : "border-gray-200 bg-[#F1F1F1] hover:border-gray-300 hover:bg-white"
-                }`}
+                className={`border min-w-[600px] max-w-[750px] rounded-full flex items-center transition-all duration-200 ${isSelected
+                  ? isAnswerChecked
+                    ? isCorrectOption
+                      ? "border-green-500 bg-green-50 border-2"
+                      : "border-red-500 bg-red-50 border-2"
+                    : "border-[#3373b5] bg-white border-2"
+                  : "border-gray-200 bg-[#F1F1F1] hover:border-gray-300 hover:bg-white"
+                  }`}
               >
                 <div
-                  className={`rounded-full flex items-center ml-4 mr-4 ${
-                    isSelected
-                      ? isAnswerChecked
-                        ? isCorrectOption
-                          ? "bg-[#C2E6B1]"
-                          : "bg-red-100"
-                        : "bg-[#3373b5]"
-                      : "bg-white"
-                  }`}
+                  className={`rounded-full flex items-center ml-4 mr-4 ${isSelected
+                    ? isAnswerChecked
+                      ? isCorrectOption
+                        ? "bg-[#C2E6B1]"
+                        : "bg-red-100"
+                      : "bg-[#3373b5]"
+                    : "bg-white"
+                    }`}
                 >
                   <RadioGroupItem
-                    value={option.id.toString()}
-                    id={`option-${option.id}`}
-                    className={`h-5 w-5 ${
-                      isSelected
-                        ? isAnswerChecked
-                          ? isCorrectOption
-                            ? "border-green-500 ring-2 text-green-700 bg-green-500 ring-green-200"
-                            : "border-red-500 ring-2 text-red-700 ring-red-200"
-                          : "border-[#3373b5] text-[#3373b5]"
-                        : "border-gray-300"
-                    }`}
+                    value={option.option_index.toString()}
+                    id={`option-${option.option_index}`}
+                    className={`h-5 w-5 ${isSelected
+                      ? isAnswerChecked
+                        ? isCorrectOption
+                          ? "border-green-500 ring-2 text-green-700 bg-green-500 ring-green-200"
+                          : "border-red-500 ring-2 text-red-700 ring-red-200"
+                        : "border-[#3373b5] text-[#3373b5]"
+                      : "border-gray-300"
+                      }`}
                   />
                 </div>
                 <Label
-                  htmlFor={`option-${option.id}`}
-                  className={`flex-grow cursor-pointer h-16 text-md flex items-center transition-colors ${
-                    isSelected
-                      ? isAnswerChecked
-                        ? isCorrectOption
-                          ? "text-green-600 font-medium"
-                          : "text-red-600 font-medium"
-                        : "text-[#3373b5] font-medium"
-                      : "hover:text-[#3373b5]"
-                  }`}
+                  htmlFor={`option-${option.option_index}`}
+                  className={`flex-grow cursor-pointer h-16 text-md flex items-center transition-colors ${isSelected
+                    ? isAnswerChecked
+                      ? isCorrectOption
+                        ? "text-green-600 font-medium"
+                        : "text-red-600 font-medium"
+                      : "text-[#3373b5] font-medium"
+                    : "hover:text-[#3373b5]"
+                    }`}
                 >
                   <MathRenderer content={option.option_text} />
                 </Label>
@@ -190,15 +225,14 @@ export function QuestionPanel({
                   onTextAnswerChange(e.target.value)
                   //textAnswer = e.target.value
                 }}
-                className={`w-full min-h-[120px] text-lg px-4 py-3 border-2 rounded-lg transition-all duration-200 resize-y ${
-                  isAnswerChecked
-                    ? isCorrect
-                      ? "border-green-500 bg-green-50"
-                      : "border-red-500 bg-red-50"
-                    : textAnswer
-                      ? "border-[#3373b5] bg-white"
-                      : "border-gray-200 bg-[#F1F1F1] focus:border-[#3373b5] focus:bg-white"
-                }`}
+                className={`w-full min-h-[120px] text-lg px-4 py-3 border-2 rounded-lg transition-all duration-200 resize-y ${isAnswerChecked
+                  ? isCorrect
+                    ? "border-green-500 bg-green-50"
+                    : "border-red-500 bg-red-50"
+                  : textAnswer
+                    ? "border-[#3373b5] bg-white"
+                    : "border-gray-200 bg-[#F1F1F1] focus:border-[#3373b5] focus:bg-white"
+                  }`}
                 disabled={isAnswerChecked}
               />
 
@@ -232,6 +266,24 @@ export function QuestionPanel({
     if (isFillBlank) return "Short Answer"
     return "Question"
   }
+
+  // Helper: determine correctness for a question
+  const getQuestionStatus = (num: number) => {
+    if (!allSelectedOptions || allSelectedOptions[num] === undefined) return null;
+    const q = question && question.quiz_id ? undefined : undefined; // placeholder for type
+    // Try to get the question object from the questions array if available
+    // We'll assume the parent passes a questions array or you can get it from context if needed
+    // For now, rely on question if it's the current one
+    if (currentQuestionId === num && question) {
+      if (question.question_type === "mcq") {
+        const opt = question.options.find((o: any) => o.option_index === allSelectedOptions[num]);
+        if (opt) return opt.is_correct ? "correct" : "wrong";
+      }
+      // For short answer, you could add logic if correctness is tracked
+    }
+    // Otherwise, just show answered
+    return "answered";
+  };
 
   return (
     <div>
@@ -281,20 +333,70 @@ export function QuestionPanel({
 
       <div className="bg-white p-6">
         {/* Question pagination */}
-        <div className="bg-white border-b border-t mb-4 border-gray-200 px-4 pt-2 flex overflow-x-auto">
-          {paginationNumbers.map((num) => (
-            <button
-              key={num}
-              onClick={() => onQuestionSelect(num)}
-              className={`min-w-[36px] h-9 flex items-center justify-center mx-1 transition-colors ${
-                num === currentQuestionId
-                  ? "text-[#3373b5] font-bold border-b border-[#3373b5]"
-                  : "text-gray-500 hover:text-[#3373b5]"
-              }`}
-            >
-              {num}
-            </button>
-          ))}
+        <div className="bg-white border-b border-t mb-6 border-gray-200 px-6 py-1">
+
+
+          <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
+            {paginationNumbers.map((num) => {
+              const status = getQuestionStatus(num);
+              const isCurrent = num === currentQuestionId;
+              const isAnswered = allSelectedOptions[num] !== undefined;
+
+              let btnClass = "relative min-w-[44px] h-11 flex items-center justify-center transition-all duration-200 rounded-lg border-2 font-medium text-sm ";
+              let icon = null;
+              let tooltip = "";
+
+              if (isCurrent) {
+                btnClass += "text-white bg-[#3373b5] border-[#3373b5] shadow-lg transform scale-105 ";
+                tooltip = "Current question";
+              } else if (isAnswered && isAnswerChecked) {
+                // Only show correct/wrong status after submit
+                if (status === "correct") {
+                  btnClass += "text-green-800 border-green-500 bg-green-100 hover:bg-green-200 ";
+                  icon = <CheckCircle className="w-4 h-4 absolute -top-1 -right-1 text-green-600" />;
+                  tooltip = "Correct answer";
+                } else if (status === "wrong") {
+                  btnClass += "text-red-800 border-red-500 bg-red-100 hover:bg-red-200 ";
+                  icon = <XCircle className="w-4 h-4 absolute -top-1 -right-1 text-red-600" />;
+                  tooltip = "Incorrect answer";
+                } else {
+                  btnClass += "text-blue-800 border-blue-400 bg-blue-100 hover:bg-blue-200 ";
+                  icon = <Circle className="w-3 h-3 absolute -top-1 -right-1 text-blue-600" />;
+                  tooltip = "Answered";
+                }
+              } else if (isAnswered) {
+                // Show answered status before submit
+                btnClass += "text-blue-800 border-blue-400 bg-blue-100 hover:bg-blue-200 ";
+                icon = <Circle className="w-3 h-3 absolute -top-1 -right-1 text-blue-600" />;
+                tooltip = "Answered";
+              } else {
+                btnClass += "text-gray-600 border-gray-300 bg-white hover:bg-gray-50 hover:border-[#3373b5] hover:text-[#3373b5] ";
+                tooltip = "Unanswered";
+              }
+
+              return (
+                <div key={num} className="relative group">
+                  <button
+                    onClick={() => onQuestionSelect(num)}
+                    className={btnClass}
+                    aria-label={`Go to question ${num}${tooltip ? ' - ' + tooltip : ''}`}
+                    title={tooltip}
+                  >
+                    {num}
+                  </button>
+                  {icon}
+
+                  {/* Hover tooltip */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                    {tooltip}
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+
         </div>
 
         {/* Question navigation header */}
@@ -334,9 +436,8 @@ export function QuestionPanel({
         {isAnswerChecked && (
           <div className="flex flex-col items-center mt-6">
             <div
-              className={`p-4 w-[300px] text-center inline-block rounded-md transition-all duration-300 ${
-                isCorrect ? "bg-[#C2E6B1] text-black" : "bg-[#E87E7B] text-white"
-              }`}
+              className={`p-4 w-[300px] text-center inline-block rounded-md transition-all duration-300 ${isCorrect ? "bg-[#C2E6B1] text-black" : "bg-[#E87E7B] text-white"
+                }`}
             >
               {isCorrect ? (
                 <div className="flex items-center justify-center">
@@ -363,27 +464,53 @@ export function QuestionPanel({
             Skip
           </Button>
 
-          {!isAnswerChecked && !isCorrect && (
+          {!isAnswerChecked && (
             <Button
               className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 disabled:opacity-50"
               onClick={onSubmit}
-              disabled={!canSubmit()}
+              disabled={!canSubmit() || isSubmitting}
             >
-              SUBMIT
+              {isSubmitting ? (
+                <span className="flex items-center"><Loader2 className="animate-spin mr-2 h-4 w-4" />Submitting...</span>
+              ) : (
+                "SUBMIT"
+              )}
             </Button>
           )}
 
-          {/* {quizStatus && (
+          {/* Only show Retake and Final Submit when all questions are answered */}
+          {enableRetakeAndFinalSubmit && onRetakeQuiz &&  (
             <Button
               className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 flex items-center gap-2"
-              onClick={() => setShowRetakeDialog(true)}
+              onClick={onRetakeQuiz}
             >
               <RotateCcw className="h-4 w-4" />
               Re Take
             </Button>
-          )} */}
+          )}
+
+          {enableRetakeAndFinalSubmit && onFinalSubmit && !isReviewMode && (
+            <Button
+              className="bg-green-600 hover:bg-green-700 rounded-full px-6 ml-4 text-white"
+              onClick={onFinalSubmit}
+            >
+              Final Submit
+            </Button>
+          )}
+           {/* Show review-specific actions if in review mode */}
+          {isReviewMode && (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="border-blue-300 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md"
+                onClick={() => window.history.back()}
+              >
+                Back to Quizzes
+              </Button>
+            </div>
+          )}
         </div>
-        
+
       </div>
     </div>
   )

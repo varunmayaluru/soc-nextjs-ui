@@ -1,107 +1,120 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 interface MathRendererProps {
-    content: string
-    className?: string
+  content: string
+  className?: string
+  inline?: boolean
+  displayMode?: boolean
+ 
 }
 
-export function MathRenderer({ content, className = "" }: MathRendererProps) {
-    const containerRef = useRef<HTMLDivElement>(null)
+export function MathRenderer({
+  content,
+  className = "",
+  inline = false,
+  displayMode = false,
+  
+}: MathRendererProps) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [isReady, setIsReady] = useState(false)
 
-    useEffect(() => {
-        if (!containerRef.current) return
-
-        // Load KaTeX CSS
-        if (!document.getElementById("katex-css")) {
-            const link = document.createElement("link")
-            link.id = "katex-css"
-            link.rel = "stylesheet"
-            link.href = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
-            document.head.appendChild(link)
-        }
-
-        // Load KaTeX scripts
-        const loadKaTeX = async () => {
-            if (!(window as any).katex) {
-                await new Promise((resolve) => {
-                    const script = document.createElement("script")
-                    script.src = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"
-                    script.onload = resolve
-                    document.head.appendChild(script)
-                })
-            }
-
-            if (!(window as any).renderMathInElement) {
-                await new Promise((resolve) => {
-                    const script = document.createElement("script")
-                    script.src = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
-                    script.onload = resolve
-                    document.head.appendChild(script)
-                })
-            }
-
-            // Render math in the container
-            if ((window as any).renderMathInElement && containerRef.current) {
-                ; (window as any).renderMathInElement(containerRef.current, {
-                    delimiters: [
-                        { left: "$$", right: "$$", display: true },
-                        { left: "$", right: "$", display: false },
-                        { left: "$$", right: "$$", display: false },
-                        { left: "\\[", right: "\\]", display: true },
-                    ],
-                    throwOnError: false,
-                })
-            }
-        }
-
-        loadKaTeX()
-    }, [content])
-
-    // Parse content to handle common math notation
-    const parseContent = (text: string) => {
-        // Convert common mathematical expressions to LaTeX
-        let parsed = text
-
-        // Square root: sqrt(x) or √x -> $\sqrt{x}$
-        parsed = parsed.replace(/sqrt$$([^)]+)$$/g, "$\\sqrt{$1}$")
-        parsed = parsed.replace(/√([a-zA-Z0-9]+)/g, "$\\sqrt{$1}$")
-
-        // Powers: x^2, x^n -> $x^{2}$, $x^{n}$
-        parsed = parsed.replace(/([a-zA-Z0-9]+)\^([a-zA-Z0-9]+)/g, "$$$1^{$2}$$")
-
-        // Fractions: 1/2, a/b -> $\frac{1}{2}$, $\frac{a}{b}$
-        parsed = parsed.replace(/([a-zA-Z0-9]+)\/([a-zA-Z0-9]+)/g, "$\\frac{$1}{$2}$")
-
-        // Common symbols
-        parsed = parsed.replace(/\bpi\b/g, "$\\pi$")
-        parsed = parsed.replace(/\binfinity\b/g, "$\\infty$")
-        parsed = parsed.replace(/\balpha\b/g, "$\\alpha$")
-        parsed = parsed.replace(/\bbeta\b/g, "$\\beta$")
-        parsed = parsed.replace(/\bgamma\b/g, "$\\gamma$")
-        parsed = parsed.replace(/\bdelta\b/g, "$\\delta$")
-        parsed = parsed.replace(/\btheta\b/g, "$\\theta$")
-        parsed = parsed.replace(/\blambda\b/g, "$\\lambda$")
-        parsed = parsed.replace(/\bsigma\b/g, "$\\sigma$")
-
-        // Summation: sum(i=1 to n) -> $\sum_{i=1}^{n}$
-        parsed = parsed.replace(/sum$$([^=]+)=([^to]+)to([^)]+)$$/g, "$\\sum_{$1=$2}^{$3}$")
-
-        // Integral: int(a to b) -> $\int_{a}^{b}$
-        parsed = parsed.replace(/int$$([^to]+)to([^)]+)$$/g, "$\\int_{$1}^{$2}$")
-
-        // Limit: lim(x->0) -> $\lim_{x \to 0}$
-        parsed = parsed.replace(/lim$$([^->]+)->([^)]+)$$/g, "$\\lim_{$1 \\to $2}$")
-
-        return parsed
+  useEffect(() => {
+    // Load KaTeX CSS
+    const loadCSS = () => {
+      if (!document.getElementById("katex-css")) {
+        const link = document.createElement("link")
+        link.id = "katex-css"
+        link.rel = "stylesheet"
+        link.href = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+        document.head.appendChild(link)
+      }
     }
 
-    const processedContent = parseContent(content)
+    // Load KaTeX JS
+    const loadKaTeX = async () => {
+      if (!(window as any).katex) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script")
+          script.src = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"
+          script.onload = resolve
+          script.onerror = reject
+          document.head.appendChild(script)
+        })
+      }
+    }
 
-    return (
-        <div ref={containerRef} className={className}>
-            {processedContent}
-        </div>
-    )
+    // Load auto-render extension
+    const loadAutoRender = async () => {
+      if (!(window as any).renderMathInElement) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script")
+          script.src = "https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+          script.onload = resolve
+          script.onerror = reject
+          document.head.appendChild(script)
+        })
+      }
+    }
+
+    const init = async () => {
+      try {
+        loadCSS()
+        await loadKaTeX()
+        await loadAutoRender()
+        setIsReady(true)
+      } catch (err) {
+        console.error("KaTeX loading error:", err)
+      }
+    }
+
+    init()
+  }, [])
+
+  useEffect(() => {
+    if (!isReady || !containerRef.current) return
+
+    try {
+      const renderMathInElement = (window as any).renderMathInElement
+
+      if (!containerRef.current) return
+
+      // Set the content directly
+      containerRef.current.innerHTML = content
+
+      // Use auto-render for all content
+      if (renderMathInElement) {
+        renderMathInElement(containerRef.current, {
+          delimiters: [
+            { left: "$$", right: "$$", display: true },
+            { left: "$", right: "$", display: false },
+            { left: "\\[", right: "\\]", display: true },
+            { left: "$$", right: "$$", display: false },
+          ],
+          throwOnError: false,
+          errorColor: "#cc0000",
+          strict: false,
+          trust: false,
+        })
+      }
+
+    } catch (err) {
+      console.error("Math rendering error:", err)
+      if (containerRef.current) {
+        containerRef.current.textContent = content
+      }
+    }
+  }, [content, isReady])
+
+
+  return (
+    <div
+      ref={containerRef}
+      className={`${inline ? "inline-block" : "block"} ${displayMode ? "text-center" : ""} ${className}`}
+      style={{ minHeight: isReady ? "auto" : "20px" }}
+    >
+      {!isReady && <span className="text-gray-500">Loading...</span>}
+    </div>
+  )
 }
