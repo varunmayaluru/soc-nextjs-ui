@@ -94,39 +94,79 @@ export default function TopicsPage() {
   const organizationId = localStorage.getItem("organizationId")
 
   useEffect(() => {
-    const fetchTopics = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
+  const fetchTopics = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
 
-        if (!subjectId || !organizationId) {
-          throw new Error("Missing required parameters")
-        }
-
-        const response = await api.get<Topic[]>(
-          `topics/topics/by-subject/${subjectId}?organization_id=${organizationId}`,
-        )
-
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status}`)
-        }
-
-        if (!response.data) {
-          throw new Error("No data received from API")
-        }
-
-        const formattedTopics = response.data.map(formatTopic)
-        setTopicProgress(formattedTopics)
-      } catch (error) {
-        console.error("Error fetching topics:", error)
-        setError(error instanceof Error ? error.message : "Failed to load topics")
-      } finally {
-        setIsLoading(false)
+      if (!subjectId || !organizationId || !userId) {
+        throw new Error("Missing required parameters")
       }
-    }
 
-    fetchTopics()
-  }, [subjectId, organizationId])
+      // Step 1: Get topics
+      const response = await api.get<Topic[]>(
+        `topics/topics/by-subject/${subjectId}?organization_id=${organizationId}`,
+      )
+      if (!response.ok || !response.data) {
+        throw new Error(`Failed to fetch topics: ${response.status}`)
+      }
+
+      const baseTopics = response.data.map(formatTopic)
+
+      // Step 2: Get topic-level progress
+      const progressResponse = await api.get<
+        {
+          topic_id: string
+          topic_name: string
+          total_quizzes: number
+          completed_quizzes: number
+          completion_ratio: number
+        }[]
+      >(
+        `topic-progress/subjects/topic-progress?user_id=${userId}&subject_id=${subjectId}`
+      )
+
+      if (!progressResponse.ok) {
+        throw new Error(`Failed to fetch topic progress: ${progressResponse.status}`)
+      }
+
+      const progressMap = new Map(
+        progressResponse.data.map((p) => [
+          p.topic_id,
+          {
+            completed: p.completed_quizzes,
+            total: p.total_quizzes,
+            ratio: p.completion_ratio,
+          },
+        ])
+      )
+
+      // Step 3: Merge topic progress into base topic list
+      const enrichedTopics = baseTopics.map((topic) => {
+        const progress = progressMap.get(topic.id.toString()) // Ensure we use string keys for consistency
+        if (progress) {
+          return {
+            ...topic,
+            completedLessons: progress.completed,
+            totalLessons: progress.total,
+            progress: Math.round(progress.ratio * 100),
+          }
+        }
+        return topic
+      })
+
+      setTopicProgress(enrichedTopics)
+    } catch (error) {
+      console.error("Error fetching topics:", error)
+      setError(error instanceof Error ? error.message : "Failed to load topics")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  fetchTopics()
+}, [subjectId, organizationId])
+
 
   const renderLoadingSkeletons = () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

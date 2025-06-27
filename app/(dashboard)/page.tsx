@@ -89,49 +89,79 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
 
-        if (!api) {
-          throw new Error("API client not available")
+      if (!api) throw new Error("API client not available")
+
+      // Fetch user info
+      const userResponse = await api.get<User>("users/me")
+      if (!userResponse.ok) throw new Error(`API error: ${userResponse.status}`)
+
+      const user = userResponse.data
+      localStorage.setItem("organizationId", user.organization_id.toString())
+      localStorage.setItem("userId", user.user_id.toString())
+
+      // Fetch subjects
+      const subjectsResponse = await api.get<Subject[]>(
+        `subjects/subjects?&organization_id=${user.organization_id}`,
+      )
+      if (!subjectsResponse.ok) throw new Error(`API error: ${subjectsResponse.status}`)
+
+      const baseSubjects = subjectsResponse.data.map(formatSubject)
+
+      // ✅ Fetch progress
+      const progressResponse = await api.get<
+        {
+          subject_id: string
+          subject_name: string
+          total_quizzes: number
+          completed_quizzes: number
+          completion_ratio: number
+        }[]
+      >(`subject-progress/subjects/progress?user_id=${user.user_id}`)
+
+      if (!progressResponse.ok) throw new Error(`API error: ${progressResponse.status}`)
+
+      const progressMap = new Map(
+        progressResponse.data.map((p) => [
+          p.subject_id,
+          {
+            completed: p.completed_quizzes,
+            total: p.total_quizzes,
+            ratio: p.completion_ratio,
+          },
+        ]),
+      )
+
+      // ✅ Merge subject progress with base subject list
+      const enrichedSubjects = baseSubjects.map((subject) => {
+        const progress = progressMap.get(subject.id.toString())
+        if (progress) {
+          return {
+            ...subject,
+            completedLessons: progress.completed,
+            totalLessons: progress.total,
+            progress: Math.round(progress.ratio * 100),
+          }
         }
+        return subject
+      })
 
-        // Fetch user info
-        const userResponse = await api.get<User>("users/me")
-        if (!userResponse.ok) {
-          throw new Error(`API error: ${userResponse.status}`)
-        }
-
-        const user = userResponse.data
-        console.log("User data:", user)
-
-        // Store user data in localStorage
-        localStorage.setItem("organizationId", user.organization_id.toString())
-        localStorage.setItem("userId", user.user_id.toString())
-
-        // Fetch subjects
-        const subjectsResponse = await api.get<Subject[]>(
-          `subjects/subjects?&organization_id=${user.organization_id}`,
-        )
-        if (!subjectsResponse.ok) {
-          throw new Error(`API error: ${subjectsResponse.status}`)
-        }
-
-        const formattedSubjects = subjectsResponse.data.map(formatSubject)
-        setSubjectProgress(formattedSubjects)
-        setError(null)
-      } catch (err) {
-        console.error("Error in dashboard data fetch:", err)
-        setError(err instanceof Error ? err.message : "Failed to load dashboard data")
-      } finally {
-        setIsLoading(false)
-      }
+      setSubjectProgress(enrichedSubjects)
+      setError(null)
+    } catch (err) {
+      console.error("Error in dashboard data fetch:", err)
+      setError(err instanceof Error ? err.message : "Failed to load dashboard data")
+    } finally {
+      setIsLoading(false)
     }
+  }
 
-    fetchDashboardData()
-  }, [])
+  fetchDashboardData()
+}, [])
 
   const renderLoadingSkeletons = () => (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -238,7 +268,7 @@ export default function Dashboard() {
         <div className="flex justify-between mb-2">
           <span className="text-gray-600">{subject.progress}%</span>
           <span className="text-gray-400 text-sm">
-            {subject.completedLessons}/{subject.totalLessons} Lessons
+            {subject.completedLessons}/{subject.totalLessons} Quizzes
           </span>
         </div>
         <div className="w-full bg-gray-200 rounded-full h-2">
