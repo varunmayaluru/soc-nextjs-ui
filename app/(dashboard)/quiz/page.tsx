@@ -617,14 +617,7 @@ export default function QuizPage() {
       if (result.ok && result.data) {
         setFinalSubmissionData(result.data)
         setQuizCompleted(true)
-        const deleteQuizProgress = await api.delete<any>(
-          `quiz-progress/quiz-progress/?quiz_id=${quizId}&subject_id=${subjectId}&topic_id=${topicId}&user_id=${userId}`,
-        )
-        if (deleteQuizProgress.ok) {
-          console.log("Quiz progress deleted successfully")
-        } else {
-          console.error("Failed to delete quiz progress")
-        }
+     
       } else {
         console.error("Quiz final submission failed")
       }
