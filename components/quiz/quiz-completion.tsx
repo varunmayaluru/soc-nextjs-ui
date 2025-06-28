@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { CheckCircle, XCircle, HelpCircle, SkipForward, RotateCcw, Trophy, Sparkles } from "lucide-react"
+import { CheckCircle, XCircle, Trophy, Sparkles } from 'lucide-react'
 import { useRouter } from "next/navigation"
 
 interface QuizCompletionProps {
@@ -17,6 +17,7 @@ interface QuizCompletionProps {
   answers?: { [key: string]: { selected: string; is_correct: boolean } }
   questions?: any[]
   onRetake?: () => void
+  onBackToQuiz?: () => void
   quizzesListUrl?: string
 }
 
@@ -31,31 +32,16 @@ export default function QuizCompletion({
   answers = {},
   questions = [],
   onRetake,
+  onBackToQuiz,
   quizzesListUrl = "/quizzes",
 }: QuizCompletionProps) {
   const [animateScore, setAnimateScore] = useState(false)
   const [showConfetti, setShowConfetti] = useState(true)
   const router = useRouter()
 
-  // Calculate breakdown
-  let correctAnswers = 0, incorrectAnswers = 0, noAnswers = 0, skippedAnswers = 0;
-  if (questions.length > 0) {
-    questions.forEach((q) => {
-      const ans = answers[q.question_number];
-      if (ans === undefined) {
-        noAnswers++;
-      } else if (q.question_type === "mcq") {
-        const opt = q.options.find((o: any) => o.option_index === ans);
-        if (opt && opt.is_correct) correctAnswers++;
-        else incorrectAnswers++;
-      } else if (q.question_type === "sa") {
-        // For short answer, treat as correct if not empty (customize as needed)
-        if (ans) correctAnswers++;
-        else incorrectAnswers++;
-      }
-    });
-    skippedAnswers = totalQuestions - (correctAnswers + incorrectAnswers + noAnswers);
-  }
+  // Calculate breakdown - use score directly for accuracy
+  const correctAnswers = score;
+  const incorrectAnswers = totalQuestions - score;
 
   const percentage = Math.round((score / totalQuestions) * 100)
   const grade = getGrade(percentage)
@@ -83,6 +69,14 @@ export default function QuizCompletion({
       onRetake()
     } else {
       window.location.reload()
+    }
+  }
+
+  const handleBackToQuiz = () => {
+    if (onBackToQuiz) {
+      onBackToQuiz()
+    } else {
+      router.back()
     }
   }
 
@@ -152,7 +146,7 @@ export default function QuizCompletion({
         <Card>
           <CardContent className="p-6">
             <h2 className="text-xl font-bold text-gray-800 mb-4">Performance Breakdown</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="bg-gray-50 rounded-lg p-4 flex items-center">
                 <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mr-3">
                   <CheckCircle className="w-5 h-5 text-green-500" />
@@ -170,26 +164,6 @@ export default function QuizCompletion({
                 <div>
                   <div className="text-xs text-gray-500">Incorrect</div>
                   <div className="text-xl font-bold text-red-500">{incorrectAnswers}</div>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-4 flex items-center">
-                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
-                  <HelpCircle className="w-5 h-5 text-gray-500" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500">No Answer</div>
-                  <div className="text-xl font-bold text-gray-500">{noAnswers}</div>
-                </div>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-4 flex items-center">
-                <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center mr-3">
-                  <SkipForward className="w-5 h-5 text-yellow-500" />
-                </div>
-                <div>
-                  <div className="text-xs text-gray-500">Skipped</div>
-                  <div className="text-xl font-bold text-yellow-500">{skippedAnswers}</div>
                 </div>
               </div>
             </div>
@@ -236,15 +210,15 @@ export default function QuizCompletion({
         </Card> */}
 
         {/* Action Buttons */}
-        {/* <div className="flex justify-center space-x-4 mt-8 mb-8">
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 h-auto flex items-center" onClick={handleSubmit}>
-            Submit
+        <div className="flex justify-center mt-8 mb-8">
+          <Button 
+            variant="outline" 
+            className="px-8 py-2 h-auto flex items-center" 
+            onClick={handleBackToQuiz}
+          >
+            Back to Quiz
           </Button>
-          <Button variant="outline" className="px-8 py-2 h-auto flex items-center" onClick={handleRetake}>
-            <RotateCcw className="w-4 h-4 mr-2" />
-            Retake Quiz
-          </Button>
-        </div> */}
+        </div>
       </div>
     </div>
   )
