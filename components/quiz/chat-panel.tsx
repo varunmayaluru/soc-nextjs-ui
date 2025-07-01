@@ -134,25 +134,24 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
     }
 
     // Ensure we scroll when user sends message
-    let latex_string : string = "";
-    try
-    {
+    let latex_string: string = "";
+    try {
 
-    const Payload={ 
-            input_statement: newMessage,
-             model: "gpt-4o"
-    }
-       const Response =
-        await secureApi.post<any>(
-                "/latex/latex/convert",
-                Payload
-              );
-      if(Response.ok && Response.data) {
-        const latex = Response.data.latex_string || "";
-        latex_string= latex;
+      const Payload = {
+        input_statement: newMessage,
+        model: "gpt-4o"
       }
-      
-    }catch (error) {
+      const Response =
+        await secureApi.post<any>(
+          "/latex/latex/convert",
+          Payload
+        );
+      if (Response.ok && Response.data) {
+        const latex = Response.data.latex_string || "";
+        latex_string = latex;
+      }
+
+    } catch (error) {
       console.error("Error checking if user is near bottom:", error)
     }
     setShouldAutoScroll(true)
@@ -174,7 +173,7 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
   return (
     <div
       className="bg-white border-l border-gray-200 flex flex-col overflow-hidden"
-      style={{ height: "calc(100vh - 224px)" }}
+      style={{ minHeight: "calc(100vh - 224px)" }}
     >
       {/* Chat header */}
       <div className="p-3 border-b border-gray-200 bg-gradient-to-r from-blue-100 to-blue-200 text-gray-800">
