@@ -173,7 +173,7 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
   return (
     <div
       className="bg-white border-l border-gray-200 flex flex-col overflow-hidden"
-      style={{ minHeight: "calc(100vh - 224px)" }}
+      style={{ maxHeight: "calc(100vh - 224px)" }}
     >
       {/* Chat header */}
       <div className="p-3 border-b border-gray-200 bg-gradient-to-r from-blue-100 to-blue-200 text-gray-800">
