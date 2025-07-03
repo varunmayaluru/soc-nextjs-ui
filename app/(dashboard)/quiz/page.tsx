@@ -11,6 +11,8 @@ import { useQuizChat } from "@/hooks/use-quiz-chat"
 import { secureApi } from "@/lib/secure-api-client"
 import { QuestionPanel } from "@/components/quiz/question-panel"
 import { ChatPanel } from "@/components/quiz/chat-panel"
+import { QuestionPanelSkeleton } from "@/components/quiz/QuestionPanelSkeleton"
+import { ChatPanelSkeleton } from "@/components/quiz/ChatPanelSkeleton"
 
 // Define the Question interface
 interface Question {
@@ -143,7 +145,8 @@ interface answers {
 
 export default function QuizPage() {
   const [quiz, setQuiz] = useState<Quiz | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isQuestionsLoading, setIsQuestionsLoading] = useState(true)
+  const [isProgressLoading, setIsProgressLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [attemptId, setAttemptId] = useState<number | null>(null)
   const [currentquestionId, setCurrentquestionId] = useState<number | null>(1)
@@ -218,7 +221,7 @@ export default function QuizPage() {
     // Fetch all questions for the quiz on mount
     const fetchAllQuestions = async () => {
       try {
-        setIsLoading(true)
+        setIsQuestionsLoading(true)
         setError(null)
         const response = await api.get<any[]>(
           `questions/questions/quiz-questions?quiz_id=${quizId}&organization_id=${organizationId}`,
@@ -235,7 +238,7 @@ export default function QuizPage() {
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load questions")
       } finally {
-        setIsLoading(false)
+        setIsQuestionsLoading(false)
       }
     }
     fetchAllQuestions()
@@ -243,7 +246,7 @@ export default function QuizPage() {
 
   useEffect(() => {
     const fetchQuizProgress = async () => {
-      setIsLoading(true)
+      setIsProgressLoading(true)
       setError(null)
       try {
         const result = await api.get<SingleQuizProgress>(
@@ -302,7 +305,7 @@ export default function QuizPage() {
       } catch (err) {
         setError("Failed to load quizzes")
       } finally {
-        setIsLoading(false)
+        setIsProgressLoading(false)
       }
     }
     if (userId) fetchQuizProgress()
@@ -617,7 +620,7 @@ export default function QuizPage() {
       if (result.ok && result.data) {
         setFinalSubmissionData(result.data)
         setQuizCompleted(true)
-     
+
       } else {
         console.error("Quiz final submission failed")
       }
@@ -652,35 +655,12 @@ export default function QuizPage() {
     setIsAnswerChecked(false)
   }
 
-  if (isLoading) {
+  if (isQuestionsLoading || isProgressLoading) {
     return (
       <div className="mx-auto bg-white " style={{ height: "calc(100vh - 200px)" }}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-0 h-full">
-          <div className="bg-white p-6">
-            <div className="space-y-4">
-              <Skeleton className="h-8 w-3/4 bg-gray-200" />
-              <Skeleton className="h-4 w-1/4 bg-gray-200" />
-              <Skeleton className="h-24 w-full bg-gray-200" />
-              <div className="space-y-2 mt-4">
-                {Array(4)
-                  .fill(0)
-                  .map((_, i) => (
-                    <Skeleton key={i} className="h-12 w-full" />
-                  ))}
-              </div>
-              <div className="flex justify-between mt-6">
-                <Skeleton className="h-10 w-24" />
-                <Skeleton className="h-10 w-24" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-white border-l border-gray-200 p-6">
-            <div className="space-y-4">
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-              <Skeleton className="h-4 w-2/3" />
-            </div>
-          </div>
+          <QuestionPanelSkeleton />
+          <ChatPanelSkeleton />
         </div>
       </div>
     )
@@ -721,7 +701,7 @@ export default function QuizPage() {
       {!quizCompleted && (
         <div className="mx-auto bg-white">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
-            {/* Use QuestionPanel for question UI */}
+            {/* Left: QuestionPanel */}
             <QuestionPanel
               isTyping={isTyping}
               topicSlug={topicSlug || ""}
@@ -753,14 +733,14 @@ export default function QuizPage() {
               onRetakeQuiz={handleRetakeQuiz}
               onFinalSubmit={handleFinalSubmit}
               isSubmitting={isSubmitting}
-              isLoading={isLoading}
+              isLoading={isQuestionsLoading || isProgressLoading}
               allSelectedOptions={allSelectedOptions}
               attemptNumber={attemptId}
               answeredQuestionsCount={answeredQuestionsCount}
               totalQuestionsCount={totalQuestionsCount}
               enableRetakeAndFinalSubmit={answeredQuestionsCount === totalQuestionsCount && totalQuestionsCount > 0}
             />
-            {/* Use ChatPanel for chat UI */}
+            {/* Right: ChatPanel */}
             <ChatPanel
               messages={messages}
               isTyping={isTyping}

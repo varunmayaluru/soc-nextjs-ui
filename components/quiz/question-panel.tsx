@@ -301,14 +301,14 @@ export function QuestionPanel({
     } else if (isFillBlank) {
       // Render Fill in the Blank Text Area with chat panel controls
       return (
-        <div className="px-4 py-4 flex justify-center">
+        <div className="px-2 py-2 flex justify-center">
           <div className="min-w-[600px] max-w-[750px] w-full">
-            <div className="mb-4 mt-16">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Fill in your answer below:</label>
+            <div className="mb-2 mt-4">
+              <label className="block text-xs font-medium text-gray-700 mb-1">Fill in your answer below:</label>
               {/* Controls and input merged row - now styled like chat panel */}
               <div
                 className={cn(
-                  "flex items-center bg-white rounded-full border transition-all duration-200",
+                  "flex items-center bg-white rounded-full border transition-all duration-200 gap-1",
                   isAnswerChecked && "pointer-events-none",
                   isListening && "ring-2 ring-violet-200 border-violet-300 shadow-lg",
                   isAnswerChecked && isCorrect && "border-green-500 bg-green-50",
@@ -317,7 +317,7 @@ export function QuestionPanel({
                 )}
               >
                 <button
-                  className="p-3 text-gray-400 hover:text-gray-600 disabled:opacity-50 transition-colors"
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 transition-colors"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isProcessingMath || isAnswerChecked}
                   title="Upload math image"
@@ -334,7 +334,7 @@ export function QuestionPanel({
                   disabled={isProcessingMath || isAnswerChecked}
                 />
                 <button
-                  className="p-3 text-gray-400 hover:text-gray-600 disabled:opacity-50 transition-colors"
+                  className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 transition-colors"
                   onClick={() => setShowDrawingCanvas(true)}
                   disabled={isAnswerChecked}
                   title="Draw math expression"
@@ -342,7 +342,7 @@ export function QuestionPanel({
                 >
                   <PencilIcon size={20} />
                 </button>
-                <div className="p-1">
+                <div className="p-0.5">
                   <SpeechToTextInput
                     onTranscriptChange={(transcript) => handleSpeechTranscript(transcript, true)}
                     placeholder="Speak your answer..."
@@ -370,7 +370,7 @@ export function QuestionPanel({
                     }
                   }}
                   className={cn(
-                    "flex-1 min-h-[40px] resize-none outline-none border-none focus:ring-0 py-3 px-3 text-sm transition-all duration-200 bg-transparent text-black placeholder-gray-400",
+                    "flex-1 min-h-[32px] resize-none outline-none border-none focus:ring-0 py-2 px-2 text-sm transition-all duration-200 bg-transparent text-black placeholder-gray-400",
                     isListening && "bg-violet-50 text-violet-700 placeholder-violet-400"
                   )}
                   disabled={isAnswerChecked}
@@ -378,8 +378,8 @@ export function QuestionPanel({
               </div>
               {/* Show correct answer after submission for fill in the blank */}
               {isAnswerChecked && question.correct_answer && (
-                <div className="mt-3 p-3 bg-gray-50 rounded border">
-                  <span className="text-sm font-medium text-gray-700">Correct Answer: </span>
+                <div className="mt-2 p-2 bg-gray-50 rounded border text-xs">
+                  <span className="text-xs font-medium text-gray-700">Correct Answer: </span>
                   <MathRenderer content={question.correct_answer} />
                 </div>
               )}
@@ -433,6 +433,7 @@ export function QuestionPanel({
 
   return (
     <div>
+      {/* Restore original breadcrumb/banner at the top */}
       <div className="flex items-center justify-between bg-[#1e74bb] text-white px-8 py-6 relative">
         <Breadcrumb>
           <BreadcrumbList>
@@ -469,198 +470,189 @@ export function QuestionPanel({
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
-
         <div>
           <span className="text-md font-semibold">
             [Quiz {currentQuestionId} of {totalQuestions} ]
           </span>
         </div>
       </div>
-
-      <div className="bg-white p-6">
-        {/* Question pagination */}
-        <div className="bg-white border-b border-t mb-6 border-gray-200 px-6 py-1">
-          <div className="flex flex-wrap gap-2 overflow-x-auto pb-2">
-            {paginationNumbers.map((num) => {
-              const status = getQuestionStatus(num)
-              const isCurrent = num === currentQuestionId
-              const isAnswered = allSelectedOptions[num] !== undefined
-
-              let btnClass =
-                "relative min-w-[44px] h-11 flex items-center justify-center transition-all duration-200 rounded-lg border-2 font-medium text-sm "
-              let icon = null
-              let tooltip = ""
-
-              if (isCurrent) {
-                btnClass += "text-white bg-[#3373b5] border-[#3373b5] shadow-lg transform scale-105 "
-                tooltip = "Current question"
-              } else if (isAnswered && isAnswerChecked) {
-                // Only show correct/wrong status after submit
-                if (status === "correct") {
-                  btnClass += "text-green-800 border-green-500 bg-green-100 hover:bg-green-200 "
-                  icon = <CheckCircle className="w-4 h-4 absolute -top-1 -right-1 text-green-600" />
-                  tooltip = "Correct answer"
-                } else if (status === "wrong") {
-                  btnClass += "text-red-800 border-red-500 bg-red-100 hover:bg-red-200 "
-                  icon = <XCircle className="w-4 h-4 absolute -top-1 -right-1 text-red-600" />
-                  tooltip = "Incorrect answer"
-                } else {
-                  btnClass += "text-blue-800 border-blue-400 bg-blue-100 hover:bg-blue-200 "
-                  icon = <Circle className="w-3 h-3 absolute -top-1 -right-1 text-blue-600" />
-                  tooltip = "Answered"
-                }
-              } else if (isAnswered) {
-                // Show answered status before submit
-                btnClass += "text-blue-800 border-blue-400 bg-blue-100 hover:bg-blue-200 "
-                icon = <Circle className="w-3 h-3 absolute -top-1 -right-1 text-blue-600" />
-                tooltip = "Answered"
-              } else {
-                btnClass +=
-                  "text-gray-600 border-gray-300 bg-white hover:bg-gray-50 hover:border-[#3373b5] hover:text-[#3373b5] "
-                tooltip = "Unanswered"
-              }
-
-              return (
-                <div key={num} className="relative group">
-                  <button
-                    onClick={() => onQuestionSelect(num)}
-                    className={btnClass}
-                    aria-label={`Go to question ${num}${tooltip ? " - " + tooltip : ""}`}
-                    title={tooltip}
-                  >
-                    {num}
-                  </button>
-                  {icon}
-
-                  {/* Hover tooltip */}
-                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                    {tooltip}
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Question navigation header */}
-        <div className="bg-[#F7F8FA] rounded-tl-2xl rounded-tr-2xl flex justify-between items-center mb-6 py-4 px-4">
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full bg-[#1E74BB] hover:bg-gray-400 disabled:bg-gray-400 border-none h-12 w-12 flex items-center justify-center"
-            onClick={() => onNavigate("prev")}
-            disabled={currentQuestionId === 1 || isTyping}
-          >
-            <ChevronLeft className="h-6 w-6 text-white" />
-          </Button>
-
-          <div className="text-center flex-1 px-4">
-            <h2 className="text-xl font-bold mb-2">
-              <MathRenderer content={`${currentQuestionId}. ${question.quiz_question_text}`} />
-            </h2>
-            <div className="text-sm text-gray-600">{getQuestionTypeLabel()}</div>
-          </div>
-
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full bg-[#1E74BB] hover:bg-[#1E74BB84] disabled:bg-gray-400 border-none h-12 w-12 flex items-center justify-center"
-            onClick={() => onNavigate("next")}
-            disabled={currentQuestionId === totalQuestions || isTyping}
-          >
-            <ChevronRight className="h-6 w-6 text-white" />
-          </Button>
-        </div>
-
-        {/* Dynamic Question Input */}
-        {renderQuestionInput()}
-
-        {/* Answer feedback */}
-        {isAnswerChecked && (
-          <div className="flex flex-col items-center mt-6">
-            <div
-              className={`p-4 w-[300px] text-center inline-block rounded-md transition-all duration-300 ${isCorrect ? "bg-[#C2E6B1] text-black" : "bg-[#E87E7B] text-white"
-                }`}
-            >
-              {isCorrect ? (
-                <div className="flex items-center justify-center">
-                  <ThumbsUp className="mr-4" />
-                  <div className="text-center">
-                    <span className="font-bold">Correct!</span> Great Job
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center">
-                  <ThumbsDown className="mr-4" />
-                  <div className="text-center">
-                    <span className="font-bold">Wrong!</span> Let's learn together
-                  </div>
-                </div>
-              )}
+      {/* Main compact panel below breadcrumb */}
+      <div className="flex flex-col min-h-[calc(100vh-224px)] bg-white">
+        <div className="flex-1 flex flex-col">
+          <div className="bg-white p-4 flex-1 flex flex-col overflow-y-auto">
+            {/* Question pagination */}
+            <div className="bg-white border-b border-t mb-4 border-gray-200 px-2 py-1">
+              <div className="flex flex-wrap gap-1 overflow-x-auto pb-1">
+                {paginationNumbers.map((num) => {
+                  const status = getQuestionStatus(num)
+                  const isCurrent = num === currentQuestionId
+                  const isAnswered = allSelectedOptions[num] !== undefined
+                  let btnClass =
+                    "relative min-w-[36px] h-8 flex items-center justify-center transition-all duration-200 rounded-lg border-2 font-medium text-xs "
+                  let icon = null
+                  let tooltip = ""
+                  if (isCurrent) {
+                    btnClass += "text-white bg-[#3373b5] border-[#3373b5] shadow-lg transform scale-105 "
+                    tooltip = "Current question"
+                  } else if (isAnswered && isAnswerChecked) {
+                    // Only show correct/wrong status after submit
+                    if (status === "correct") {
+                      btnClass += "text-green-800 border-green-500 bg-green-100 hover:bg-green-200 "
+                      icon = <CheckCircle className="w-4 h-4 absolute -top-1 -right-1 text-green-600" />
+                      tooltip = "Correct answer"
+                    } else if (status === "wrong") {
+                      btnClass += "text-red-800 border-red-500 bg-red-100 hover:bg-red-200 "
+                      icon = <XCircle className="w-4 h-4 absolute -top-1 -right-1 text-red-600" />
+                      tooltip = "Incorrect answer"
+                    } else {
+                      btnClass += "text-blue-800 border-blue-400 bg-blue-100 hover:bg-blue-200 "
+                      icon = <Circle className="w-3 h-3 absolute -top-1 -right-1 text-blue-600" />
+                      tooltip = "Answered"
+                    }
+                  } else if (isAnswered) {
+                    // Show answered status before submit
+                    btnClass += "text-blue-800 border-blue-400 bg-blue-100 hover:bg-blue-200 "
+                    icon = <Circle className="w-3 h-3 absolute -top-1 -right-1 text-blue-600" />
+                    tooltip = "Answered"
+                  } else {
+                    btnClass +=
+                      "text-gray-600 border-gray-300 bg-white hover:bg-gray-50 hover:border-[#3373b5] hover:text-[#3373b5] "
+                    tooltip = "Unanswered"
+                  }
+                  return (
+                    <div key={num} className="relative group">
+                      <button
+                        onClick={() => onQuestionSelect(num)}
+                        className={btnClass}
+                        aria-label={`Go to question ${num}${tooltip ? " - " + tooltip : ""}`}
+                        title={tooltip}
+                      >
+                        {num}
+                      </button>
+                      {icon}
+                      {/* Hover tooltip */}
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+                        {tooltip}
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* Action buttons */}
-        <div className="mt-8 bg-[#F7F8FA] p-4 rounded-bl-2xl rounded-br-2xl flex justify-between">
-          <Button
-            variant="outline"
-            className="border-gray-300 text-gray-600 bg-white hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={() => onNavigate("next")}
-            disabled={currentQuestionId === totalQuestions || isTyping}
-          >
-            Skip
-          </Button>
-
-          {!isAnswerChecked && (
-            <Button
-              className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 disabled:opacity-50"
-              onClick={onSubmit}
-              disabled={!canSubmit() || isSubmitting}
-            >
-              {isSubmitting ? (
-                <span className="flex items-center">
-                  <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                  Submitting...
-                </span>
-              ) : (
-                "SUBMIT"
-              )}
-            </Button>
-          )}
-
-          {/* Only show Retake and Final Submit when all questions are answered */}
-          {enableRetakeAndFinalSubmit && onRetakeQuiz && (
-            <Button
-              className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 flex items-center gap-2"
-              onClick={onRetakeQuiz}
-            >
-              <RotateCcw className="h-4 w-4" />
-              Re Take
-            </Button>
-          )}
-
-          {enableRetakeAndFinalSubmit && onFinalSubmit && !isReviewMode && (
-            <Button
-              className="bg-green-600 hover:bg-green-700 rounded-full px-6 ml-4 text-white"
-              onClick={onFinalSubmit}
-            >
-              Final Submit
-            </Button>
-          )}
-          {/* Show review-specific actions if in review mode */}
-          {isReviewMode && (
-            <div className="flex gap-2">
+            {/* Question navigation header */}
+            <div className="bg-[#F7F8FA] rounded-tl-2xl rounded-tr-2xl flex justify-between items-center mb-3 py-2 px-2">
               <Button
                 variant="outline"
-                className="border-blue-300 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md"
-                onClick={() => window.history.back()}
+                size="icon"
+                className="rounded-full bg-[#1E74BB] hover:bg-gray-400 disabled:bg-gray-400 border-none h-12 w-12 flex items-center justify-center"
+                onClick={() => onNavigate("prev")}
+                disabled={currentQuestionId === 1 || isTyping}
               >
-                Back to Quizzes
+                <ChevronLeft className="h-6 w-6 text-white" />
+              </Button>
+              <div className="text-center flex-1 px-2">
+                <h2 className="text-lg font-semibold mb-1">
+                  <MathRenderer content={`${currentQuestionId}. ${question.quiz_question_text}`} />
+                </h2>
+                <div className="text-xs text-gray-600">{getQuestionTypeLabel()}</div>
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full bg-[#1E74BB] hover:bg-[#1E74BB84] disabled:bg-gray-400 border-none h-12 w-12 flex items-center justify-center"
+                onClick={() => onNavigate("next")}
+                disabled={currentQuestionId === totalQuestions || isTyping}
+              >
+                <ChevronRight className="h-6 w-6 text-white" />
               </Button>
             </div>
-          )}
+            {/* Dynamic Question Input */}
+            <div className="mt-2 flex-1">{renderQuestionInput()}</div>
+            {/* Answer feedback */}
+            {isAnswerChecked && (
+              <div className="flex flex-col items-center mt-2">
+                <div
+                  className={`p-2 w-[220px] text-center inline-block rounded-md transition-all duration-300 text-sm ${isCorrect ? "bg-[#C2E6B1] text-black" : "bg-[#E87E7B] text-white"
+                    }`}
+                >
+                  {isCorrect ? (
+                    <div className="flex items-center justify-center">
+                      <ThumbsUp className="mr-4" />
+                      <div className="text-center">
+                        <span className="font-bold">Correct!</span> Great Job
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center">
+                      <ThumbsDown className="mr-4" />
+                      <div className="text-center">
+                        <span className="font-bold">Wrong!</span> Let's learn together
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          {/* Action buttons pinned to bottom */}
+          <div className="bg-[#F7F8FA] p-8 rounded-bl-2xl rounded-br-2xl flex justify-between border-t border-gray-200">
+            <Button
+              variant="outline"
+              className="border-gray-300 text-gray-600 bg-white hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => onNavigate("next")}
+              disabled={currentQuestionId === totalQuestions || isTyping}
+            >
+              Skip
+            </Button>
+            {/* Show SUBMIT for MCQ if not checked */}
+            {isMultipleChoice && !isAnswerChecked && (
+              <Button
+                className="ml-2 bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 disabled:opacity-50"
+                onClick={onSubmit}
+                disabled={!canSubmit() || isSubmitting}
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center">
+                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                    Submitting...
+                  </span>
+                ) : (
+                  "SUBMIT"
+                )}
+              </Button>
+            )}
+            {/* Only show Retake and Final Submit when all questions are answered */}
+            {enableRetakeAndFinalSubmit && onRetakeQuiz && (
+              <Button
+                className="bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 flex items-center gap-2"
+                onClick={onRetakeQuiz}
+              >
+                <RotateCcw className="h-4 w-4" />
+                Re Take
+              </Button>
+            )}
+            {enableRetakeAndFinalSubmit && onFinalSubmit && !isReviewMode && (
+              <Button
+                className="bg-green-600 hover:bg-green-700 rounded-full px-6 ml-4 text-white"
+                onClick={onFinalSubmit}
+              >
+                Final Submit
+              </Button>
+            )}
+            {/* Show review-specific actions if in review mode */}
+            {isReviewMode && (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="border-blue-300 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md"
+                  onClick={() => window.history.back()}
+                >
+                  Back to Quizzes
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
