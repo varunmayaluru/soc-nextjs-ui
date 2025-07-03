@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button"
 interface SpeechToTextInputProps {
   onTranscriptChange: (transcript: string) => void
   placeholder?: string
+  resetRef?: React.MutableRefObject<() => void>
 }
 
 const SpeechToTextInput: React.FC<SpeechToTextInputProps> = ({
   onTranscriptChange,
   placeholder = "Type your message or click the mic to speak...",
+  resetRef,
 }) => {
   const [isListening, setIsListening] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -26,6 +28,12 @@ const SpeechToTextInput: React.FC<SpeechToTextInputProps> = ({
       onTranscriptChange(transcript)
     }
   }, [transcript, onTranscriptChange])
+
+  useEffect(() => {
+    if (resetRef) {
+      resetRef.current = resetTranscript
+    }
+  }, [resetRef, resetTranscript])
 
   const toggleListening = async () => {
     if (!browserSupportsSpeechRecognition) {

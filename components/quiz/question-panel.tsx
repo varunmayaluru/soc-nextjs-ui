@@ -13,13 +13,22 @@ import {
   Circle,
   XCircle,
   CheckCircle,
+  ImageIcon,
+  PencilIcon,
 } from "lucide-react"
 import { MathRenderer } from "@/components/math-renderer"
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator } from "../ui/breadcrumb"
 import Link from "next/link"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useSearchParams } from "next/navigation"
-import { useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
+import { MathInputHelper } from "@/components/math-input-helper"
+import SpeechToTextInput from "@/components/speech-to-text-input"
+import TextToSpeech from "@/components/TextToSpeech"
+import { DrawingCanvas } from "@/components/quiz/drawing-canvas"
+import { useMathInput } from "@/hooks/use-math-input"
+import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 
 interface Option {
   id: number
@@ -133,6 +142,16 @@ export function QuestionPanel({
   const mode: string | null = searchParams.get("mode")
   const isReviewMode = mode === "review"
 
+  const [showDrawingCanvas, setShowDrawingCanvas] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { isProcessing: isProcessingMath, processImage: processMathImage } = useMathInput({
+    onResult: (latex) => onTextAnswerChange(latex),
+  })
+  const [speechTranscript, setSpeechTranscript] = useState("")
+  const [isUserTyping, setIsUserTyping] = useState(false)
+  const speechResetRef = useRef<() => void>(() => { })
+  const [isListening, setIsListening] = useState(false)
+
   // Clear selections when navigating to a different question
   useEffect(() => {
     // Check if current question has been answered before
@@ -148,6 +167,44 @@ export function QuestionPanel({
       }
     }
   }, [currentQuestionId]) // Only run when currentQuestionId changes
+
+  // Handler for Mathpix image upload
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file && file.type.startsWith("image/")) {
+      processMathImage(file)
+    }
+  }
+
+  // Handler for drawing save
+  const handleDrawingSave = (imageData: string) => {
+    setShowDrawingCanvas(false)
+    // Convert dataURL to File and process
+    fetch(imageData)
+      .then((res) => res.blob())
+      .then((blob) => {
+        const file = new File([blob], "drawing.png", { type: "image/png" })
+        processMathImage(file)
+      })
+  }
+
+  // Handler for math symbol insert
+  const handleInsertMathSymbol = (symbol: string) => {
+    onTextAnswerChange(textAnswer + symbol)
+  }
+
+  // Handler for speech transcript
+  const handleSpeechTranscript = (transcript: string, listening?: boolean) => {
+    if (!isUserTyping) {
+      if (transcript === "") {
+        onTextAnswerChange("")
+      } else {
+        onTextAnswerChange(transcript)
+      }
+    }
+    setSpeechTranscript(transcript)
+    if (typeof listening === "boolean") setIsListening(listening)
+  }
 
   if (isLoading || !question) {
     return (
@@ -187,57 +244,51 @@ export function QuestionPanel({
             return (
               <div
                 key={option.id}
-                className={`border min-w-[600px] max-w-[750px] rounded-full flex items-center transition-all duration-200 ${
-                  isAnswerChecked ? "opacity-75" : ""
-                } ${
-                  isSelected
+                className={`border min-w-[600px] max-w-[750px] rounded-full flex items-center transition-all duration-200 ${isAnswerChecked ? "opacity-75" : ""
+                  } ${isSelected
                     ? isAnswerChecked
                       ? isCorrectOption
                         ? "border-green-500 bg-green-50 border-2"
                         : "border-red-500 bg-red-50 border-2"
                       : "border-[#3373b5] bg-white border-2"
                     : "border-gray-200 bg-[#F1F1F1] hover:border-gray-300 hover:bg-white"
-                }`}
+                  }`}
               >
                 <div
-                  className={`rounded-full flex items-center ml-4 mr-4 ${
-                    isSelected
-                      ? isAnswerChecked
-                        ? isCorrectOption
-                          ? "bg-[#C2E6B1]"
-                          : "bg-red-100"
-                        : "bg-[#3373b5]"
-                      : "bg-white"
-                  }`}
+                  className={`rounded-full flex items-center ml-4 mr-4 ${isSelected
+                    ? isAnswerChecked
+                      ? isCorrectOption
+                        ? "bg-[#C2E6B1]"
+                        : "bg-red-100"
+                      : "bg-[#3373b5]"
+                    : "bg-white"
+                    }`}
                 >
                   <RadioGroupItem
                     value={option.option_index.toString()}
                     id={`option-${option.option_index}`}
                     disabled={isAnswerChecked}
-                    className={`h-5 w-5 ${
-                      isSelected
-                        ? isAnswerChecked
-                          ? isCorrectOption
-                            ? "border-green-500 ring-2 text-green-700 bg-green-500 ring-green-200"
-                            : "border-red-500 ring-2 text-red-700 ring-red-200"
-                          : "border-[#3373b5] text-[#3373b5]"
-                        : "border-gray-300"
-                    } ${isAnswerChecked ? "cursor-not-allowed" : ""}`}
+                    className={`h-5 w-5 ${isSelected
+                      ? isAnswerChecked
+                        ? isCorrectOption
+                          ? "border-green-500 ring-2 text-green-700 bg-green-500 ring-green-200"
+                          : "border-red-500 ring-2 text-red-700 ring-red-200"
+                        : "border-[#3373b5] text-[#3373b5]"
+                      : "border-gray-300"
+                      } ${isAnswerChecked ? "cursor-not-allowed" : ""}`}
                   />
                 </div>
                 <Label
                   htmlFor={`option-${option.option_index}`}
-                  className={`flex-grow h-16 text-md flex items-center transition-colors ${
-                    isAnswerChecked ? "cursor-not-allowed" : "cursor-pointer"
-                  } ${
-                    isSelected
+                  className={`flex-grow h-16 text-md flex items-center transition-colors ${isAnswerChecked ? "cursor-not-allowed" : "cursor-pointer"
+                    } ${isSelected
                       ? isAnswerChecked
                         ? isCorrectOption
                           ? "text-green-600 font-medium"
                           : "text-red-600 font-medium"
                         : "text-[#3373b5] font-medium"
                       : "hover:text-[#3373b5]"
-                  }`}
+                    }`}
                   onClick={isAnswerChecked ? (e) => e.preventDefault() : undefined}
                 >
                   <MathRenderer content={option.option_text} />
@@ -248,32 +299,80 @@ export function QuestionPanel({
         </RadioGroup>
       )
     } else if (isFillBlank) {
-      // Render Fill in the Blank Text Area
+      // Render Fill in the Blank Text Area with chat panel controls
       return (
         <div className="px-4 py-4 flex justify-center">
           <div className="min-w-[600px] max-w-[750px] w-full">
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Fill in your answer below:</label>
-
-              <Textarea
-                placeholder="Type your answer here..."
-                value={textAnswer}
-                onChange={(e) => {
-                  onTextAnswerChange(e.target.value)
-                  //textAnswer = e.target.value
-                }}
-                className={`w-full min-h-[120px] text-lg px-4 py-3 border-2 rounded-lg transition-all duration-200 resize-y ${
-                  isAnswerChecked
-                    ? isCorrect
-                      ? "border-green-500 bg-green-50"
-                      : "border-red-500 bg-red-50"
-                    : textAnswer
-                      ? "border-[#3373b5] bg-white"
-                      : "border-gray-200 bg-[#F1F1F1] focus:border-[#3373b5] focus:bg-white"
-                }`}
-                disabled={isAnswerChecked}
-              />
-
+              {/* Controls and input merged row - now styled like chat panel */}
+              <div
+                className={cn(
+                  "flex items-center bg-white rounded-full border border-gray-300 transition-all duration-200",
+                  isListening && "ring-2 ring-violet-200 border-violet-300 shadow-lg"
+                )}
+              >
+                <button
+                  className="p-3 text-gray-400 hover:text-gray-600 disabled:opacity-50 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isProcessingMath || isAnswerChecked}
+                  title="Upload math image"
+                  type="button"
+                >
+                  {isProcessingMath ? <Loader2 className="h-5 w-5 animate-spin" /> : <ImageIcon size={20} />}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  disabled={isProcessingMath || isAnswerChecked}
+                />
+                <button
+                  className="p-3 text-gray-400 hover:text-gray-600 disabled:opacity-50 transition-colors"
+                  onClick={() => setShowDrawingCanvas(true)}
+                  disabled={isAnswerChecked}
+                  title="Draw math expression"
+                  type="button"
+                >
+                  <PencilIcon size={20} />
+                </button>
+                <SpeechToTextInput
+                  onTranscriptChange={(transcript) => handleSpeechTranscript(transcript, true)}
+                  placeholder="Speak your answer..."
+                  resetRef={speechResetRef}
+                />
+                <MathInputHelper onInsert={handleInsertMathSymbol} disabled={isAnswerChecked} />
+                <input
+                  type="text"
+                  placeholder="Type your answer here..."
+                  value={textAnswer}
+                  onChange={(e) => {
+                    setIsUserTyping(true)
+                    onTextAnswerChange(e.target.value)
+                    setSpeechTranscript("")
+                    if (speechResetRef.current) speechResetRef.current()
+                  }}
+                  onBlur={() => {
+                    setIsUserTyping(false)
+                    if (textAnswer === "") {
+                      setSpeechTranscript("")
+                      if (speechResetRef.current) speechResetRef.current()
+                    }
+                  }}
+                  className={cn(
+                    "flex-1 border-none focus:ring-0 py-3 px-3 text-sm bg-transparent transition-all duration-200",
+                    isListening && "bg-violet-50 text-violet-700 placeholder-violet-400"
+                  )}
+                  disabled={isAnswerChecked}
+                />
+                {textAnswer.trim() && (
+                  <div className="mt-2 bg-gray-50 border border-gray-200 rounded px-3 py-2 text-base">
+                    <MathRenderer content={textAnswer} />
+                  </div>
+                )}
+              </div>
               {/* Show correct answer after submission for fill in the blank */}
               {isAnswerChecked && question.correct_answer && (
                 <div className="mt-3 p-3 bg-gray-50 rounded border">
@@ -282,6 +381,12 @@ export function QuestionPanel({
                 </div>
               )}
             </div>
+            {showDrawingCanvas && (
+              <DrawingCanvas
+                onClose={() => setShowDrawingCanvas(false)}
+                onSave={handleDrawingSave}
+              />
+            )}
           </div>
         </div>
       )
@@ -294,7 +399,7 @@ export function QuestionPanel({
     if (isMultipleChoice) {
       return selectedOption !== null && selectedOption !== -1
     } else if (isFillBlank) {
-      return textAnswer !== ""
+      return textAnswer.trim() !== ""
     }
     return false
   }
@@ -472,9 +577,8 @@ export function QuestionPanel({
         {isAnswerChecked && (
           <div className="flex flex-col items-center mt-6">
             <div
-              className={`p-4 w-[300px] text-center inline-block rounded-md transition-all duration-300 ${
-                isCorrect ? "bg-[#C2E6B1] text-black" : "bg-[#E87E7B] text-white"
-              }`}
+              className={`p-4 w-[300px] text-center inline-block rounded-md transition-all duration-300 ${isCorrect ? "bg-[#C2E6B1] text-black" : "bg-[#E87E7B] text-white"
+                }`}
             >
               {isCorrect ? (
                 <div className="flex items-center justify-center">
