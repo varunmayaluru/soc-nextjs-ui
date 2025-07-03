@@ -303,13 +303,17 @@ export function QuestionPanel({
       return (
         <div className="px-4 py-4 flex justify-center">
           <div className="min-w-[600px] max-w-[750px] w-full">
-            <div className="mb-4">
+            <div className="mb-4 mt-16">
               <label className="block text-sm font-medium text-gray-700 mb-2">Fill in your answer below:</label>
               {/* Controls and input merged row - now styled like chat panel */}
               <div
                 className={cn(
-                  "flex items-center bg-white rounded-full border border-gray-300 transition-all duration-200",
-                  isListening && "ring-2 ring-violet-200 border-violet-300 shadow-lg"
+                  "flex items-center bg-white rounded-full border transition-all duration-200",
+                  isAnswerChecked && "pointer-events-none",
+                  isListening && "ring-2 ring-violet-200 border-violet-300 shadow-lg",
+                  isAnswerChecked && isCorrect && "border-green-500 bg-green-50",
+                  isAnswerChecked && !isCorrect && "border-red-500 bg-red-50",
+                  (!isAnswerChecked || isCorrect === undefined) && "border-gray-300 bg-white"
                 )}
               >
                 <button
@@ -338,14 +342,18 @@ export function QuestionPanel({
                 >
                   <PencilIcon size={20} />
                 </button>
-                <SpeechToTextInput
-                  onTranscriptChange={(transcript) => handleSpeechTranscript(transcript, true)}
-                  placeholder="Speak your answer..."
-                  resetRef={speechResetRef}
-                />
+                <div className="p-1">
+                  <SpeechToTextInput
+                    onTranscriptChange={(transcript) => handleSpeechTranscript(transcript, true)}
+                    placeholder="Speak your answer..."
+                    resetRef={speechResetRef}
+                    disabled={isAnswerChecked}
+                    variant="ghost"
+                    className="border-none"
+                  />
+                </div>
                 <MathInputHelper onInsert={handleInsertMathSymbol} disabled={isAnswerChecked} />
-                <input
-                  type="text"
+                <Textarea
                   placeholder="Type your answer here..."
                   value={textAnswer}
                   onChange={(e) => {
@@ -362,16 +370,11 @@ export function QuestionPanel({
                     }
                   }}
                   className={cn(
-                    "flex-1 border-none focus:ring-0 py-3 px-3 text-sm bg-transparent transition-all duration-200",
+                    "flex-1 min-h-[40px] resize-none outline-none border-none focus:ring-0 py-3 px-3 text-sm transition-all duration-200 bg-transparent text-black placeholder-gray-400",
                     isListening && "bg-violet-50 text-violet-700 placeholder-violet-400"
                   )}
                   disabled={isAnswerChecked}
                 />
-                {textAnswer.trim() && (
-                  <div className="mt-2 bg-gray-50 border border-gray-200 rounded px-3 py-2 text-base">
-                    <MathRenderer content={textAnswer} />
-                  </div>
-                )}
               </div>
               {/* Show correct answer after submission for fill in the blank */}
               {isAnswerChecked && question.correct_answer && (

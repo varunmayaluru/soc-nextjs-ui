@@ -2,20 +2,28 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
+// @ts-ignore: No types for 'react-speech-recognition'
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition"
 import { Mic, MicOff, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 interface SpeechToTextInputProps {
   onTranscriptChange: (transcript: string) => void
   placeholder?: string
   resetRef?: React.MutableRefObject<() => void>
+  disabled?: boolean
+  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
+  className?: string
 }
 
 const SpeechToTextInput: React.FC<SpeechToTextInputProps> = ({
   onTranscriptChange,
   placeholder = "Type your message or click the mic to speak...",
   resetRef,
+  disabled = false,
+  variant = "outline",
+  className = "",
 }) => {
   const [isListening, setIsListening] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -36,6 +44,7 @@ const SpeechToTextInput: React.FC<SpeechToTextInputProps> = ({
   }, [resetRef, resetTranscript])
 
   const toggleListening = async () => {
+    if (disabled) return
     if (!browserSupportsSpeechRecognition) {
       alert("Your browser does not support speech recognition.")
       return
@@ -74,11 +83,12 @@ const SpeechToTextInput: React.FC<SpeechToTextInputProps> = ({
 
   return (
     <Button
-      variant="outline"
+      variant={variant}
       size="icon"
       onClick={toggleListening}
-      className={listening ? "text-red-500" : ""}
-      disabled={isLoading}
+      className={cn(listening ? "text-red-500" : "", className)}
+      disabled={isLoading || disabled}
+      style={disabled ? { opacity: 0.5, pointerEvents: "none" } : {}}
       title={listening ? "Stop listening" : "Start speech recognition"}
     >
       {isLoading ? (

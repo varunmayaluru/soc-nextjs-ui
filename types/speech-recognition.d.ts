@@ -95,4 +95,6 @@ declare global {
   }
 }
 
+declare module "react-speech-recognition";
+
 export { type SpeechRecognition, type SpeechRecognitionEvent };
