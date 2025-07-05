@@ -15,6 +15,7 @@ interface SpeechToTextInputProps {
   disabled?: boolean
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link"
   className?: string
+  onListeningChange?: (listening: boolean) => void
 }
 
 const SpeechToTextInput: React.FC<SpeechToTextInputProps> = ({
@@ -24,6 +25,7 @@ const SpeechToTextInput: React.FC<SpeechToTextInputProps> = ({
   disabled = false,
   variant = "outline",
   className = "",
+  onListeningChange,
 }) => {
   const [isListening, setIsListening] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -42,6 +44,10 @@ const SpeechToTextInput: React.FC<SpeechToTextInputProps> = ({
       resetRef.current = resetTranscript
     }
   }, [resetRef, resetTranscript])
+
+  useEffect(() => {
+    if (onListeningChange) onListeningChange(listening)
+  }, [listening, onListeningChange])
 
   const toggleListening = async () => {
     if (disabled) return

@@ -303,19 +303,46 @@ export function QuestionPanel({
       return (
         <div className="px-2 py-2 flex justify-center">
           <div className="min-w-[600px] max-w-[750px] w-full">
-            <div className="mb-2 mt-4">
+            <div className="mb-2 mt-6">
               <label className="block text-xs font-medium text-gray-700 mb-1">Fill in your answer below:</label>
               {/* Controls and input merged row - now styled like chat panel */}
               <div
                 className={cn(
-                  "flex items-center bg-white rounded-full border transition-all duration-200 gap-1",
+                  "flex items-end rounded-lg bg-[#F9F9F9] border transition-all duration-200 gap-1",
                   isAnswerChecked && "pointer-events-none",
                   isListening && "ring-2 ring-violet-200 border-violet-300 shadow-lg",
                   isAnswerChecked && isCorrect && "border-green-500 bg-green-50",
                   isAnswerChecked && !isCorrect && "border-red-500 bg-red-50",
-                  (!isAnswerChecked || isCorrect === undefined) && "border-gray-300 bg-white"
+                  (!isAnswerChecked || isCorrect === undefined) && "border-gray-300 bg-[#F9F9F9]"
                 )}
               >
+
+
+                <Textarea
+
+                  placeholder="Type your answer here..."
+                  value={textAnswer}
+                  onChange={(e) => {
+                    setIsUserTyping(true)
+                    onTextAnswerChange(e.target.value)
+                    setSpeechTranscript("")
+                    if (speechResetRef.current) speechResetRef.current()
+                  }}
+                  onBlur={() => {
+                    setIsUserTyping(false)
+                    if (textAnswer === "") {
+                      setSpeechTranscript("")
+                      if (speechResetRef.current) speechResetRef.current()
+                    }
+                  }}
+                  className={cn(
+                    "flex-1 h-[100px] resize-none outline-none border-none focus:ring-0 py-2 px-2 text-sm transition-all duration-200 bg-transparent text-black placeholder-gray-400",
+                    isListening && "bg-violet-50 text-violet-700 placeholder-violet-400"
+                  )}
+                  disabled={isAnswerChecked}
+                />
+              </div>
+              <div className="flex bg-[#F7F8FA] gap-1 rounded-lg border border-gray-300">
                 <button
                   className="p-2 text-gray-400 hover:text-gray-600 disabled:opacity-50 transition-colors"
                   onClick={() => fileInputRef.current?.click()}
@@ -350,31 +377,10 @@ export function QuestionPanel({
                     disabled={isAnswerChecked}
                     variant="ghost"
                     className="border-none"
+                    onListeningChange={setIsListening}
                   />
                 </div>
                 <MathInputHelper onInsert={handleInsertMathSymbol} disabled={isAnswerChecked} />
-                <Textarea
-                  placeholder="Type your answer here..."
-                  value={textAnswer}
-                  onChange={(e) => {
-                    setIsUserTyping(true)
-                    onTextAnswerChange(e.target.value)
-                    setSpeechTranscript("")
-                    if (speechResetRef.current) speechResetRef.current()
-                  }}
-                  onBlur={() => {
-                    setIsUserTyping(false)
-                    if (textAnswer === "") {
-                      setSpeechTranscript("")
-                      if (speechResetRef.current) speechResetRef.current()
-                    }
-                  }}
-                  className={cn(
-                    "flex-1 min-h-[32px] resize-none outline-none border-none focus:ring-0 py-2 px-2 text-sm transition-all duration-200 bg-transparent text-black placeholder-gray-400",
-                    isListening && "bg-violet-50 text-violet-700 placeholder-violet-400"
-                  )}
-                  disabled={isAnswerChecked}
-                />
               </div>
               {/* Show correct answer after submission for fill in the blank */}
               {isAnswerChecked && question.correct_answer && (
@@ -541,7 +547,7 @@ export function QuestionPanel({
               </div>
             </div>
             {/* Question navigation header */}
-            <div className="bg-[#F7F8FA] rounded-tl-2xl rounded-tr-2xl flex justify-between items-center mb-3 py-2 px-2">
+            <div className="bg-[#F7F8FA] rounded-tl-2xl rounded-tr-2xl flex justify-between items-center mb-3 py-4 px-4">
               <Button
                 variant="outline"
                 size="icon"
@@ -573,7 +579,7 @@ export function QuestionPanel({
             {isAnswerChecked && (
               <div className="flex flex-col items-center mt-2">
                 <div
-                  className={`p-2 w-[220px] text-center inline-block rounded-md transition-all duration-300 text-sm ${isCorrect ? "bg-[#C2E6B1] text-black" : "bg-[#E87E7B] text-white"
+                  className={`p-2 w-[270px] text-center inline-block rounded-md transition-all duration-300 text-sm ${isCorrect ? "bg-[#C2E6B1] text-black" : "bg-[#E87E7B] text-white"
                     }`}
                 >
                   {isCorrect ? (
@@ -596,7 +602,7 @@ export function QuestionPanel({
             )}
           </div>
           {/* Action buttons pinned to bottom */}
-          <div className="bg-[#F7F8FA] p-8 rounded-bl-2xl rounded-br-2xl flex justify-between border-t border-gray-200">
+          <div className="bg-[#F7F8FA] p-8 rounded-bl-2xl rounded-br-2xl flex justify-between border-t border-gray-200 ml-4 mr-4">
             <Button
               variant="outline"
               className="border-gray-300 text-gray-600 bg-white hover:bg-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
@@ -607,6 +613,23 @@ export function QuestionPanel({
             </Button>
             {/* Show SUBMIT for MCQ if not checked */}
             {isMultipleChoice && !isAnswerChecked && (
+              <Button
+                className="ml-2 bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 disabled:opacity-50"
+                onClick={onSubmit}
+                disabled={!canSubmit() || isSubmitting}
+              >
+                {isSubmitting ? (
+                  <span className="flex items-center">
+                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                    Submitting...
+                  </span>
+                ) : (
+                  "SUBMIT"
+                )}
+              </Button>
+            )}
+            {/* Show SUBMIT for Fill in the Blank if not checked */}
+            {isFillBlank && !isAnswerChecked && (
               <Button
                 className="ml-2 bg-[#3373b5] hover:bg-[#2a5d92] rounded-full px-6 disabled:opacity-50"
                 onClick={onSubmit}

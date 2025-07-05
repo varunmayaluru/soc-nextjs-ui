@@ -315,3 +315,151 @@ graph TD
     K --> L[Analyze Knowledge Gaps]
     L --> M[Session Complete]
 ```
+
+## AI Chat Functional Flow (APIs & Implementation)
+
+### 1. Trigger: Incorrect Answer
+
+- When a user answers a quiz question incorrectly, the chat process is triggered.
+- The frontend calls `initializeChat(userAnswer)` from the `useQuizChat` hook.
+
+---
+
+### 2. Chat Initialization
+
+#### a. Contextual Answer
+
+- **API:** `POST /genai/socratic/contextual-answer`
+- **Request:** Encrypted payload containing the quiz question.
+- **Backend:**
+  - Decrypts the payload.
+  - Calls `get_actual_answer` (OpenAI or similar LLM) to generate a detailed explanation.
+  - Returns the AI's contextual answer.
+
+#### b. Initial Socratic Question
+
+- **API:** `POST /genai/socratic/initial`
+- **Request:** Encrypted payload with the question, AI's contextual answer, correct answer, and user answer.
+- **Backend:**
+  - Decrypts the payload.
+  - Calls `get_first_soc_question` to generate a Socratic follow-up question.
+  - Returns the Socratic question.
+
+---
+
+### 3. Interactive Chat Loop
+
+#### a. User Sends a Message
+
+- The user types or speaks a message, which is sent via `sendMessage(content)`.
+
+#### b. Evaluate Conversation Progress
+
+- **API:** `POST /genai/missing-context/evaluate`
+- **Request:** Encrypted payload with the question, conversation history, and correct answer.
+- **Backend:**
+  - Decrypts the payload.
+  - Calls `get_missing_context` to check if the user's understanding is complete.
+  - Returns `is_complete: true/false`.
+
+#### c. If Not Complete (and feedback cycles < 5):
+
+##### i. Generate Feedback
+
+- **API:** `POST /genai/feedback/generate`
+- **Request:** Encrypted payload with the latest Socratic question, user message, and contextual answer.
+- **Backend:**
+  - Decrypts the payload.
+  - Calls `feedback_pipeline` to generate personalized feedback.
+  - Returns feedback.
+
+##### ii. Generate Follow-up Socratic Question
+
+- **API:** `POST /genai/follow-up-socratic/ask`
+- **Request:** Encrypted payload with the question, user answer, correct answer, conversation history, and contextual answer.
+- **Backend:**
+
+  - Decrypts the payload.
+  - Calls `socratic_response_pipeline` to generate the next Socratic question.
+  - Returns the question.
+
+- The chat loop continues: user responds, and the above steps repeat.
+
+---
+
+### 4. Chat Completion
+
+#### a. If Complete (or after 5 feedback cycles):
+
+##### i. Reveal Correct Answer
+
+- The correct answer is shown to the user.
+
+##### ii. Generate Learning Summary
+
+- **API:** `POST /genai/user-summary/generate`
+- **Request:** Encrypted payload with the question, conversation history, and correct answer.
+- **Backend:**
+  - Decrypts the payload.
+  - Calls `get_user_summary` to generate a summary of the learning session.
+  - Returns the summary.
+
+##### iii. Knowledge Gap Analysis
+
+- **API:** `POST /genai/knowledge-gap/analyze`
+- **Request:** Encrypted payload with the conversation history and correct answer.
+- **Backend:**
+  - Decrypts the payload.
+  - Calls `get_knowledge_gap` to analyze and return knowledge gaps.
+
+---
+
+### 5. Security
+
+- **All requests/responses are AES-GCM encrypted.**
+- **Authentication** is enforced via `get_current_user` dependency in all endpoints.
+
+---
+
+### 6. Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant Backend
+
+    User->>Frontend: Submits incorrect answer
+    Frontend->>Backend: /genai/socratic/contextual-answer (encrypted)
+    Backend-->>Frontend: Contextual answer (encrypted)
+    Frontend->>Backend: /genai/socratic/initial (encrypted)
+    Backend-->>Frontend: Socratic question (encrypted)
+    loop Chat Loop (max 5 cycles or until complete)
+        User->>Frontend: Sends chat message
+        Frontend->>Backend: /genai/missing-context/evaluate (encrypted)
+        Backend-->>Frontend: is_complete: false
+        Frontend->>Backend: /genai/feedback/generate (encrypted)
+        Backend-->>Frontend: Feedback (encrypted)
+        Frontend->>Backend: /genai/follow-up-socratic/ask (encrypted)
+        Backend-->>Frontend: Socratic question (encrypted)
+    end
+    Frontend->>Backend: /genai/user-summary/generate (encrypted)
+    Backend-->>Frontend: Summary (encrypted)
+    Frontend->>Backend: /genai/knowledge-gap/analyze (encrypted)
+    Backend-->>Frontend: Knowledge gap (encrypted)
+    Frontend->>User: Show correct answer, summary, and knowledge gap
+```
+
+---
+
+### 7. Key API Endpoints
+
+| Endpoint                            | Purpose                                   |
+| ----------------------------------- | ----------------------------------------- |
+| `/genai/socratic/contextual-answer` | Get detailed explanation                  |
+| `/genai/socratic/initial`           | Get first Socratic question               |
+| `/genai/missing-context/evaluate`   | Check if user's understanding is complete |
+| `/genai/feedback/generate`          | Generate feedback                         |
+| `/genai/follow-up-socratic/ask`     | Get next Socratic question                |
+| `/genai/user-summary/generate`      | Generate learning summary                 |
+| `/genai/knowledge-gap/analyze`      | Analyze knowledge gaps                    |
