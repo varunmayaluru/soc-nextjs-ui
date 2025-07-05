@@ -198,11 +198,11 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
       {/* Messages area */}
       <div
         ref={messagesContainerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth"
+        className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth max-h-[calc(100vh-330px)]"
         onScroll={handleScroll}
       >
         {messages.length === 0 && !disabled && (
-          <div className="text-center text-gray-500 py-8">
+          <div className="text-center text-gray-500 py-8 h-full flex flex-col justify-center items-center">
             <Bot className="h-12 w-12 mx-auto mb-4 text-gray-300" />
             <p>I'm here to help you understand the concepts better.</p>
             <p className="text-sm mt-2">Answer the question incorrectly to start our conversation!</p>
@@ -210,48 +210,10 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
         )}
 
         {disabled && (
-          <div className="text-center py-6 px-4 h-full flex items-cente">
-            {/* Simplified disabled state UI */}
-            <div className="max-w-sm mx-auto">
-              {/* Icon and visual elements */}
-              <div className="relative mb-4">
-                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mb-3">
-                  <Brain className="h-8 w-8 text-blue-600" />
-                </div>
-                <div className="absolute -top-1 -right-1 w-6 h-6 bg-yellow-100 rounded-full flex items-center justify-center">
-                  <span className="text-yellow-600 text-xs">🔒</span>
-                </div>
-              </div>
-
-              {/* Main message */}
-              <h3 className="text-base font-semibold text-gray-800 mb-2">
-                Unlock Your Learning Assistant
-              </h3>
-
-              <p className="text-sm text-gray-600 mb-4">
-                Your AI tutor is ready to help you understand concepts better!
-              </p>
-
-              {/* Simplified feature highlights */}
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center space-x-2 p-2 bg-blue-50 rounded-lg">
-                  <span className="text-blue-600 text-sm">💬</span>
-                  <p className="text-xs text-blue-800">Ask questions & get explanations</p>
-                </div>
-
-                <div className="flex items-center space-x-2 p-2 bg-green-50 rounded-lg">
-                  <span className="text-green-600 text-sm">📝</span>
-                  <p className="text-xs text-green-800">Step-by-step guidance</p>
-                </div>
-              </div>
-
-              {/* Call to action */}
-              <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-3 text-white">
-                <p className="text-xs text-blue-100 text-center">
-                  Answer the quiz question to unlock your AI tutor!
-                </p>
-              </div>
-            </div>
+          <div className="text-center text-gray-500 py-8 h-full flex flex-col justify-center items-center">
+            <Bot className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <p>I'm here to help you understand the concepts better.</p>
+            <p className="text-sm mt-2">Answer the question incorrectly to start our conversation!</p>
           </div>
         )}
 
