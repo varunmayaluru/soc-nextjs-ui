@@ -389,11 +389,16 @@ export default function QuizPage() {
     setIsSubmitting(true)
     let selectedOptionArray: any = undefined
     let isUserAnswer = true
-
+    let correct_answer =
+        currentQuestion.question_type === "sa"
+          ? currentQuestion.short_answer_text
+          : currentQuestion.options.find((option:any) => option.is_correct)?.option_text;
+      console.log("Correct answer:", correct_answer);
     if (currentQuestion?.question_type === "sa") {
       const payload = {
         question_text: currentQuestion?.quiz_question_text || "",
-        actual_answer: currentQuestion?.short_answer_text || "",
+        contextual_answer: currentQuestion?.short_answer_text || "",
+        correct_answer: correct_answer,
         user_answer: textAnswer,
         model: "gpt-4o",
       }
