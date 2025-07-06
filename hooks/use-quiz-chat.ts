@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { secureApi } from "@/lib/secure-api-client";
 import { api } from "@/lib/api-client";
+import { Option } from "react-day-picker";
 
 interface Message {
   id: number;
@@ -170,7 +171,11 @@ export function useQuizChat({
 
       // Get contextual answer using secure API with encryption
       const payload = {
-        user_content: question.quiz_question_text,
+        query: question.quiz_question_text,
+        options: question.options.map(option => option.option_text).join(', '),
+        student_answer: userAnswer,
+        correct_answer: question.options.find((option => option.is_correct)
+          )?.option_text || question.short_answer_text || "",
         model: "gpt-4o",
         collection_name: "linear_algebra",
         top_k: 5,
@@ -198,8 +203,8 @@ export function useQuizChat({
         // Get initial Socratic question using secure API with encryption
         const socraticPayload = {
           model: "gpt-4o",
-          complex_question: question.quiz_question_text,
-          actual_answer: response.data.assistant_response,
+          query: question.quiz_question_text,
+          contextual_answer: response.data.assistant_response,
           correct_answer: correct_answer,
           student_answer: selectedOption?.toString(),
         };
@@ -264,22 +269,40 @@ export function useQuizChat({
         question.question_type === "sa"
           ? question.short_answer_text
           : question.options.find((option) => option.is_correct)?.option_text;
-      const isCompletePayload = {
-        complex_question: question.quiz_question_text,
-        messages: conversationMessages,
+      // const isCompletePayload = {
+      //   complex_question: question.quiz_question_text,
+      //   messages: conversationMessages,
+      //   model: "gpt-4o",
+      //   actual_answer: correct_answer,
+      // };
+
+      const isCorrectPayload = {
+        query: question.quiz_question_text,
+        user_answer: selectedOption?.toString(),
+        correct_answer: correct_answer,
         model: "gpt-4o",
-        actual_answer: correct_answer,
+        contextual_answer: correct_answer,
       };
 
+      // console.log(
+      //   "🔐 Sending encrypted evaluation request with payload:",
+      //   isCompletePayload
+      // );
       console.log(
         "🔐 Sending encrypted evaluation request with payload:",
-        isCompletePayload
+        isCorrectPayload
       );
-      const isContinueResponse = await secureApi.post<any>(
-        "/genai/missing-context/evaluate",
-        isCompletePayload
+      // const isContinueResponse = await secureApi.post<any>(
+      //   "/genai/missing-context/evaluate",
+      //   isCompletePayload
+      // );
+      // const shouldContinue = !isContinueResponse.data.is_complete;
+
+      const isCorrectResponse = await secureApi.post<any>(
+        "/genai/answer-evaluation/answer/evaluate",
+        isCorrectPayload
       );
-      const shouldContinue = !isContinueResponse.data.is_complete;
+      const shouldContinue = !isCorrectResponse.data.is_correct;
 
       if (shouldContinue && feedbackCounter < 5) {
         // Generate feedback using secure API with encryption
@@ -289,7 +312,12 @@ export function useQuizChat({
             { role: "user", content },
           ],
           model: "gpt-4o",
-          actual_answer: contextAnswer,
+          query: question.quiz_question_text,
+          student_answer: selectedOption?.toString(),
+          correct_answer: question.options.find(
+            (option) => option.is_correct,
+          )?.option_text || question.short_answer_text || "",
+          contextual_answer: contextAnswer,
         };
 
         console.log(
@@ -319,12 +347,12 @@ export function useQuizChat({
             ? question.short_answer_text
             : question.options.find((option) => option.is_correct)?.option_text;
         const followUpPayload = {
-          complex_question: question.quiz_question_text,
+          query: question.quiz_question_text,
           student_answer: selectedOption?.toString(),
           correct_answer: correct_answer,
           messages: conversationMessages,
           model: "gpt-4o",
-          actual_answer: contextAnswer,
+          contextual_answer: contextAnswer,
         };
 
         console.log(
@@ -385,16 +413,19 @@ export function useQuizChat({
             ? question.short_answer_text
             : question.options.find((option) => option.is_correct)?.option_text;
         const summaryPayload = {
-          complex_question: question.quiz_question_text,
+          query: question.quiz_question_text,
           messages: conversationMessages,
           model: "gpt-4o",
-          actual_answer: correct_answer,
+          contextual_answer: correct_answer,
         };
 
         const knowledgeGapPayload = {
+          query: question.quiz_question_text,
+          student_answer: selectedOption?.toString(),
+          correct_answer: correct_answer,
           messages: conversationMessages,
           model: "gpt-4o",
-          actual_answer: correct_answer,
+          contextual_answer: correct_answer,
         };
 
         console.log("🔐 Sending encrypted summary and knowledge gap requests");
