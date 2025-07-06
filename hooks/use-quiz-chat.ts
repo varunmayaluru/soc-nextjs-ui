@@ -284,10 +284,11 @@ export function useQuizChat({
       if (shouldContinue && feedbackCounter < 5) {
         // Generate feedback using secure API with encryption
         const feedbackPayload = {
-          messages: [
-            { role: "assistant", content: actualAnswer },
-            { role: "user", content },
-          ],
+          // messages: [
+          //   { role: "assistant", content: actualAnswer },
+          //   { role: "user", content },
+          // ],
+          messages: conversationMessages,
           model: "gpt-4o",
           query: question.quiz_question_text,
           student_answer: question.question_type === "sa" ? question.short_answer_text || "" : selectedOptionData?.option_text || "",
