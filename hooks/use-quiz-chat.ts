@@ -277,8 +277,8 @@ export function useQuizChat({
       // };
 
       const isCorrectPayload = {
-        query: question.quiz_question_text,
-        user_answer: selectedOption?.toString(),
+        question_text: question.quiz_question_text,
+        user_answer: content,
         correct_answer: correct_answer,
         model: "gpt-4o",
         contextual_answer: correct_answer,
