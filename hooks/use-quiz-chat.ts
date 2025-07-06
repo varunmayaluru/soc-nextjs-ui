@@ -282,7 +282,7 @@ export function useQuizChat({
         user_answer: content,
         correct_answer: correct_answer,
         model: "gpt-4o",
-        contextual_answer: correct_answer,
+        contextual_answer: contextAnswer,
       };
 
       // console.log(
@@ -419,7 +419,7 @@ export function useQuizChat({
           query: question.quiz_question_text,
           messages: conversationMessages,
           model: "gpt-4o",
-          contextual_answer: correct_answer,
+          contextual_answer: contextAnswer,
         };
 
         const knowledgeGapPayload = {
@@ -429,7 +429,7 @@ export function useQuizChat({
           correct_answer: correct_answer,
           messages: conversationMessages,
           model: "gpt-4o",
-          contextual_answer: correct_answer,
+          contextual_answer: contextAnswer,
         };
 
         console.log("🔐 Sending encrypted summary and knowledge gap requests");
