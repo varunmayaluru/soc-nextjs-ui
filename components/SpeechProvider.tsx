@@ -1,20 +1,22 @@
 "use client"
-import { createContext, useContext, useState, useRef, useCallback } from "react"
+
 import type React from "react"
+import { createContext, useContext, useState, useRef, useCallback } from "react"
+import { ELEVENLABS_CONFIG } from "@/lib/config"
 
 interface SpeechContextType {
   currentId: string | null
   isPaused: boolean
   isLoading: boolean
-  speak: (id: string, text: string, voice?: string) => Promise<void>
+  speak: (id: string, text: string, voice?: string, contentType?: string) => Promise<void>
   pause: () => void
   resume: () => void
   reset: () => void
 }
 
-const SpeechContext = createContext<SpeechContextType | null>(null)
+const SpeechContext = createContext<SpeechContextType | undefined>(undefined)
 
-export const SpeechProvider = ({ children }: { children: React.ReactNode }) => {
+export function SpeechProvider({ children }: { children: React.ReactNode }) {
   const [currentId, setCurrentId] = useState<string | null>(null)
   const [isPaused, setIsPaused] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -26,20 +28,17 @@ export const SpeechProvider = ({ children }: { children: React.ReactNode }) => {
       audioRef.current.pause()
       audioRef.current.removeEventListener("ended", handleAudioEnd)
       audioRef.current.removeEventListener("error", handleAudioError)
-      audioRef.current.removeEventListener("loadstart", handleLoadStart)
-      audioRef.current.removeEventListener("canplay", handleCanPlay)
+      audioRef.current = null
     }
     if (audioUrlRef.current) {
       URL.revokeObjectURL(audioUrlRef.current)
       audioUrlRef.current = null
     }
-    audioRef.current = null
   }, [])
 
   const handleAudioEnd = useCallback(() => {
     setCurrentId(null)
     setIsPaused(false)
-    setIsLoading(false)
     cleanup()
   }, [cleanup])
 
@@ -54,80 +53,80 @@ export const SpeechProvider = ({ children }: { children: React.ReactNode }) => {
     [cleanup],
   )
 
-  const handleLoadStart = useCallback(() => {
-    setIsLoading(true)
-  }, [])
+  const speak = useCallback(
+    async (id: string, text: string, voice: string = ELEVENLABS_CONFIG.DEFAULT_VOICE, contentType = "educational") => {
+      try {
+        setIsLoading(true)
+        cleanup() // Clean up any existing audio
 
-  const handleCanPlay = useCallback(() => {
-    setIsLoading(false)
-  }, [])
+        // Get voice settings based on content type
+        const voiceSettings =
+          ELEVENLABS_CONFIG.CONTENT_VOICE_SETTINGS[
+            contentType.toUpperCase() as keyof typeof ELEVENLABS_CONFIG.CONTENT_VOICE_SETTINGS
+          ] || ELEVENLABS_CONFIG.VOICE_SETTINGS
 
-  const speak = async (id: string, text: string, voice = "JBFqnCBsd6RMkjVDRZzb") => {
-    try {
-      // Stop any current playback
-      cleanup()
-      setIsLoading(true)
-      setCurrentId(id)
+        const response = await fetch("/api/tts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text,
+            voice,
+            model: ELEVENLABS_CONFIG.DEFAULT_MODEL,
+            voiceSettings,
+          }),
+        })
 
-      const response = await fetch("/api/tts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text, voice }),
-      })
+        if (!response.ok) {
+          throw new Error(`TTS API error: ${response.status}`)
+        }
 
-      if (!response.ok) {
-        throw new Error(`Failed to generate speech: ${response.statusText}`)
+        const audioBlob = await response.blob()
+        const audioUrl = URL.createObjectURL(audioBlob)
+        audioUrlRef.current = audioUrl
+
+        const audio = new Audio(audioUrl)
+        audioRef.current = audio
+
+        audio.addEventListener("ended", handleAudioEnd)
+        audio.addEventListener("error", handleAudioError)
+
+        await audio.play()
+
+        setCurrentId(id)
+        setIsPaused(false)
+        setIsLoading(false)
+      } catch (error) {
+        console.error("Speech synthesis error:", error)
+        setIsLoading(false)
+        cleanup()
+        throw error
       }
+    },
+    [cleanup, handleAudioEnd, handleAudioError],
+  )
 
-      const audioBlob = await response.blob()
-      const audioUrl = URL.createObjectURL(audioBlob)
-      audioUrlRef.current = audioUrl
-
-      const audio = new Audio(audioUrl)
-      audioRef.current = audio
-
-      // Add event listeners
-      audio.addEventListener("ended", handleAudioEnd)
-      audio.addEventListener("error", handleAudioError)
-      audio.addEventListener("loadstart", handleLoadStart)
-      audio.addEventListener("canplay", handleCanPlay)
-
-      // Start playing
-      await audio.play()
-      setIsPaused(false)
-      setIsLoading(false)
-    } catch (error) {
-      console.error("Speech generation error:", error)
-      setCurrentId(null)
-      setIsPaused(false)
-      setIsLoading(false)
-      cleanup()
-      throw error // Re-throw to handle in component
-    }
-  }
-
-  const pause = () => {
+  const pause = useCallback(() => {
     if (audioRef.current && !audioRef.current.paused) {
       audioRef.current.pause()
       setIsPaused(true)
     }
-  }
+  }, [])
 
-  const resume = () => {
+  const resume = useCallback(() => {
     if (audioRef.current && audioRef.current.paused) {
-      audioRef.current.play().catch(console.error)
+      audioRef.current.play()
       setIsPaused(false)
     }
-  }
+  }, [])
 
-  const reset = () => {
+  const reset = useCallback(() => {
     setCurrentId(null)
     setIsPaused(false)
     setIsLoading(false)
     cleanup()
-  }
+  }, [cleanup])
 
   return (
     <SpeechContext.Provider
@@ -146,9 +145,9 @@ export const SpeechProvider = ({ children }: { children: React.ReactNode }) => {
   )
 }
 
-export const useSpeech = () => {
+export function useSpeech() {
   const context = useContext(SpeechContext)
-  if (!context) {
+  if (context === undefined) {
     throw new Error("useSpeech must be used within a SpeechProvider")
   }
   return context

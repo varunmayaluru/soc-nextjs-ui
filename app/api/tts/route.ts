@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 
+// Initialize the ElevenLabs client
 const elevenlabs = new ElevenLabsClient({
   apiKey: process.env.ELEVENLABS_API_KEY!,
 });
@@ -9,9 +10,11 @@ export async function POST(request: NextRequest) {
   try {
     const {
       text,
-      voice = "JBFqnCBsd6RMkjVDRZzb",
+      voice = "EXAVITQu4vr4xnSDxMaL",
       model = "eleven_multilingual_v2",
     } = await request.json();
+
+    console.log("Using voice ID:", voice)
 
     if (!text) {
       return NextResponse.json({ error: "Text is required" }, { status: 400 });
@@ -25,20 +28,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create streaming audio from text
+    // Get streaming audio from ElevenLabs
     const audioStream = await elevenlabs.textToSpeech.stream(voice, {
       modelId: model,
       text,
       outputFormat: "mp3_44100_128",
       voiceSettings: {
-        stability: 0.5,
-        similarityBoost: 0.8,
+        stability: 0.4,
+        similarityBoost: 0.9,
         useSpeakerBoost: true,
         speed: 1.0,
       },
     });
 
-    // ✅ Use Web ReadableStream reader (compatible with Edge Runtime)
+    // Use Web Stream Reader to read chunks
     const reader = audioStream.getReader();
     const chunks: Uint8Array[] = [];
 
@@ -48,7 +51,7 @@ export async function POST(request: NextRequest) {
       if (value) chunks.push(value);
     }
 
-    // Combine chunks into a buffer
+    // Convert chunks into Node.js Buffer
     const audioBuffer = Buffer.concat(
       chunks.map((chunk) => Buffer.from(chunk))
     );
@@ -57,7 +60,7 @@ export async function POST(request: NextRequest) {
       headers: {
         "Content-Type": "audio/mpeg",
         "Content-Length": audioBuffer.byteLength.toString(),
-        "Cache-Control": "public, max-age=3600",
+        "Cache-Control": "public, max-age=3600", // 1 hour cache
       },
     });
   } catch (error) {

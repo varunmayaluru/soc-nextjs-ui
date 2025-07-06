@@ -4,51 +4,58 @@ import { useEffect, useState } from "react"
 import { useSpeech } from "./SpeechProvider"
 import { Play, Pause, RotateCcw, Loader2 } from "lucide-react"
 import { secureApi } from "@/lib/secure-api-client"
+import { ELEVENLABS_CONFIG } from "@/lib/config"
 
 interface Props {
   id: string
   message: string
   voice?: string // ElevenLabs voice ID
+  contentType?: "educational" | "conversational" | "formal"
 }
 
-export default function TextToSpeech({ id, message, voice = "JBFqnCBsd6RMkjVDRZzb" }: Props) {
+export default function TextToSpeech({
+  id,
+  message,
+  voice = ELEVENLABS_CONFIG.DEFAULT_VOICE,
+  contentType = "educational",
+}: Props) {
   const { currentId, isPaused, isLoading, speak, pause, resume, reset } = useSpeech()
+
   const [processedMessage, setProcessedMessage] = useState(message)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const processMessage = async () => {
-      if (/\$.*?\$|\$\$.*?\$\$/.test(message)) {
-        // Contains LaTeX
-        try {
-          const payload = {
-            input_statement: message,
-            model: "gpt-4o",
-          }
-
-          const response = await secureApi.post<any>("/genai/latex-to-speech/convert", payload)
-
-          if (response.ok && response.data) {
-            setProcessedMessage(response.data.spoken_string || message)
-          } else {
-            setProcessedMessage(message) // fallback
-          }
-        } catch (error) {
-          console.error("Error converting LaTeX to speech:", error)
-          setProcessedMessage(message) // fallback
-        }
-      } else {
-        setProcessedMessage(message)
-      }
-    }
-
-    processMessage()
-  }, [message])
 
   const isCurrent = currentId === id
   const isPlaying = isCurrent && !isPaused && !isLoading
   const isPausedCurrent = isCurrent && isPaused
   const isLoadingCurrent = isCurrent && isLoading
+
+  const voiceInfo = Object.values(ELEVENLABS_CONFIG.ALL_VOICES).find((v) => v.id === voice)
+  const voiceLabel = voiceInfo?.name ?? "Default"
+
+  useEffect(() => {
+    const convertLatexToSpeech = async () => {
+      const latexRegex = /\$.*?\$|\$\$.*?\$\$/ // Matches inline and block LaTeX
+
+      if (!latexRegex.test(message)) {
+        setProcessedMessage(message)
+        return
+      }
+
+      try {
+        const { data, ok } = await secureApi.post<any>("/genai/latex-to-speech/convert", {
+          input_statement: message,
+          model: "gpt-4o",
+        })
+
+        setProcessedMessage(ok && data?.spoken_string ? data.spoken_string : message)
+      } catch (err) {
+        console.error("LaTeX conversion error:", err)
+        setProcessedMessage(message)
+      }
+    }
+
+    convertLatexToSpeech()
+  }, [message])
 
   const handlePlayPause = async () => {
     try {
@@ -61,8 +68,8 @@ export default function TextToSpeech({ id, message, voice = "JBFqnCBsd6RMkjVDRZz
       } else {
         await speak(id, processedMessage, voice)
       }
-    } catch (error) {
-      console.error("TTS error:", error)
+    } catch (err) {
+      console.error("TTS playback error:", err)
       setError("Failed to play audio. Please try again.")
     }
   }
@@ -82,7 +89,8 @@ export default function TextToSpeech({ id, message, voice = "JBFqnCBsd6RMkjVDRZz
         className={`p-1.5 rounded-full transition-colors ${
           isCurrent ? "bg-green-500 hover:bg-green-600 text-white" : "bg-gray-100 hover:bg-gray-200 text-gray-700"
         } ${isLoadingCurrent ? "opacity-50 cursor-not-allowed" : ""}`}
-        title={isLoadingCurrent ? "Loading..." : isPlaying ? "Pause" : isPausedCurrent ? "Resume" : "Play"}
+        title={`${isLoadingCurrent ? "Loading..." : isPlaying ? "Pause" : isPausedCurrent ? "Resume" : "Play"} (${voiceLabel})`}
+        aria-label="Play or pause TTS"
       >
         {isLoadingCurrent ? (
           <Loader2 size={14} className="animate-spin" />
@@ -95,11 +103,12 @@ export default function TextToSpeech({ id, message, voice = "JBFqnCBsd6RMkjVDRZz
 
       <button
         onClick={handleReset}
+        disabled={!isCurrent}
         className={`p-1.5 rounded-full transition-colors ${
           isCurrent ? "bg-red-500 hover:bg-red-600 text-white" : "bg-gray-100 hover:bg-gray-200 text-gray-500"
         }`}
-        disabled={!isCurrent}
         title="Reset"
+        aria-label="Reset TTS"
       >
         <RotateCcw size={14} />
       </button>
