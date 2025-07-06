@@ -181,10 +181,10 @@ export function useQuizChat({
         top_k: 5,
       };
 
-      console.log(
-        "🔐 Sending encrypted contextual answer request with payload:",
-        payload
-      );
+      // console.log(
+      //   "🔐 Sending encrypted contextual answer request with payload:",
+      //   payload
+      // );
       // Use the regular post method which will auto-encrypt for /genai/ endpoints
       const response = await secureApi.post<any>(
         "/genai/socratic/contextual-answer",
@@ -210,10 +210,10 @@ export function useQuizChat({
           student_answer: selectedOptionData?.option_text || "",
         };
 
-        console.log(
-          "🔐 Sending encrypted Socratic question request with payload:",
-          socraticPayload
-        );
+        // console.log(
+        //   "🔐 Sending encrypted Socratic question request with payload:",
+        //   socraticPayload
+        // );
         const socraticResponse = await secureApi.post<any>(
           "/genai/socratic/initial",
           socraticPayload
@@ -289,10 +289,10 @@ export function useQuizChat({
       //   "🔐 Sending encrypted evaluation request with payload:",
       //   isCompletePayload
       // );
-      console.log(
-        "🔐 Sending encrypted evaluation request with payload:",
-        isCorrectPayload
-      );
+      // console.log(
+      //   "🔐 Sending encrypted evaluation request with payload:",
+      //   isCorrectPayload
+      // );
       // const isContinueResponse = await secureApi.post<any>(
       //   "/genai/missing-context/evaluate",
       //   isCompletePayload
@@ -322,10 +322,10 @@ export function useQuizChat({
           contextual_answer: contextAnswer,
         };
 
-        console.log(
-          "🔐 Sending encrypted feedback request with payload:",
-          feedbackPayload
-        );
+        // console.log(
+        //   "🔐 Sending encrypted feedback request with payload:",
+        //   feedbackPayload
+        // );
         const feedbackResponse = await secureApi.post<any>(
           "/genai/feedback/generate",
           feedbackPayload
@@ -358,10 +358,10 @@ export function useQuizChat({
           contextual_answer: contextAnswer,
         };
 
-        console.log(
-          "🔐 Sending encrypted follow-up request with payload:",
-          followUpPayload
-        );
+        // console.log(
+        //   "🔐 Sending encrypted follow-up request with payload:",
+        //   followUpPayload
+        // );
         const followUpResponse = await secureApi.post<any>(
           "/genai/follow-up-socratic/ask",
           followUpPayload
