@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@elevenlabs/elevenlabs-js": "^2.5.0",
     "@emotion/is-prop-valid": "latest",
     "@hookform/resolvers": "^3.9.1",
     "@radix-ui/react-accordion": "latest",
