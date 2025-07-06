@@ -206,7 +206,8 @@ export function useQuizChat({
           query: question.quiz_question_text,
           contextual_answer: response.data.assistant_response,
           correct_answer: correct_answer,
-          student_answer: selectedOption?.toString(),
+          // student_answer: selectedOption?.toString(),
+          student_answer: selectedOptionData?.option_text || "",
         };
 
         console.log(
@@ -313,7 +314,8 @@ export function useQuizChat({
           ],
           model: "gpt-4o",
           query: question.quiz_question_text,
-          student_answer: selectedOption?.toString(),
+          // student_answer: selectedOption?.toString(),
+          student_answer: selectedOptionData?.option_text || "",
           correct_answer: question.options.find(
             (option) => option.is_correct,
           )?.option_text || question.short_answer_text || "",
@@ -348,7 +350,8 @@ export function useQuizChat({
             : question.options.find((option) => option.is_correct)?.option_text;
         const followUpPayload = {
           query: question.quiz_question_text,
-          student_answer: selectedOption?.toString(),
+          // student_answer: selectedOption?.toString(),
+          student_answer: selectedOptionData?.option_text || "",
           correct_answer: correct_answer,
           messages: conversationMessages,
           model: "gpt-4o",
@@ -421,7 +424,8 @@ export function useQuizChat({
 
         const knowledgeGapPayload = {
           query: question.quiz_question_text,
-          student_answer: selectedOption?.toString(),
+          // student_answer: selectedOption?.toString(),
+          student_answer: selectedOptionData?.option_text || "",
           correct_answer: correct_answer,
           messages: conversationMessages,
           model: "gpt-4o",
