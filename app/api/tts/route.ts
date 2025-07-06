@@ -29,15 +29,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Get streaming audio from ElevenLabs
+    // const audioStream = await elevenlabs.textToSpeech.stream(voice, {
+    //   modelId: model,
+    //   text,
+    //   outputFormat: "mp3_44100_128",
+    //   voiceSettings: {
+    //     stability: 0.4,
+    //     similarityBoost: 0.9,
+    //     useSpeakerBoost: true,
+    //     speed: 1.0,
+    //   },
+    // });
+    // Get streaming audio from ElevenLabs
     const audioStream = await elevenlabs.textToSpeech.stream(voice, {
       modelId: model,
       text,
       outputFormat: "mp3_44100_128",
       voiceSettings: {
-        stability: 0.4,
+        stability: 0.7,
         similarityBoost: 0.9,
-        useSpeakerBoost: true,
-        speed: 1.0,
+        useSpeakerBoost: false,
+        speed: 0.85,
       },
     });
 
