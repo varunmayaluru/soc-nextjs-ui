@@ -59,7 +59,7 @@ export function ChatMessage({ message, index }: ChatMessageProps) {
       case "summary":
         return "Summary"
       case "knowledge-gap":
-        return "Knowledge Gap"
+        return "Knowledge Gap Analysis"
       default:
         return null
     }
