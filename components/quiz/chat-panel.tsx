@@ -135,10 +135,10 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
 
   const userInput = newMessage.trim();
   setShouldAutoScroll(true);
-  onSendMessage(userInput); // ✅ Render user message instantly
-  setNewMessage(""); // ✅ Clear input immediately
+  onSendMessage(userInput); 
+  setNewMessage(""); 
 
-  // 🔁 Fire-and-forget LaTeX conversion
+  // Fire-and-forget LaTeX conversion
   void (async () => {
     try {
       const Payload = {
