@@ -1,7 +1,14 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useState, useRef, useCallback } from "react"
+import {
+  createContext,
+  useContext,
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+} from "react"
 import { ELEVENLABS_CONFIG } from "@/lib/config"
 
 interface SpeechContextType {
@@ -21,19 +28,22 @@ export function SpeechProvider({ children }: { children: React.ReactNode }) {
   const [isPaused, setIsPaused] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const audioUrlRef = useRef<string | null>(null)
+  const mediaSourceRef = useRef<MediaSource | null>(null)
+  const sourceBufferRef = useRef<SourceBuffer | null>(null)
 
   const cleanup = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause()
-      audioRef.current.removeEventListener("ended", handleAudioEnd)
-      audioRef.current.removeEventListener("error", handleAudioError)
-      audioRef.current = null
+      audioRef.current.removeAttribute("src")
+      audioRef.current.load()
     }
-    if (audioUrlRef.current) {
-      URL.revokeObjectURL(audioUrlRef.current)
-      audioUrlRef.current = null
+
+    if (mediaSourceRef.current) {
+      mediaSourceRef.current.removeEventListener("sourceopen", handleSourceOpen)
+      mediaSourceRef.current = null
     }
+
+    sourceBufferRef.current = null
   }, [])
 
   const handleAudioEnd = useCallback(() => {
@@ -53,40 +63,81 @@ export function SpeechProvider({ children }: { children: React.ReactNode }) {
     [cleanup],
   )
 
+  const handleSourceOpen = useCallback(async () => {
+    try {
+      const mediaSource = mediaSourceRef.current
+      if (!mediaSource) return
+
+      const sourceBuffer = mediaSource.addSourceBuffer("audio/mpeg")
+      sourceBufferRef.current = sourceBuffer
+
+      const { text, voice, contentType } = mediaSourceRef.current as any
+
+      const response = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text,
+          voice,
+          model: ELEVENLABS_CONFIG.DEFAULT_MODEL,
+          voiceSettings:
+            ELEVENLABS_CONFIG.CONTENT_VOICE_SETTINGS[
+              contentType.toUpperCase() as keyof typeof ELEVENLABS_CONFIG.CONTENT_VOICE_SETTINGS
+            ] || ELEVENLABS_CONFIG.VOICE_SETTINGS,
+        }),
+      })
+
+      if (!response.ok || !response.body) {
+        throw new Error(`TTS API error: ${response.status}`)
+      }
+
+      const reader = response.body.getReader()
+
+      const pump = async () => {
+        const { done, value } = await reader.read()
+        if (done) {
+          if (mediaSource.readyState === "open") {
+            mediaSource.endOfStream()
+          }
+          return
+        }
+
+        if (!sourceBuffer.updating) {
+          sourceBuffer.appendBuffer(value!)
+        } else {
+          sourceBuffer.addEventListener("updateend", () => {
+            sourceBuffer.appendBuffer(value!)
+          }, { once: true })
+        }
+
+        await pump()
+      }
+
+      await pump()
+    } catch (err) {
+      console.error("Error in handleSourceOpen:", err)
+      cleanup()
+      setIsLoading(false)
+    }
+  }, [cleanup])
+
   const speak = useCallback(
     async (id: string, text: string, voice: string = ELEVENLABS_CONFIG.DEFAULT_VOICE, contentType = "educational") => {
       try {
+        cleanup()
         setIsLoading(true)
-        cleanup() // Clean up any existing audio
 
-        // Get voice settings based on content type
-        const voiceSettings =
-          ELEVENLABS_CONFIG.CONTENT_VOICE_SETTINGS[
-            contentType.toUpperCase() as keyof typeof ELEVENLABS_CONFIG.CONTENT_VOICE_SETTINGS
-          ] || ELEVENLABS_CONFIG.VOICE_SETTINGS
+        const mediaSource = new MediaSource()
+        mediaSourceRef.current = mediaSource
 
-        const response = await fetch("/api/tts", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            text,
-            voice,
-            model: ELEVENLABS_CONFIG.DEFAULT_MODEL,
-            voiceSettings,
-          }),
-        })
+        ;(mediaSource as any).text = text
+        ;(mediaSource as any).voice = voice
+        ;(mediaSource as any).contentType = contentType
 
-        if (!response.ok) {
-          throw new Error(`TTS API error: ${response.status}`)
-        }
+        mediaSource.addEventListener("sourceopen", handleSourceOpen)
 
-        const audioBlob = await response.blob()
-        const audioUrl = URL.createObjectURL(audioBlob)
-        audioUrlRef.current = audioUrl
-
-        const audio = new Audio(audioUrl)
+        const audio = new Audio()
+        audio.src = URL.createObjectURL(mediaSource)
         audioRef.current = audio
 
         audio.addEventListener("ended", handleAudioEnd)
@@ -104,7 +155,7 @@ export function SpeechProvider({ children }: { children: React.ReactNode }) {
         throw error
       }
     },
-    [cleanup, handleAudioEnd, handleAudioError],
+    [cleanup, handleAudioEnd, handleAudioError, handleSourceOpen],
   )
 
   const pause = useCallback(() => {

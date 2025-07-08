@@ -125,39 +125,38 @@ export function ChatPanel({ messages, isTyping, onSendMessage, disabled = false 
     scrollToBottom(false)
   }, [])
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || disabled) return
+  const handleSendMessage = () => {
+  if (!newMessage.trim() || disabled) return;
 
-    // Stop listening if currently active
-    if (speechRecognition.isListening) {
-      speechRecognition.stopListening()
-    }
-
-    // Ensure we scroll when user sends message
-    let latex_string: string = "";
-    try {
-
-      const Payload = {
-        input_statement: newMessage,
-        model: "gpt-4o"
-      }
-      const Response =
-        await secureApi.post<any>(
-          "/latex/latex/convert",
-          Payload
-        );
-      if (Response.ok && Response.data) {
-        const latex = Response.data.latex_string || "";
-        latex_string = latex;
-      }
-
-    } catch (error) {
-      console.error("Error checking if user is near bottom:", error)
-    }
-    setShouldAutoScroll(true)
-    onSendMessage(latex_string ? latex_string : newMessage.trim())
-    setNewMessage("")
+  // Stop listening if currently active
+  if (speechRecognition.isListening) {
+    speechRecognition.stopListening();
   }
+
+  const userInput = newMessage.trim();
+  setShouldAutoScroll(true);
+  onSendMessage(userInput); // ✅ Render user message instantly
+  setNewMessage(""); // ✅ Clear input immediately
+
+  // 🔁 Fire-and-forget LaTeX conversion
+  void (async () => {
+    try {
+      const Payload = {
+        input_statement: userInput,
+        model: "gpt-4o",
+      };
+      const Response = await secureApi.post<any>("/latex/latex/convert", Payload);
+
+      if (Response.ok && Response.data?.latex_string) {
+        const latex = Response.data.latex_string;
+        console.log("Converted LaTeX:", latex);
+        // Optional: update message state if needed
+      }
+    } catch (error) {
+      console.error("Error during LaTeX conversion:", error);
+    }
+  })();
+};
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
