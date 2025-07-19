@@ -1,3 +1,5 @@
+// useQuizChat.ts
+
 "use client"
 
 import { useState, useCallback, useRef, useEffect } from "react"
@@ -53,6 +55,16 @@ interface UseQuizChatProps {
   selectedOptionData: QuestionOption | undefined
 }
 
+interface ConversationData {
+  query: string
+  options: string
+  student_answer: string
+  correct_answer: string
+  contextual_answer: string
+  timestamp: string
+  messages: ConvoMessage[]
+}
+
 export function useQuizChat({
   currentQuestionId,
   attemptId,
@@ -72,22 +84,97 @@ export function useQuizChat({
   const [feedbackCounter, setFeedbackCounter] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const organizationId = localStorage.getItem("organizationId")
   const userId = localStorage.getItem("userId")
 
+  const generateSessionId = useCallback(
+    () => `${userId}:${quizId}:${currentQuestionId}:${attemptId || 1}`,
+    [userId, quizId, currentQuestionId, attemptId],
+  )
+
+  const loadConversation = useCallback(
+    async (): Promise<ConversationData | null> => {
+      try {
+        const sessionId = generateSessionId()
+        const payload = {
+          user_session_id: sessionId,
+          db_name: "probed-edu-db",
+          collection_name: "probed-edu-collection",
+        }
+        const res = await secureApi.post<ConversationData>(
+          "/conv-store/conv-store/read",
+          payload,
+        )
+        return res.ok && res.data ? res.data : null
+      } catch (error) {
+        console.error("❌ Error loading conversation:", error)
+        return null
+      }
+    },
+    [generateSessionId],
+  )
+
+  const convertConvoMessagesToUIMessages = useCallback(
+    (convo: ConvoMessage[]): Message[] =>
+      convo.map((msg, i) => ({
+        id: i + 1,
+        sender: msg.role === "user" ? "user" : "response",
+        content: msg.content,
+        timestamp: "Previously",
+      })),
+    [],
+  )
+
+  // 1️⃣ Auto-load saved conversation when question/attempt changes
+  useEffect(() => {
+    if (!question) return
+
+    const hydrate = async () => {
+      setIsTyping(true)
+      try {
+        const existing = await loadConversation()
+        if (existing && existing.messages.length > 0) {
+          setConversationMessages(existing.messages)
+          setMessages(convertConvoMessagesToUIMessages(existing.messages))
+          setContextAnswer(existing.contextual_answer)
+          setActualAnswer(existing.student_answer)
+          const fbCount = existing.messages.filter(
+            (m) => m.role === "assistant" && m.content.includes("feedback"),
+          ).length
+          setFeedbackCounter(fbCount)
+        }
+      } catch (e) {
+        console.error("Error loading conversation:", e)
+      } finally {
+        setIsTyping(false)
+      }
+    }
+
+    hydrate()
+  }, [
+    question?.quiz_question_text,
+    currentQuestionId,
+    attemptId,
+    loadConversation,
+    convertConvoMessagesToUIMessages,
+  ])
+
+  // scroll to bottom whenever messages update
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  const addMessage = useCallback((message: Omit<Message, "id" | "timestamp">) => {
-    const newMessage: Message = {
-      ...message,
-      id: Date.now() + Math.random(),
-      timestamp: "Just now",
-    }
-    setMessages((prev) => [...prev, newMessage])
-    return newMessage
-  }, [])
+  const addMessage = useCallback(
+    (message: Omit<Message, "id" | "timestamp">) => {
+      const newMessage: Message = {
+        ...message,
+        id: Date.now() + Math.random(),
+        timestamp: "Just now",
+      }
+      setMessages((prev) => [...prev, newMessage])
+      return newMessage
+    },
+    [],
+  )
 
   const resetChat = useCallback(() => {
     setMessages([])
@@ -97,269 +184,336 @@ export function useQuizChat({
     setActualAnswer("")
   }, [])
 
-  const initializeChat = async (userAnswer: string) => {
-    if (!question) return
+  const saveConversation = useCallback(
+    async (
+      query: string,
+      options: string,
+      studentAnswer: string,
+      correctAnswer: string,
+      contextualAnswer: string,
+      messages: ConvoMessage[],
+    ) => {
+      try {
+        const sessionId = generateSessionId()
+        const payload = {
+          user_session_id: sessionId,
+          query,
+          options,
+          student_answer: studentAnswer,
+          correct_answer: correctAnswer,
+          contextual_answer: contextualAnswer,
+          messages,
+        }
+        const response = await secureApi.post("/conv-store/conv-store/write", payload)
+        if (!response.ok) {
+          console.error("❌ Failed to save conversation")
+        }
+      } catch (error) {
+        console.error("❌ Error saving conversation:", error)
+      }
+    },
+    [generateSessionId],
+  )
 
-    setIsTyping(true)
+  const initializeChat = useCallback(
+    async (userAnswer: string) => {
+      if (!question) return
+      setIsTyping(true)
 
-    try {
-      const initialMessages: Message[] = [
-        {
-          id: 1,
+      try {
+        // Guard against re-initializing if we already hydrated
+        const existing = await loadConversation()
+        if (existing && existing.messages.length > 0) {
+          setConversationMessages(existing.messages)
+          setMessages(convertConvoMessagesToUIMessages(existing.messages))
+          setContextAnswer(existing.contextual_answer)
+          setActualAnswer(existing.student_answer)
+          const fbCount = existing.messages.filter(
+            (m) => m.role === "assistant" && m.content.includes("feedback"),
+          ).length
+          setFeedbackCounter(fbCount)
+          return
+        }
+
+        // New conversation flow
+        const initialUI: Message[] = [
+          {
+            id: 1,
+            sender: "response",
+            content: question.quiz_question_text,
+            timestamp: "Just now",
+            type: "question",
+          },
+          {
+            id: 2,
+            sender: "user",
+            content: userAnswer,
+            timestamp: "Just now",
+          },
+        ]
+        setMessages(initialUI)
+
+        const intro: Message = {
+          id: 3,
           sender: "response",
-          content: question.quiz_question_text,
+          content: "I'll help you understand this question better.",
           timestamp: "Just now",
-          type: "question",
-        },
-        {
-          id: 2,
-          sender: "user",
-          content: userAnswer,
-          timestamp: "Just now",
-        },
-      ]
+        }
+        setTimeout(() => setMessages((prev) => [...prev, intro]), 500)
 
-      setMessages(initialMessages)
+        const convoStart: ConvoMessage[] = [
+          { role: "assistant", content: question.quiz_question_text },
+          { role: "user", content: userAnswer },
+          { role: "assistant", content: "I'll help you understand this question better." },
+        ]
+        setConversationMessages(convoStart)
 
-      const intro: Message = {
-        id: 3,
-        sender: "response",
-        content: "I'll help you understand this question better.",
-        timestamp: "Just now",
+        // Fetch contextual answer
+        const contextPayload = {
+          query: question.quiz_question_text,
+          options: question.options.map((o) => o.option_text).join(", "),
+          student_answer: userAnswer,
+          correct_answer:
+            question.question_type === "sa"
+              ? question.short_answer_text
+              : question.options.find((o) => o.is_correct)?.option_text || "",
+          model: "gpt-4o",
+          collection_name: "linear_algebra",
+          top_k: 5,
+        }
+        const contextRes = await secureApi.post<any>(
+          "/genai/socratic/contextual-answer",
+          contextPayload,
+        )
+        let ctxAns = ""
+        if (contextRes.ok && contextRes.data) {
+          ctxAns = contextRes.data.assistant_response
+          setContextAnswer(ctxAns)
+        }
+
+        // Fetch initial Socratic question
+        const correctAns =
+          question.question_type === "sa"
+            ? question.short_answer_text
+            : question.options.find((o) => o.is_correct)?.option_text
+        const socraticPayload = {
+          model: "gpt-4o",
+          query: question.quiz_question_text,
+          contextual_answer: ctxAns,
+          correct_answer: correctAns,
+          student_answer: userAnswer,
+        }
+        const socraticRes = await secureApi.post<any>(
+          "/genai/socratic/initial",
+          socraticPayload,
+        )
+        if (socraticRes.ok && socraticRes.data) {
+          addMessage({
+            sender: "response",
+            content: socraticRes.data.sub_question,
+            type: "question",
+          })
+          const updatedConvo = [
+            ...convoStart,
+            { role: "assistant", content: socraticRes.data.sub_question },
+          ]
+          setConversationMessages(updatedConvo)
+
+          await saveConversation(
+            question.quiz_question_text,
+            question.options.map((o) => o.option_text).join(", "),
+            userAnswer,
+            correctAns || "",
+            ctxAns,
+            updatedConvo,
+          )
+        }
+      } catch (error) {
+        console.error(error)
+        addMessage({ sender: "response", content: "Sorry, I encountered an error." })
+      } finally {
+        setIsTyping(false)
       }
+    },
+    [
+      question,
+      loadConversation,
+      convertConvoMessagesToUIMessages,
+      saveConversation,
+      addMessage,
+    ],
+  )
 
-      setTimeout(() => {
-        setMessages((prev) => [...prev, intro])
-      }, 500)
+  const sendMessage = useCallback(
+    async (content: string) => {
+      if (!content.trim() || !question) return
+      addMessage({ sender: "user", content })
+      const updatedConvo = [...conversationMessages, { role: "user", content }]
+      setConversationMessages(updatedConvo)
+      setIsTyping(true)
 
-      const conversationObj: ConvoMessage[] = [
-        { role: "assistant", content: question.quiz_question_text },
-        { role: "user", content: userAnswer },
-        { role: "assistant", content: "I'll help you understand this question better." },
-      ]
-
-      setConversationMessages(conversationObj)
-
-      const payload = {
-        query: question.quiz_question_text,
-        options: question.options.map((option) => option.option_text).join(", "),
-        student_answer: userAnswer,
-        correct_answer:
-          question.options.find((o) => o.is_correct)?.option_text || question.short_answer_text || "",
-        model: "gpt-4o",
-        collection_name: "linear_algebra",
-        top_k: 5,
-      }
-
-      const response = await secureApi.post<any>("/genai/socratic/contextual-answer", payload)
-
-      if (response.ok && response.data) {
-        setContextAnswer(response.data.assistant_response)
-
-        const correct_answer =
+      try {
+        const correctAns =
           question.question_type === "sa"
             ? question.short_answer_text
             : question.options.find((o) => o.is_correct)?.option_text
 
-        const socraticPayload = {
-          model: "gpt-4o",
-          query: question.quiz_question_text,
-          contextual_answer: response.data.assistant_response,
-          correct_answer,
-          student_answer: userAnswer,
-        }
+        // Evaluate answer
+        const evalRes = await secureApi.post<any>(
+          "/genai/answer-evaluation/answer/evaluate",
+          {
+            question_text: question.quiz_question_text,
+            user_answer: content,
+            correct_answer: correctAns,
+            model: "gpt-4o",
+            contextual_answer: contextAnswer,
+          },
+        )
+        const shouldContinue = !evalRes.data.is_correct
 
-        const socraticResponse = await secureApi.post<any>("/genai/socratic/initial", socraticPayload)
+        if (shouldContinue && feedbackCounter < 5) {
+          // Generate feedback
+          const fbRes = await secureApi.post<any>(
+            "/genai/feedback/generate",
+            {
+              messages: updatedConvo,
+              model: "gpt-4o",
+              query: question.quiz_question_text,
+              student_answer:
+                question.question_type === "sa"
+                  ? question.short_answer_text || ""
+                  : selectedOptionData?.option_text || "",
+              correct_answer: correctAns,
+              contextual_answer: contextAnswer,
+            },
+          )
+          addMessage({ sender: "response", content: fbRes.data.feedback, type: "feedback" })
+          const afterFb = [...updatedConvo, { role: "assistant", content: fbRes.data.feedback }]
+          setConversationMessages(afterFb)
 
-        if (socraticResponse.ok && socraticResponse.data) {
-          setActualAnswer(socraticResponse.data.sub_question)
+          // Follow-up question
+          const fuRes = await secureApi.post<any>(
+            "/genai/follow-up-socratic/ask",
+            {
+              query: question.quiz_question_text,
+              student_answer:
+                question.question_type === "sa"
+                  ? question.short_answer_text || ""
+                  : selectedOptionData?.option_text || "",
+              correct_answer: correctAns,
+              messages: afterFb,
+              model: "gpt-4o",
+              contextual_answer: contextAnswer,
+            },
+          )
+          if (fuRes.ok && fuRes.data) {
+            addMessage({
+              sender: "response",
+              content: fuRes.data.sub_question,
+              type: "question",
+            })
+            const finalConvo = [
+              ...afterFb,
+              { role: "assistant", content: fuRes.data.sub_question },
+            ]
+            setConversationMessages(finalConvo)
+            await saveConversation(
+              question.quiz_question_text,
+              question.options.map((o) => o.option_text).join(", "),
+              question.question_type === "sa"
+                ? question.short_answer_text || ""
+                : selectedOptionData?.option_text || "",
+              correctAns || "",
+              contextAnswer,
+              finalConvo,
+            )
+          }
+          setFeedbackCounter((prev) => prev + 1)
+        } else {
+          // Summary and knowledge-gap
+          const [sumRes, gapRes] = await Promise.all([
+            secureApi.post<any>(
+              "/genai/user-summary/generate",
+              {
+                query: question.quiz_question_text,
+                messages: updatedConvo,
+                model: "gpt-4o",
+                contextual_answer: contextAnswer,
+              },
+            ),
+            secureApi.post<any>(
+              "/genai/knowledge-gap/analyze",
+              {
+                query: question.quiz_question_text,
+                student_answer:
+                  question.question_type === "sa"
+                    ? question.short_answer_text || ""
+                    : selectedOptionData?.option_text || "",
+                correct_answer: correctAns,
+                messages: updatedConvo,
+                model: "gpt-4o",
+                contextual_answer: contextAnswer,
+              },
+            ),
+          ])
 
           addMessage({
             sender: "response",
-            content: socraticResponse.data.sub_question,
-            type: "question",
+            content: `The correct answer is: ${correctAns}`,
+            type: "Actual-Answer",
+          })
+          addMessage({ sender: "response", content: sumRes.data.summary, type: "summary" })
+          addMessage({
+            sender: "response",
+            content: gapRes.data["knowledge-gap"],
+            type: "knowledge-gap",
           })
 
-          setConversationMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: socraticResponse.data.sub_question },
-          ])
-        }
-      }
-    } catch (error) {
-      console.error("❌ Error initializing chat:", error)
-      addMessage({
-        sender: "response",
-        content: "Sorry, I encountered an error. Please try again.",
-      })
-    } finally {
-      setIsTyping(false)
-    }
-  }
+          const finalConvo = [
+            ...updatedConvo,
+            { role: "assistant", content: `The correct answer is: ${correctAns}` },
+            { role: "assistant", content: sumRes.data.summary },
+            { role: "assistant", content: gapRes.data["knowledge-gap"] },
+          ]
+          setConversationMessages(finalConvo)
 
-  const sendMessage = async (content: string) => {
-    if (!content.trim() || !question) return
-
-    addMessage({ sender: "user", content })
-
-    const updatedConversationMessages: ConvoMessage[] = [
-      ...conversationMessages,
-      { role: "user", content },
-    ]
-    setConversationMessages(updatedConversationMessages)
-
-    setIsTyping(true)
-
-    try {
-      const correct_answer =
-        question.question_type === "sa"
-          ? question.short_answer_text
-          : question.options.find((o) => o.is_correct)?.option_text
-
-      const isCorrectPayload = {
-        question_text: question.quiz_question_text,
-        user_answer: content,
-        correct_answer,
-        model: "gpt-4o",
-        contextual_answer: contextAnswer,
-      }
-
-      const isCorrectResponse = await secureApi.post<any>(
-        "/genai/answer-evaluation/answer/evaluate",
-        isCorrectPayload
-      )
-      const shouldContinue = !isCorrectResponse.data.is_correct
-
-      if (shouldContinue && feedbackCounter < 5) {
-        const feedbackPayload = {
-          messages: updatedConversationMessages,
-          model: "gpt-4o",
-          query: question.quiz_question_text,
-          student_answer:
+          await saveConversation(
+            question.quiz_question_text,
+            question.options.map((o) => o.option_text).join(", "),
             question.question_type === "sa"
               ? question.short_answer_text || ""
               : selectedOptionData?.option_text || "",
-          correct_answer:
-            question.options.find((o) => o.is_correct)?.option_text || question.short_answer_text || "",
-          contextual_answer: contextAnswer,
+            correctAns || "",
+            contextAnswer,
+            finalConvo,
+          )
         }
-
-        const feedbackResponse = await secureApi.post<any>("/genai/feedback/generate", feedbackPayload)
-        const feedback = feedbackResponse.data.feedback
-
-        addMessage({ sender: "response", content: feedback, type: "feedback" })
-
-        const newConvoMessages: ConvoMessage[] = [
-          ...updatedConversationMessages,
-          { role: "assistant", content: feedback },
-        ]
-        setConversationMessages(newConvoMessages)
-
-        const followUpPayload = {
-          query: question.quiz_question_text,
-          student_answer:
-            question.question_type === "sa"
-              ? question.short_answer_text || ""
-              : selectedOptionData?.option_text || "",
-          correct_answer,
-          messages: newConvoMessages,
-          model: "gpt-4o",
-          contextual_answer: contextAnswer,
-        }
-
-        const followUpResponse = await secureApi.post<any>(
-          "/genai/follow-up-socratic/ask",
-          followUpPayload
-        )
-
-        if (followUpResponse.ok && followUpResponse.data) {
-          const followUpQuestion = followUpResponse.data.sub_question
-
-          addMessage({ sender: "response", content: followUpQuestion, type: "question" })
-          setConversationMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: followUpQuestion },
-          ])
-        }
-
-        // if (feedbackCounter === 0) {
-        //   const payload = {
-        //     organization_id: organizationId,
-        //     user_id: userId,
-        //     subject_id: subjectId,
-        //     topic_id: topicId,
-        //     quiz_id: quizId,
-        //     question_number: currentQuestionId,
-        //     attempt_id: attemptId || 1,
-        //     is_complete: true,
-        //     is_correct: selectedOptionData?.is_correct || false,
-        //     is_ai_assisted: true,
-        //     completion_time_seconds: 0,
-        //   }
-
-        //   await api.patch(`/user-quiz-attempts/quiz-attempts/`, payload)
-        // }
-
-        setFeedbackCounter((prev) => prev + 1)
-      } else {
-        const summaryPayload = {
-          query: question.quiz_question_text,
-          messages: updatedConversationMessages,
-          model: "gpt-4o",
-          contextual_answer: contextAnswer,
-        }
-
-        const knowledgeGapPayload = {
-          query: question.quiz_question_text,
-          student_answer:
-            question.question_type === "sa"
-              ? question.short_answer_text || ""
-              : selectedOptionData?.option_text || "",
-          correct_answer,
-          messages: updatedConversationMessages,
-          model: "gpt-4o",
-          contextual_answer: contextAnswer,
-        }
-
-        const [summaryResponse, knowledgeGapResponse] = await Promise.all([
-          secureApi.post<any>("/genai/user-summary/generate", summaryPayload),
-          secureApi.post<any>("/genai/knowledge-gap/analyze", knowledgeGapPayload),
-        ])
-
+      } catch (error) {
+        console.error(error)
         addMessage({
           sender: "response",
-          content: `The correct answer is : ${correct_answer}`,
-          type: "Actual-Answer",
+          content: "Sorry, I encountered an error processing your message.",
         })
-
-        addMessage({
-          sender: "response",
-          content: summaryResponse.data.summary,
-          type: "summary",
-        })
-
-        addMessage({
-          sender: "response",
-          content: knowledgeGapResponse.data.knowledge_gap,
-          type: "knowledge-gap",
-        })
+      } finally {
+        setIsTyping(false)
       }
-    } catch (error) {
-      console.error("❌ Error sending message:", error)
-      addMessage({
-        sender: "response",
-        content: "Sorry, I encountered an error processing your message. Please try again.",
-      })
-    } finally {
-      setIsTyping(false)
-    }
-  }
+    },
+    [
+      question,
+      conversationMessages,
+      contextAnswer,
+      feedbackCounter,
+      selectedOptionData,
+      addMessage,
+      saveConversation,
+    ],
+  )
 
   return {
     messages,
     isTyping,
-    sendMessage,
     initializeChat,
+    sendMessage,
     resetChat,
     messagesEndRef,
   }
