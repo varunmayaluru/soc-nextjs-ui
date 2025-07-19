@@ -14,6 +14,7 @@ interface Message {
 interface ConvoMessage {
   role: string
   content: string
+  type?: "feedback" | "question" | "summary" | "knowledge-gap" | "Actual-Answer"
 }
 
 interface QuestionOption {
@@ -97,6 +98,52 @@ export function useQuizChat({
     [userId, quizId, currentQuestionId, attemptId],
   )
 
+  // Determine message type based on content and context
+  const determineMessageType = useCallback((content: string, role: string, index: number): Message["type"] => {
+    if (role === "user") return undefined
+
+    // First assistant message is usually the question
+    if (index === 0) return "question"
+
+    const lowerContent = content.toLowerCase()
+
+    // Check for specific patterns to determine type
+    if (lowerContent.includes("the correct answer is") || lowerContent.includes("correct answer:")) {
+      return "Actual-Answer"
+    }
+    if (
+      lowerContent.includes("summary") ||
+      lowerContent.includes("to summarize") ||
+      lowerContent.includes("in summary")
+    ) {
+      return "summary"
+    }
+    if (
+      lowerContent.includes("knowledge gap") ||
+      lowerContent.includes("areas to focus") ||
+      lowerContent.includes("need to work on")
+    ) {
+      return "knowledge-gap"
+    }
+    if (
+      lowerContent.includes("feedback") ||
+      lowerContent.includes("let me help") ||
+      lowerContent.includes("understand")
+    ) {
+      return "feedback"
+    }
+    if (
+      content.includes("?") ||
+      lowerContent.includes("what") ||
+      lowerContent.includes("how") ||
+      lowerContent.includes("why")
+    ) {
+      return "question"
+    }
+
+    return undefined
+  }, [])
+
   // Load conversation from storage
   const loadConversation = useCallback(async (): Promise<ConversationData | null> => {
     if (!currentQuestionId || !userId) return null
@@ -107,18 +154,18 @@ export function useQuizChat({
         db_name: "probed-edu-db",
         collection_name: "probed-edu-collection",
       }
-      console.log("Loading conversation for session:", generateSessionId())
+      console.log("🔍 Loading conversation for session:", generateSessionId())
       const res = await secureApi.post<ConversationData>("/conv-store/conv-store/read", payload)
 
       if (res.ok && res.data && res.data.messages && res.data.messages.length > 0) {
-        console.log("Conversation loaded with", res.data.messages.length, "messages")
+        console.log("✅ Conversation loaded with", res.data.messages.length, "messages")
         return res.data
       } else {
-        console.log("No existing conversation found")
+        console.log("📭 No existing conversation found")
         return null
       }
     } catch (err) {
-      console.error("Error loading conversation:", err)
+      console.error("❌ Error loading conversation:", err)
       return null
     }
   }, [generateSessionId, currentQuestionId, userId])
@@ -135,30 +182,33 @@ export function useQuizChat({
           db_name: "probed-edu-db",
           collection_name: "probed-edu-collection",
         }
-        console.log("Saving conversation for session:", generateSessionId())
+        console.log("💾 Saving conversation for session:", generateSessionId())
         const res = await secureApi.post("/conv-store/conv-store/write", payload)
         if (!res.ok) {
-          console.error("Failed to save conversation:", res)
+          console.error("❌ Failed to save conversation:", res)
         } else {
-          console.log("Conversation saved successfully")
+          console.log("✅ Conversation saved successfully")
         }
       } catch (err) {
-        console.error("Error saving conversation:", err)
+        console.error("❌ Error saving conversation:", err)
       }
     },
     [generateSessionId, currentQuestionId, userId],
   )
 
-  // Convert conversation messages to UI messages
-  const uiFromConvo = useCallback((convo: ConvoMessage[]): Message[] => {
-    return convo.map((m, i) => ({
-      id: i + 1,
-      sender: m.role === "user" ? "user" : "response",
-      content: m.content,
-      timestamp: "Previously",
-      type: i === 0 ? "question" : undefined,
-    }))
-  }, [])
+  // Convert conversation messages to UI messages with proper type detection
+  const uiFromConvo = useCallback(
+    (convo: ConvoMessage[]): Message[] => {
+      return convo.map((m, i) => ({
+        id: i + 1,
+        sender: m.role === "user" ? "user" : "response",
+        content: m.content,
+        timestamp: "Previously",
+        type: m.type || determineMessageType(m.content, m.role, i),
+      }))
+    },
+    [determineMessageType],
+  )
 
   // Create conversation data object
   const createConversationData = useCallback(
@@ -189,22 +239,22 @@ export function useQuizChat({
   const loadExistingConversation = useCallback(async () => {
     if (!question || !currentQuestionId || conversationLoaded) return
 
-    console.log("Loading existing conversation for question:", currentQuestionId)
+    console.log("🔍 Loading existing conversation for question:", currentQuestionId)
     setIsTyping(true)
 
     try {
       const existing = await loadConversation()
       if (existing && existing.messages && existing.messages.length > 0) {
-        console.log("Found existing conversation, restoring state")
+        console.log("✅ Found existing conversation, restoring state")
         setConversationMessages(existing.messages)
 
-        // Convert conversation messages to UI messages
+        // Convert conversation messages to UI messages with proper type detection
         const uiMessages: Message[] = existing.messages.map((m, i) => ({
           id: i + 1,
           sender: m.role === "user" ? "user" : "response",
           content: m.content,
           timestamp: "Previously",
-          type: i === 0 ? "question" : undefined,
+          type: m.type || determineMessageType(m.content, m.role, i),
         }))
         setMessages(uiMessages)
 
@@ -224,7 +274,7 @@ export function useQuizChat({
       }
       setConversationLoaded(true)
     } catch (error) {
-      console.error("Error loading existing conversation:", error)
+      console.error("❌ Error loading existing conversation:", error)
       setMessages([])
       setConversationMessages([])
       setIsInitialized(false)
@@ -232,11 +282,11 @@ export function useQuizChat({
     } finally {
       setIsTyping(false)
     }
-  }, [question, currentQuestionId, conversationLoaded, loadConversation])
+  }, [question, currentQuestionId, conversationLoaded, loadConversation, determineMessageType])
 
   // Reset conversation state when question changes
   const resetConversationState = useCallback(() => {
-    console.log("Resetting conversation state for new question")
+    console.log("🔄 Resetting conversation state for new question")
     setMessages([])
     setConversationMessages([])
     setContextAnswer("")
@@ -290,31 +340,31 @@ export function useQuizChat({
 
   const initializeChat = async (userAnswer: string) => {
     if (!question || !currentQuestionId) {
-      console.log("Cannot initialize chat: missing question or currentQuestionId")
+      console.log("⚠️ Cannot initialize chat: missing question or currentQuestionId")
       return
     }
 
     // If already initialized or conversation exists, don't reinitialize
     if (isInitialized || conversationMessages.length > 0) {
-      console.log("Chat already initialized or conversation exists")
+      console.log("⚠️ Chat already initialized or conversation exists")
       return
     }
 
-    console.log("Initializing new chat for question:", currentQuestionId)
+    console.log("🚀 Initializing new chat for question:", currentQuestionId)
     setIsTyping(true)
 
     try {
       // Double-check if conversation exists
       const existing = await loadConversation()
       if (existing && existing.messages && existing.messages.length > 0) {
-        console.log("Found existing conversation during initialization")
+        console.log("✅ Found existing conversation during initialization")
         setConversationMessages(existing.messages)
         const uiMessages: Message[] = existing.messages.map((m, i) => ({
           id: i + 1,
           sender: m.role === "user" ? "user" : "response",
           content: m.content,
           timestamp: "Previously",
-          type: i === 0 ? "question" : undefined,
+          type: m.type || determineMessageType(m.content, m.role, i),
         }))
         setMessages(uiMessages)
         setContextAnswer(existing.contextual_answer || "")
@@ -353,7 +403,7 @@ export function useQuizChat({
       }, 500)
 
       const conversationObj: ConvoMessage[] = [
-        { role: "assistant", content: question.quiz_question_text },
+        { role: "assistant", content: question.quiz_question_text, type: "question" as const },
         { role: "user", content: userAnswer },
         { role: "assistant", content: "I'll help you understand this question better." },
       ]
@@ -394,7 +444,10 @@ export function useQuizChat({
             content: socraticResponse.data.sub_question,
             type: "question",
           })
-          const updatedConvo = [...conversationObj, { role: "assistant", content: socraticResponse.data.sub_question }]
+          const updatedConvo = [
+            ...conversationObj,
+            { role: "assistant", content: socraticResponse.data.sub_question, type: "question" as const },
+          ]
           setConversationMessages(updatedConvo)
 
           // Save initial conversation
@@ -403,7 +456,7 @@ export function useQuizChat({
         }
       }
     } catch (error) {
-      console.error("Error initializing chat:", error)
+      console.error("❌ Error initializing chat:", error)
       addMessage({
         sender: "response",
         content: "Sorry, I encountered an error. Please try again.",
@@ -456,7 +509,7 @@ export function useQuizChat({
 
         const newConvoMessages: ConvoMessage[] = [
           ...updatedConversationMessages,
-          { role: "assistant", content: feedback },
+          { role: "assistant", content: feedback, type: "feedback" as const },
         ]
         setConversationMessages(newConvoMessages)
 
@@ -475,7 +528,10 @@ export function useQuizChat({
         if (followUpResponse.ok && followUpResponse.data) {
           const followUpQuestion = followUpResponse.data.sub_question
           addMessage({ sender: "response", content: followUpQuestion, type: "question" })
-          const finalConvo = [...newConvoMessages, { role: "assistant", content: followUpQuestion }]
+          const finalConvo = [
+            ...newConvoMessages,
+            { role: "assistant", content: followUpQuestion, type: "question" as const },
+          ]
           setConversationMessages(finalConvo)
 
           // Save updated conversation
@@ -525,9 +581,9 @@ export function useQuizChat({
 
         const finalConvo = [
           ...updatedConversationMessages,
-          { role: "assistant", content: `The correct answer is : ${correct_answer}` },
-          { role: "assistant", content: summaryResponse.data.summary },
-          { role: "assistant", content: knowledgeGapResponse.data.knowledge_gap },
+          { role: "assistant", content: `The correct answer is : ${correct_answer}`, type: "Actual-Answer" as const },
+          { role: "assistant", content: summaryResponse.data.summary, type: "summary" as const },
+          { role: "assistant", content: knowledgeGapResponse.data.knowledge_gap, type: "knowledge-gap" as const },
         ]
         setConversationMessages(finalConvo)
 
@@ -536,7 +592,7 @@ export function useQuizChat({
         await saveConversation(conversationData)
       }
     } catch (error) {
-      console.error("Error sending message:", error)
+      console.error("❌ Error sending message:", error)
       addMessage({
         sender: "response",
         content: "Sorry, I encountered an error processing your message. Please try again.",
