@@ -74,11 +74,16 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
       icon: BookOpen,
       label: "Subjects Hub",
     },
-    // {
-    //   href: "/admin/quizupload",
-    //   icon: Upload,
-    //   label: "Quiz Upload",
-    // },
+    {
+      href: "/admin/question-generator",
+      icon: BookOpen,
+      label: "Question Generator",
+    },
+    {
+      href: "/admin/quizupload",
+      icon: Upload,
+      label: "Quiz Upload",
+    },
     {
       href: "/admin/settings",
       icon: Settings,
