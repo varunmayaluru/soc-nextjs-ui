@@ -210,12 +210,15 @@ export function useQuizChat({
     [determineMessageType],
   )
 
-  // Create conversation data object
+  // Create conversation data object, stripping type from messages for backend
   const createConversationData = useCallback(
     (messages: ConvoMessage[], userAnswer?: string): ConversationData => {
       if (!question) {
         throw new Error("Question is required to create conversation data")
       }
+
+      // Remove type from all messages for backend
+      const messagesForBackend = messages.map(({ role, content }) => ({ role, content }));
 
       return {
         query: question.quiz_question_text,
@@ -224,7 +227,7 @@ export function useQuizChat({
         correct_answer: question.options.find((o) => o.is_correct)?.option_text || question.short_answer_text || "",
         contextual_answer: contextAnswer,
         timestamp: new Date().toISOString(),
-        messages: messages,
+        messages: messagesForBackend,
         question_number: currentQuestionId || undefined,
         quiz_id: quizId,
         attempt_id: attemptId || 1,
@@ -403,7 +406,7 @@ export function useQuizChat({
       }, 500)
 
       const conversationObj: ConvoMessage[] = [
-        { role: "assistant", content: question.quiz_question_text, type: "question" as const },
+        { role: "assistant", content: question.quiz_question_text },
         { role: "user", content: userAnswer },
         { role: "assistant", content: "I'll help you understand this question better." },
       ]
@@ -441,12 +444,11 @@ export function useQuizChat({
           setActualAnswer(socraticResponse.data.sub_question)
           addMessage({
             sender: "response",
-            content: socraticResponse.data.sub_question,
-            type: "question",
+            content: socraticResponse.data.sub_question
           })
           const updatedConvo = [
             ...conversationObj,
-            { role: "assistant", content: socraticResponse.data.sub_question, type: "question" as const },
+            { role: "assistant", content: socraticResponse.data.sub_question },
           ]
           setConversationMessages(updatedConvo)
 
@@ -510,33 +512,41 @@ export function useQuizChat({
         const newConvoMessages: ConvoMessage[] = [
           ...updatedConversationMessages,
           { role: "assistant", content: feedback, type: "feedback" as const },
-        ]
-        setConversationMessages(newConvoMessages)
+        ];
+        setConversationMessages(newConvoMessages);
+
+        // Strip type for backend
+        const newConvoMessagesForBackend = newConvoMessages.map(({ role, content }) => ({ role, content }));
 
         const followUpPayload = {
           query: question.quiz_question_text,
           student_answer:
-            question.question_type === "sa" ? question.short_answer_text || "" : selectedOptionData?.option_text || "",
+            question.question_type === "sa"
+              ? question.short_answer_text || ""
+              : selectedOptionData?.option_text || "",
           correct_answer,
-          messages: newConvoMessages,
+          messages: newConvoMessagesForBackend,
           model: "gpt-4o",
           contextual_answer: contextAnswer,
-        }
+        };
 
-        const followUpResponse = await secureApi.post<any>("/genai/follow-up-socratic/ask", followUpPayload)
+        const followUpResponse = await secureApi.post<any>("/genai/follow-up-socratic/ask", followUpPayload);
 
         if (followUpResponse.ok && followUpResponse.data) {
-          const followUpQuestion = followUpResponse.data.sub_question
-          addMessage({ sender: "response", content: followUpQuestion, type: "question" })
+          const followUpQuestion = followUpResponse.data.sub_question;
+          addMessage({ sender: "response", content: followUpQuestion, type: "question" });
           const finalConvo = [
             ...newConvoMessages,
-            { role: "assistant", content: followUpQuestion, type: "question" as const },
-          ]
-          setConversationMessages(finalConvo)
+            { role: "assistant", content: followUpQuestion },
+          ];
+          setConversationMessages(finalConvo);
+
+          // Strip type for backend
+          const finalConvoForBackend = finalConvo.map(({ role, content }) => ({ role, content }));
 
           // Save updated conversation
-          const conversationData = createConversationData(finalConvo)
-          await saveConversation(conversationData)
+          const conversationData = createConversationData(finalConvoForBackend);
+          await saveConversation(conversationData);
         }
 
         setFeedbackCounter((prev) => prev + 1)
@@ -584,12 +594,15 @@ export function useQuizChat({
           { role: "assistant", content: `The correct answer is : ${correct_answer}`, type: "Actual-Answer" as const },
           { role: "assistant", content: summaryResponse.data.summary, type: "summary" as const },
           { role: "assistant", content: knowledgeGapResponse.data.knowledge_gap, type: "knowledge-gap" as const },
-        ]
-        setConversationMessages(finalConvo)
+        ];
+        setConversationMessages(finalConvo);
+
+        // Strip type for backend
+        const finalConvoForBackend = finalConvo.map(({ role, content }) => ({ role, content }));
 
         // Save final conversation
-        const conversationData = createConversationData(finalConvo)
-        await saveConversation(conversationData)
+        const conversationData = createConversationData(finalConvoForBackend);
+        await saveConversation(conversationData);
       }
     } catch (error) {
       console.error("❌ Error sending message:", error)
