@@ -400,7 +400,7 @@ export default function QuestionGenerator() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                    <SelectItem value="gpt-4.1">GPT-4(Advanced)</SelectItem>
+                    <SelectItem value="gpt-4.1">GPT-4.1(Advanced)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
