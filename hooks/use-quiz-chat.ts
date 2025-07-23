@@ -199,13 +199,16 @@ export function useQuizChat({
   // Convert conversation messages to UI messages with proper type detection
   const uiFromConvo = useCallback(
     (convo: ConvoMessage[]): Message[] => {
-      return convo.map((m, i) => ({
-        id: i + 1,
-        sender: m.role === "user" ? "user" : "response",
-        content: m.content,
-        timestamp: "Previously",
-        type: m.type || determineMessageType(m.content, m.role, i),
-      }))
+      return convo.map((m, i) => {
+        const type = m.type || determineMessageType(m.content, m.role, i);
+        return {
+          id: i + 1,
+          sender: m.role === "user" ? "user" : "response",
+          content: m.content,
+          timestamp: "Previously",
+          type,
+        };
+      });
     },
     [determineMessageType],
   )
@@ -218,7 +221,6 @@ export function useQuizChat({
       }
 
       // Remove type from all messages for backend
-      const messagesForBackend = messages.map(({ role, content }) => ({ role, content }));
 
       return {
         query: question.quiz_question_text,
@@ -227,7 +229,7 @@ export function useQuizChat({
         correct_answer: question.options.find((o) => o.is_correct)?.option_text || question.short_answer_text || "",
         contextual_answer: contextAnswer,
         timestamp: new Date().toISOString(),
-        messages: messagesForBackend,
+        messages: messages,
         question_number: currentQuestionId || undefined,
         quiz_id: quizId,
         attempt_id: attemptId || 1,
@@ -252,13 +254,7 @@ export function useQuizChat({
         setConversationMessages(existing.messages)
 
         // Convert conversation messages to UI messages with proper type detection
-        const uiMessages: Message[] = existing.messages.map((m, i) => ({
-          id: i + 1,
-          sender: m.role === "user" ? "user" : "response",
-          content: m.content,
-          timestamp: "Previously",
-          type: m.type || determineMessageType(m.content, m.role, i),
-        }))
+        const uiMessages: Message[] = uiFromConvo(existing.messages);
         setMessages(uiMessages)
 
         setContextAnswer(existing.contextual_answer || "")
@@ -322,14 +318,17 @@ export function useQuizChat({
   }, [initialContextAnswer])
 
   const addMessage = useCallback((message: Omit<Message, "id" | "timestamp">) => {
+    // Infer type if not provided
+    const inferredType = message.type || determineMessageType(message.content, message.sender, 0);
     const newMessage: Message = {
       ...message,
       id: Date.now() + Math.random(),
       timestamp: "Just now",
+      type: inferredType,
     }
     setMessages((prev) => [...prev, newMessage])
     return newMessage
-  }, [])
+  }, [determineMessageType])
 
   const resetChat = useCallback(() => {
     setMessages([])
@@ -362,13 +361,7 @@ export function useQuizChat({
       if (existing && existing.messages && existing.messages.length > 0) {
         console.log("✅ Found existing conversation during initialization")
         setConversationMessages(existing.messages)
-        const uiMessages: Message[] = existing.messages.map((m, i) => ({
-          id: i + 1,
-          sender: m.role === "user" ? "user" : "response",
-          content: m.content,
-          timestamp: "Previously",
-          type: m.type || determineMessageType(m.content, m.role, i),
-        }))
+        const uiMessages: Message[] = uiFromConvo(existing.messages);
         setMessages(uiMessages)
         setContextAnswer(existing.contextual_answer || "")
         setActualAnswer(existing.actual_answer || "")
@@ -406,7 +399,7 @@ export function useQuizChat({
       }, 500)
 
       const conversationObj: ConvoMessage[] = [
-        { role: "assistant", content: question.quiz_question_text },
+        { role: "assistant", content: question.quiz_question_text ,type: "question" },
         { role: "user", content: userAnswer },
         { role: "assistant", content: "I'll help you understand this question better." },
       ]
@@ -444,11 +437,12 @@ export function useQuizChat({
           setActualAnswer(socraticResponse.data.sub_question)
           addMessage({
             sender: "response",
-            content: socraticResponse.data.sub_question
+            content: socraticResponse.data.sub_question,
+            type: "question",
           })
           const updatedConvo = [
             ...conversationObj,
-            { role: "assistant", content: socraticResponse.data.sub_question },
+            { role: "assistant", content: socraticResponse.data.sub_question, type: "question" as const },
           ]
           setConversationMessages(updatedConvo)
 
@@ -535,16 +529,14 @@ export function useQuizChat({
         if (followUpResponse.ok && followUpResponse.data) {
           const followUpQuestion = followUpResponse.data.sub_question;
           addMessage({ sender: "response", content: followUpQuestion, type: "question" });
-          const finalConvo = [
+          const finalConvo: ConvoMessage[] = [
             ...newConvoMessages,
-            { role: "assistant", content: followUpQuestion },
+            { role: "assistant", content: followUpQuestion, type: "question" as const },
           ];
           setConversationMessages(finalConvo);
 
-          // Strip type for backend
+          // Strip type for backend only
           const finalConvoForBackend = finalConvo.map(({ role, content }) => ({ role, content }));
-
-          // Save updated conversation
           const conversationData = createConversationData(finalConvoForBackend);
           await saveConversation(conversationData);
         }
@@ -589,7 +581,7 @@ export function useQuizChat({
           type: "knowledge-gap",
         })
 
-        const finalConvo = [
+        const finalConvo: ConvoMessage[] = [
           ...updatedConversationMessages,
           { role: "assistant", content: `The correct answer is : ${correct_answer}`, type: "Actual-Answer" as const },
           { role: "assistant", content: summaryResponse.data.summary, type: "summary" as const },
@@ -597,10 +589,8 @@ export function useQuizChat({
         ];
         setConversationMessages(finalConvo);
 
-        // Strip type for backend
+        // Strip type for backend only
         const finalConvoForBackend = finalConvo.map(({ role, content }) => ({ role, content }));
-
-        // Save final conversation
         const conversationData = createConversationData(finalConvoForBackend);
         await saveConversation(conversationData);
       }
