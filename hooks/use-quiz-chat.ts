@@ -392,6 +392,7 @@ export function useQuizChat({
         id: 3,
         sender: "response",
         content: "I'll help you understand this question better.",
+        type: 'feedback',
         timestamp: "Just now",
       }
       setTimeout(() => {
