@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function QuestionGeneratorPage() {
   return (
     <AdminProtectedRoute>
-      <div className="container mx-auto py-8 px-4">
+      <div className="container mx-auto py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Question Generator</h1>
           <p className="text-muted-foreground mt-2">

@@ -22,11 +22,12 @@ export default function QuestionGenerator() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [progress, setProgress] = useState(0)
   const [isDownloadReady, setIsDownloadReady] = useState(false)
+  const [lastError, setLastError] = useState<string | null>(null)
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
     if (selectedFile) {
-      // Validate file type
+      // Validate file type - match your Python backend expectations
       const allowedTypes = [
         "application/pdf",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -57,6 +58,7 @@ export default function QuestionGenerator() {
 
       setFile(selectedFile)
       setIsDownloadReady(false)
+      setLastError(null)
       toast({
         title: "File uploaded successfully",
         description: `${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB)`,
@@ -67,13 +69,28 @@ export default function QuestionGenerator() {
   const downloadExcelFromAPI = async (count: number): Promise<void> => {
     if (!file) throw new Error("No file selected")
 
-    // Create FormData for file upload
+    console.log("🚀 Starting quiz generation...")
+    console.log("📁 File:", file.name, "Size:", (file.size / 1024 / 1024).toFixed(2), "MB")
+
+    // Get Python backend URL from environment
+    const pythonBackendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
+    const apiUrl = `${pythonBackendUrl}/genai/quiz-generation/quiz/generate`
+///api/v1/genai/quiz-generation/quiz/generate
+    console.log("📡 API URL:", apiUrl)
+
+    // Create FormData for file upload - match your Python FastAPI exactly
     const formData = new FormData()
     formData.append("file", file)
     formData.append("total_questions", count.toString())
-    formData.append("chunk_size", chunkSize || "1000")
-    formData.append("overlap", overlap || "100")
-    formData.append("model", model || "gpt-3.5-turbo")
+    formData.append("chunk_size", chunkSize || "7000") // Match Python default
+    formData.append("overlap", overlap || "500") // Match Python default
+    formData.append("model", model || "gpt-4o") // Match Python default
+
+    console.log("📋 Form data prepared:")
+    console.log("  - total_questions:", count)
+    console.log("  - chunk_size:", chunkSize || "7000")
+    console.log("  - overlap:", overlap || "500")
+    console.log("  - model:", model || "gpt-4o")
 
     // Simulate progress updates
     const progressInterval = setInterval(() => {
@@ -81,55 +98,70 @@ export default function QuestionGenerator() {
     }, 500)
 
     try {
-      // Make direct fetch call to handle blob response properly
-      const response = await fetch("/api/genai/quiz-generation/quiz/generate", {
+      console.log("📡 Sending request to Python backend...")
+
+      // Direct fetch to your Python FastAPI backend
+      const response = await fetch(apiUrl, {
         method: "POST",
         body: formData,
+        // Add headers if you need authentication
         headers: {
-          // Don't set Content-Type header for FormData, let browser set it
+          // Don't set Content-Type for FormData - browser will set it with boundary
+          // Add authentication headers if needed:
+          // 'Authorization': `Bearer ${token}`,
         },
       })
 
       clearInterval(progressInterval)
       setProgress(100)
 
+      console.log("📡 Response status:", response.status)
+      console.log("📡 Response headers:", Object.fromEntries(response.headers.entries()))
+
       if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`API Error: ${response.status} - ${errorText}`)
+        let errorMessage = `HTTP ${response.status}`
+        try {
+          const errorData = await response.json()
+          errorMessage = errorData.detail || errorData.message || errorMessage
+        } catch {
+          errorMessage = (await response.text()) || errorMessage
+        }
+
+        console.error("❌ API Error:", errorMessage)
+        throw new Error(`API Error: ${errorMessage}`)
       }
 
-      // Check if response is actually an Excel file
-      const contentType = response.headers.get("content-type")
-      console.log("Response content-type:", contentType)
-
-      // Get the blob directly from the response
+      // Get the blob directly from response
       const blob = await response.blob()
-      console.log("Blob size:", blob.size, "Blob type:", blob.type)
+      console.log("📦 Received blob:", blob.size, "bytes, type:", blob.type)
 
-      // Ensure the blob has the correct MIME type for Excel
-      const excelBlob = new Blob([blob], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      })
+      // Validate blob
+      if (!blob || blob.size === 0) {
+        throw new Error("Received empty file from server")
+      }
 
-      // Create download link
-      const url = window.URL.createObjectURL(excelBlob)
+      // Create download URL
+      const url = window.URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.href = url
 
-      // Generate filename with timestamp
+      // Generate filename - match your Python backend pattern
+      const baseFilename = file.name.replace(/\.[^/.]+$/, "") // Remove extension
       const timestamp = new Date().toISOString().split("T")[0]
-      const filename = `quiz_questions_${timestamp}_${Date.now()}.xlsx`
+      const filename = `${baseFilename}_ai_generated_quiz.xlsx`
       link.download = filename
 
-      // Add link to DOM, click it, then remove it
+      console.log("💾 Downloading file:", filename)
+
+      // Trigger download
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
 
-      // Clean up the object URL
+      // Clean up the object URL after a short delay
       setTimeout(() => {
         window.URL.revokeObjectURL(url)
-      }, 100)
+      }, 1000)
 
       setIsDownloadReady(true)
 
@@ -137,16 +169,39 @@ export default function QuestionGenerator() {
         title: "Excel file downloaded successfully!",
         description: `${filename} has been saved to your downloads folder.`,
       })
+
+      console.log("✅ Download completed successfully!")
     } catch (error) {
       clearInterval(progressInterval)
-      console.error("Error downloading Excel file:", error)
+      console.error("❌ Error downloading Excel file:", error)
+
+      // Provide specific error messages
+      let errorMessage = "Unknown error occurred"
+      if (error instanceof Error) {
+        if (error.message.includes("Failed to fetch")) {
+          errorMessage = `Cannot connect to Python backend at ${pythonBackendUrl}. Please ensure your FastAPI server is running.`
+        } else if (error.message.includes("NetworkError")) {
+          errorMessage = "Network error. Check your internet connection and backend server."
+        } else if (error.message.includes("timeout")) {
+          errorMessage = "Request timed out. The file might be too large or the server is busy."
+        } else {
+          errorMessage = error.message
+        }
+      }
+
+      toast({
+        title: "Generation failed",
+        description: errorMessage,
+        variant: "destructive",
+      })
 
       // Fallback: Generate mock Excel file client-side
+      console.log("🔄 Attempting fallback generation...")
       await generateFallbackExcel(count)
 
       toast({
         title: "Downloaded with fallback data",
-        description: "API unavailable. Downloaded sample questions for demonstration.",
+        description: "Backend unavailable. Downloaded sample questions for demonstration.",
         variant: "destructive",
       })
     }
@@ -155,6 +210,8 @@ export default function QuestionGenerator() {
   // Fallback function to generate Excel client-side if API fails
   const generateFallbackExcel = async (count: number): Promise<void> => {
     try {
+      console.log("📊 Generating fallback Excel with", count, "questions...")
+
       // Dynamic import to reduce bundle size
       const XLSX = await import("xlsx")
 
@@ -201,8 +258,9 @@ export default function QuestionGenerator() {
       XLSX.writeFile(workbook, fileName)
 
       setIsDownloadReady(true)
+      console.log("✅ Fallback Excel generated:", fileName)
     } catch (error) {
-      console.error("Error generating fallback Excel:", error)
+      console.error("❌ Error generating fallback Excel:", error)
       toast({
         title: "Error generating fallback file",
         description: "Unable to create Excel file. Please try again.",
@@ -236,19 +294,19 @@ export default function QuestionGenerator() {
       return
     }
 
-    if (chunkSize && (Number.parseInt(chunkSize) < 100 || Number.parseInt(chunkSize) > 9999)) {
+    if (chunkSize && (Number.parseInt(chunkSize) < 100 || Number.parseInt(chunkSize) > 10000)) {
       toast({
         title: "Invalid chunk size",
-        description: "Chunk size should be between 100 and 9999 characters.",
+        description: "Chunk size should be between 100 and 10000 characters.",
         variant: "destructive",
       })
       return
     }
 
-    if (overlap && (Number.parseInt(overlap) < 0 || Number.parseInt(overlap) > 1000)) {
+    if (overlap && (Number.parseInt(overlap) < 0 || Number.parseInt(overlap) > 2000)) {
       toast({
         title: "Invalid overlap",
-        description: "Overlap should be between 0 and 1000 characters.",
+        description: "Overlap should be between 0 and 2000 characters.",
         variant: "destructive",
       })
       return
@@ -264,7 +322,7 @@ export default function QuestionGenerator() {
 
       await downloadExcelFromAPI(count)
     } catch (error) {
-      console.error("Error generating questions:", error)
+      console.error("❌ Error generating questions:", error)
       toast({
         title: "Generation failed",
         description: "There was an error generating the questions. Please try again.",
@@ -292,6 +350,14 @@ export default function QuestionGenerator() {
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
+      {/* Error Alert */}
+      {lastError && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error:</strong>
+          <span className="block sm:inline">{lastError}</span>
+        </div>
+      )}
+
       {/* Main Form Card */}
       <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50/50">
         <CardHeader className="pb-6">
@@ -396,11 +462,12 @@ export default function QuestionGenerator() {
                 </Label>
                 <Select value={model} onValueChange={setModel}>
                   <SelectTrigger className="h-12 text-base">
-                    <SelectValue placeholder="Select AI model" />
+                    <SelectValue placeholder="Select AI model (default: gpt-4o)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                    <SelectItem value="gpt-4.1">GPT-4.1(Advanced)</SelectItem>
+                    <SelectItem value="gpt-4o">GPT-4o (Default)</SelectItem>
+                    <SelectItem value="gpt-4">GPT-4</SelectItem>
+                    <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -413,13 +480,13 @@ export default function QuestionGenerator() {
                   id="chunk-size"
                   type="number"
                   min="100"
-                  max="9999"
-                  placeholder="Default: 1000"
+                  max="10000"
+                  placeholder="Default: 7000"
                   value={chunkSize}
                   onChange={(e) => setChunkSize(e.target.value)}
                   className="h-12 text-base"
                 />
-                <p className="text-xs text-muted-foreground">How much text to analyze at once (100-9999)</p>
+                <p className="text-xs text-muted-foreground">How much text to analyze at once (100-10000)</p>
               </div>
 
               <div className="space-y-3">
@@ -430,13 +497,13 @@ export default function QuestionGenerator() {
                   id="overlap"
                   type="number"
                   min="0"
-                  max="1000"
-                  placeholder="Default: 100"
+                  max="2000"
+                  placeholder="Default: 500"
                   value={overlap}
                   onChange={(e) => setOverlap(e.target.value)}
                   className="h-12 text-base"
                 />
-                <p className="text-xs text-muted-foreground">Text overlap between chunks (0-1000)</p>
+                <p className="text-xs text-muted-foreground">Text overlap between chunks (0-2000)</p>
               </div>
             </div>
           </div>
@@ -464,6 +531,20 @@ export default function QuestionGenerator() {
               </div>
               <p className="text-sm text-green-600">
                 Your Excel file has been downloaded automatically. Check your downloads folder.
+              </p>
+            </div>
+          )}
+
+          {/* Debug Info (Development Only) */}
+          {process.env.NODE_ENV === "development" && (
+            <div className="space-y-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 className="font-medium text-gray-800">Debug Information:</h4>
+              <p className="text-xs text-gray-600">
+                Backend URL: {process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL || "http://localhost:8000"}
+              </p>
+              <p className="text-xs text-gray-600">
+                Full API URL:{" "}
+                {(process.env.NEXT_PUBLIC_PYTHON_BACKEND_URL || "http://localhost:8000") + "/quiz/generate"}
               </p>
             </div>
           )}
