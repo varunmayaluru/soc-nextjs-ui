@@ -69,14 +69,9 @@ export default function QuestionGenerator() {
   const downloadExcelFromAPI = async (count: number): Promise<void> => {
     if (!file) throw new Error("No file selected")
 
-    console.log("🚀 Starting quiz generation...")
-    console.log("📁 File:", file.name, "Size:", (file.size / 1024 / 1024).toFixed(2), "MB")
-
     // Get Python backend URL from environment
     const pythonBackendUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
     const apiUrl = `${pythonBackendUrl}/genai/quiz-generation/quiz/generate`
-///api/v1/genai/quiz-generation/quiz/generate
-    console.log("📡 API URL:", apiUrl)
 
     // Create FormData for file upload - match your Python FastAPI exactly
     const formData = new FormData()
@@ -86,19 +81,12 @@ export default function QuestionGenerator() {
     formData.append("overlap", overlap || "500") // Match Python default
     formData.append("model", model || "gpt-4o") // Match Python default
 
-    console.log("📋 Form data prepared:")
-    console.log("  - total_questions:", count)
-    console.log("  - chunk_size:", chunkSize || "7000")
-    console.log("  - overlap:", overlap || "500")
-    console.log("  - model:", model || "gpt-4o")
-
     // Simulate progress updates
     const progressInterval = setInterval(() => {
       setProgress((prev) => Math.min(prev + 10, 90))
     }, 500)
 
     try {
-      console.log("📡 Sending request to Python backend...")
       const headers = new Headers();
       const token = localStorage.getItem("authToken");
       if (token) {
@@ -117,9 +105,6 @@ export default function QuestionGenerator() {
       clearInterval(progressInterval)
       setProgress(100)
 
-      console.log("📡 Response status:", response.status)
-      console.log("📡 Response headers:", Object.fromEntries(response.headers.entries()))
-
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}`
         try {
@@ -129,13 +114,11 @@ export default function QuestionGenerator() {
           errorMessage = (await response.text()) || errorMessage
         }
 
-        console.error("❌ API Error:", errorMessage)
         throw new Error(`API Error: ${errorMessage}`)
       }
 
       // Get the blob directly from response
       const blob = await response.blob()
-      console.log("📦 Received blob:", blob.size, "bytes, type:", blob.type)
 
       // Validate blob
       if (!blob || blob.size === 0) {
@@ -152,8 +135,6 @@ export default function QuestionGenerator() {
       const timestamp = new Date().toISOString().split("T")[0]
       const filename = `${baseFilename}_ai_generated_quiz.xlsx`
       link.download = filename
-
-      console.log("💾 Downloading file:", filename)
 
       // Trigger download
       document.body.appendChild(link)
@@ -172,10 +153,8 @@ export default function QuestionGenerator() {
         description: `${filename} has been saved to your downloads folder.`,
       })
 
-      console.log("✅ Download completed successfully!")
     } catch (error) {
       clearInterval(progressInterval)
-      console.error("❌ Error downloading Excel file:", error)
 
       // Provide specific error messages
       let errorMessage = "Unknown error occurred"
@@ -198,7 +177,6 @@ export default function QuestionGenerator() {
       })
 
       // Fallback: Generate mock Excel file client-side
-      console.log("🔄 Attempting fallback generation...")
       await generateFallbackExcel(count)
 
       toast({
@@ -212,7 +190,6 @@ export default function QuestionGenerator() {
   // Fallback function to generate Excel client-side if API fails
   const generateFallbackExcel = async (count: number): Promise<void> => {
     try {
-      console.log("📊 Generating fallback Excel with", count, "questions...")
 
       // Dynamic import to reduce bundle size
       const XLSX = await import("xlsx")
@@ -260,9 +237,7 @@ export default function QuestionGenerator() {
       XLSX.writeFile(workbook, fileName)
 
       setIsDownloadReady(true)
-      console.log("✅ Fallback Excel generated:", fileName)
     } catch (error) {
-      console.error("❌ Error generating fallback Excel:", error)
       toast({
         title: "Error generating fallback file",
         description: "Unable to create Excel file. Please try again.",
@@ -324,7 +299,6 @@ export default function QuestionGenerator() {
 
       await downloadExcelFromAPI(count)
     } catch (error) {
-      console.error("❌ Error generating questions:", error)
       toast({
         title: "Generation failed",
         description: "There was an error generating the questions. Please try again.",
