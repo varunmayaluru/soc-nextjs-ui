@@ -99,17 +99,19 @@ export default function QuestionGenerator() {
 
     try {
       console.log("📡 Sending request to Python backend...")
-
+      const headers = new Headers();
+      const token = localStorage.getItem("authToken");
+      if (token) {
+      const authValue = token.toLowerCase().startsWith("bearer ")
+        ? token
+        : `Bearer ${token}`;
+      headers.set("Authorization", authValue);
+    }
       // Direct fetch to your Python FastAPI backend
       const response = await fetch(apiUrl, {
         method: "POST",
         body: formData,
-        // Add headers if you need authentication
-        headers: {
-          // Don't set Content-Type for FormData - browser will set it with boundary
-          // Add authentication headers if needed:
-          // 'Authorization': `Bearer ${token}`,
-        },
+        headers,
       })
 
       clearInterval(progressInterval)
